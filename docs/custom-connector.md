@@ -48,9 +48,16 @@ ids are passed by the flow, not typed by the user.
   (`alex_signaturetemplate` + `alex_templatefieldmapping`).
 - **Caller**: Flow (admin-run sync, or scheduled).
 - **User sees / enters**: nothing (admin sync), or a template picker in config.
-- **Returns**: list of templates — template `id`, `name`, version, fields
-  (`field id`, `name`, `type`, required), recipient slots.
-- **HTTP**: `GET` templates endpoint *(exact path to verify against the API)*.
+- **Returns**: list of templates (DataTables envelope, read `data[]`) — template
+  `id`, `name`, `type`, `status`, `dir_hash`, public `links[]`.
+- **HTTP (list)**: `GET /entity/me/templates` *(verified live)*.
+- **HTTP (detail + fields)**: `GET /entity/me/templates/{id}` *(verified live)*.
+  Fields are in `payload.data[][]` and summarised in `data_headers[]`. Each field
+  exposes a **stable `id` (GUID)**, a `name` (e.g. `custom_field_…`), an
+  `export.header` (e.g. `customer_name`), a `type` (`input-text`,
+  `input-signature`, `input-checkbox`, `input-date`, …), `required`, and `role_id`
+  (recipient role). Use `id` or `name` as the stable key for
+  `alex_templatefieldmapping.alex_externalfieldid` / `alex_externalfieldname`.
 
 ### 3. Create Form
 - **Purpose**: Create a signature form from a template. With `draft:true` it is
@@ -60,7 +67,7 @@ ids are passed by the flow, not typed by the user.
   and the mapped field values (prefilled from the Dynamics record, editable).
 - **Returns**: `form id`, status, and a `meta_data` echo (we pass the D365
   record id + table name for correlation).
-- **HTTP**: `POST /forms` *(from API research)*.
+- **HTTP**: `POST /entity/me/forms` *(from API research)*.
 
 ### 4. Set Assignees
 - **Purpose**: Attach the recipient(s) who must sign.
@@ -68,7 +75,7 @@ ids are passed by the flow, not typed by the user.
 - **User sees / enters**: the recipient — either an existing Contact, or an
   ad-hoc person (name + email/phone) and delivery method (email / SMS / link).
 - **Returns**: assignee id(s) and their status (e.g. *waiting*).
-- **HTTP**: `POST /forms/{id}/assignees` *(from API research)*.
+- **HTTP**: `POST /entity/me/forms/{id}/assignees` *(from API research)*.
 - **Note**: only one assignee may be the primary `recipient:true`.
 
 ### 5. Upload File
@@ -77,7 +84,8 @@ ids are passed by the flow, not typed by the user.
 - **User sees / enters**: the source document (usually generated/selected
   automatically; the user does not paste base64).
 - **Returns**: confirmation / document reference.
-- **HTTP**: `POST /forms/{id}/upload` with the PDF as **base64** *(from API research)*.
+- **HTTP**: `POST /entity/me/forms/{id}/upload` with the PDF as **base64**, PDF
+  only *(from API research)*.
 
 ### 6. Get Document (Preview / Signed)
 - **Purpose**: Retrieve the PDF — the **draft preview** before sending, or the
@@ -88,14 +96,16 @@ ids are passed by the flow, not typed by the user.
 - **Returns**: the PDF (base64 / file content) + content type.
 - **Storage**: written to `alex_signaturedocument.alex_documentfile`
   (Dataverse File) with `alex_documenttype` = Preview or Signed.
-- **HTTP**: `GET` document endpoint *(exact path to verify)*.
+- **HTTP**: `GET /entity/me/forms/{id}/download` *(route verified live;
+  returns 400 for an unknown id)*. A complete PDF exists only when status is
+  `signed`/`approved`; before that only the draft PDF is available.
 
 ### 7. Send Form
 - **Purpose**: Send the form to the recipient(s) for signature (exits draft).
 - **Caller**: Flow (after the user approves the preview).
 - **User sees / enters**: a final **confirm / send** click.
 - **Returns**: updated status (e.g. *sent* / *in progress*).
-- **HTTP**: `PUT /forms/{id}/send` *(from API research)*.
+- **HTTP**: `PUT /entity/me/forms/{id}/send` *(from API research)*.
 
 ### 8. Get Form Status
 - **Purpose**: Poll the current status of a form and its assignees.
@@ -105,14 +115,17 @@ ids are passed by the flow, not typed by the user.
   viewed / signed / declined / approved), timestamps.
 - **Mapping**: updates `alex_signaturerequest.alex_status` and
   `alex_signaturerecipient.alex_recipientstatus`.
-- **HTTP**: `GET /forms/{id}` (or status endpoint) *(to confirm)*.
+- **HTTP**: `GET /entity/me/forms/{id}` *(route verified live; 400 for an
+  unknown id)*. List all forms via `GET /entity/me/forms` (DataTables envelope).
 
 ### 9. Cancel Form
 - **Purpose**: Cancel an in-flight signature request.
 - **Caller**: End user (command) → Flow.
 - **User sees / enters**: a **cancel** action with optional reason.
 - **Returns**: updated status (*cancelled*).
-- **HTTP**: cancel endpoint *(to confirm)*.
+- **HTTP**: `PUT /entity/me/forms/{id}/cancel` *(route verified live; only `PUT`
+  is accepted — `POST` returns 405)*. To remove a draft entirely use
+  `DELETE /entity/me/forms/{id}` *(route verified live)*.
 
 ---
 
@@ -163,12 +176,34 @@ sequenceDiagram
 | (error) | Failed → Pending Retry |
 | (user cancel) | Cancelled |
 
-## Open items to verify before build
+## Verified endpoints (live, 2026-06-17)
 
-- Exact paths/payloads for **Get Templates**, **Get Document**, **Get Form
-  Status**, and **Cancel** (verified so far: `/entity/me`, `/entity/me/profiles`).
-- Max upload size for **Upload File** (drives base64 handling / chunking).
-- Whether template fields expose stable ids for the mapping table.
+All paths are under base `https://api.easydo.co.il/api`, `Authorization: Bearer <token>`.
 
-> Verifying these against the live API is the recommended next step so the
-> connector's OpenAPI definition is correct on the first build.
+| Action | Method & path | Status |
+| --- | --- | --- |
+| Get Profiles | `GET /entity/me/profiles` | ✅ verified |
+| Get Templates (list) | `GET /entity/me/templates` | ✅ verified |
+| Get Template (detail + fields) | `GET /entity/me/templates/{id}` | ✅ verified |
+| Create Form | `POST /entity/me/forms` | research |
+| Set Assignees | `POST /entity/me/forms/{id}/assignees` | research |
+| Upload File | `POST /entity/me/forms/{id}/upload` | research |
+| Send Form | `PUT /entity/me/forms/{id}/send` | research |
+| List Forms | `GET /entity/me/forms` | ✅ verified |
+| Get Form Status | `GET /entity/me/forms/{id}` | ✅ route verified |
+| Download PDF | `GET /entity/me/forms/{id}/download` | ✅ route verified |
+| Cancel Form | `PUT /entity/me/forms/{id}/cancel` | ✅ route verified (PUT only) |
+| Delete Form (draft) | `DELETE /entity/me/forms/{id}` | ✅ route verified |
+
+List endpoints return a **DataTables envelope**
+(`{draw, recordsTotal, recordsFiltered, recordsReturned, recordsOffset, data:[]}`) —
+read the `data[]` array. Errors return
+`{message, error, hint, error_description}` (e.g. `record_not_accessible`).
+
+## Remaining items to confirm during build
+
+- **Max upload size** for *Upload File* (drives base64 handling / chunking) — to be
+  measured with a real PDF.
+- Exact request/response **bodies** for *Create Form → Assignees → Upload → Send*
+  end-to-end (paths confirmed; payloads from API research, to be exercised once with
+  a live send).
