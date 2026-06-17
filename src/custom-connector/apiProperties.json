@@ -5,8 +5,8 @@
         "type": "securestring",
         "uiDefinition": {
           "displayName": "API Key - מפתח API (Token)",
-          "description": "Enter the value as: Bearer <your EasyDoc API token>. The token is generated in the EasyDoc portal (Company settings -> API).",
-          "tooltip": "Bearer <your EasyDoc API token>",
+          "description": "Enter only your EasyDoc API token (without 'Bearer'). The connector adds the 'Bearer ' prefix automatically. The token is generated in the EasyDoc portal (Company settings -> API).",
+          "tooltip": "EasyDoc API token (without 'Bearer')",
           "constraints": {
             "tabIndex": 2,
             "clearText": false,
@@ -19,7 +19,18 @@
     "capabilities": [
       "actions"
     ],
-    "policyTemplateInstances": [],
+    "policyTemplateInstances": [
+      {
+        "templateId": "setheader",
+        "title": "Add Bearer prefix to Authorization",
+        "parameters": {
+          "x-ms-apimTemplateParameter.name": "Authorization",
+          "x-ms-apimTemplateParameter.value": "Bearer @connectionParameters('api_key', '')",
+          "x-ms-apimTemplateParameter.existsAction": "override",
+          "x-ms-apimTemplate-policySection": "Request"
+        }
+      }
+    ],
     "publisher": "AlexanderYurpolsky",
     "stackOwner": "EasyDoc"
   }
