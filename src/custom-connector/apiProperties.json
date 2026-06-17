@@ -4,7 +4,7 @@
       "api_key": {
         "type": "securestring",
         "uiDefinition": {
-          "displayName": "EasyDoc token (Bearer <token>)",
+          "displayName": "API Key - מפתח API (Token)",
           "description": "Enter the value as: Bearer <your EasyDoc API token>. The token is generated in the EasyDoc portal (Company settings -> API).",
           "tooltip": "Bearer <your EasyDoc API token>",
           "constraints": {
