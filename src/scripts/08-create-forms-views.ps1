@@ -50,9 +50,9 @@ function Get-TableMeta {
 function New-FieldCell {
     param([hashtable]$Meta, [string]$Field)
     $a = $Meta.Attr[$Field]
-    if (-not $a) { Write-Output "    (skip missing field $Field)"; return $null }
+    if (-not $a) { Write-Host "    (skip missing field $Field)"; return $null }
     $cid = $ClassId[$a.Type]
-    if (-not $cid) { Write-Output "    (skip unsupported type $($a.Type) for $Field)"; return $null }
+    if (-not $cid) { Write-Host "    (skip unsupported type $($a.Type) for $Field)"; return $null }
     $en = if ($a.En) { $a.En } else { $Field }
     $he = if ($a.He) { $a.He } else { $en }
     $cellId = "{" + [guid]::NewGuid().ToString() + "}"
