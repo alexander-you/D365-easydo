@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "EasyDoc",
-    "description": "Custom Connector for the EasyDoc digital-signature service. Actions only (no triggers in MVP). Used by the D365 easydo solution to create, send, track and download signature forms.",
+    "description": "EasyDoc digital-signature connector for Dynamics 365 — create, send, track and download signature forms.",
     "version": "1.0.0",
     "contact": {
       "name": "D365 easydo"
