@@ -171,6 +171,75 @@ Contact            1 ──< Signature Request        (alex_relatedcontactid)
 Integration Log → Signature Request               (string reference; elastic, no lookup)
 ```
 
+## Architecture diagram (ERD)
+
+> **תקציר בעברית:** התרשים מציג את הטבלאות והקשרים ביניהן. הקווים המלאים הם קשרי
+> Lookup אמיתיים ב-Dataverse; הקו המקווקו מ-Integration Log הוא הפניית מחרוזת
+> (לא Lookup) מאחר שטבלת ה-Elastic אינה תומכת בקשרים.
+
+```mermaid
+erDiagram
+    CONTACT ||--o{ ALEX_SIGNATUREREQUEST : "alex_relatedcontactid"
+    CONTACT ||--o{ ALEX_SIGNATURERECIPIENT : "alex_contactid"
+    ALEX_SIGNATURETEMPLATE ||--o{ ALEX_TEMPLATEFIELDMAPPING : "alex_templateid (required)"
+    ALEX_SIGNATURETEMPLATE ||--o{ ALEX_SIGNATUREREQUEST : "alex_templateid"
+    ALEX_SIGNATUREREQUEST ||--o{ ALEX_SIGNATURERECIPIENT : "alex_signaturerequestid (required)"
+    ALEX_SIGNATUREREQUEST ||--o{ ALEX_SIGNATUREDOCUMENT : "alex_signaturerequestid (required)"
+    ALEX_SIGNATUREREQUEST ..|| ALEX_INTEGRATIONLOG : "string ref (elastic, no lookup)"
+
+    ALEX_SIGNATURETEMPLATE {
+        text alex_name PK
+        text alex_externaltemplateid
+        choice alex_language
+        bool alex_isactive
+    }
+    ALEX_SIGNATUREREQUEST {
+        text alex_name PK
+        lookup alex_templateid FK
+        lookup alex_relatedcontactid FK
+        choice alex_status
+        bool alex_isdraft
+    }
+    ALEX_TEMPLATEFIELDMAPPING {
+        text alex_name PK
+        lookup alex_templateid FK
+        text alex_dynamicsfield
+        text alex_externalfieldname
+    }
+    ALEX_SIGNATURERECIPIENT {
+        text alex_name PK
+        lookup alex_signaturerequestid FK
+        lookup alex_contactid FK
+        choice alex_recipientstatus
+    }
+    ALEX_SIGNATUREDOCUMENT {
+        text alex_name PK
+        lookup alex_signaturerequestid FK
+        choice alex_documenttype
+        file alex_documentfile
+    }
+    ALEX_INTEGRATIONLOG {
+        text alex_name PK
+        text alex_signaturerequestref
+        choice alex_direction
+        choice alex_result
+    }
+```
+
+## Data flow (how records are created)
+
+```mermaid
+flowchart TD
+    C[Contact record] -->|Send for Signature| R[Signature Request]
+    T[Signature Template] -->|selected| R
+    T -->|defines| M[Template Field Mapping]
+    R -->|one per signer| RC[Signature Recipient]
+    RC -. links to .-> C
+    R -->|preview & signed| D[Signature Document<br/>Dataverse File]
+    R -. each API call .-> L[Integration Log<br/>elastic]
+```
+
+
 ## Forms & views
 
 Every table has a **main form** ("Information") organized into meaningful,

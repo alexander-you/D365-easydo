@@ -64,7 +64,9 @@ Polling flow updates status → on signed/approved → store signed PDF in Datav
 /tests         UAT scenarios and test matrix
 ```
 
-See [docs/](docs/) for detailed documentation.
+See [docs/](docs/) for detailed documentation, including
+[docs/data-model.md](docs/data-model.md) (tables, ERD, data flow) and
+[docs/custom-connector.md](docs/custom-connector.md) (EasyDoc connector actions).
 
 ## Solution
 
