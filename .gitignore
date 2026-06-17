@@ -1,0 +1,59 @@
+# ==========================================================================
+# Security — NEVER commit secrets, tokens, or sensitive customer data
+# ==========================================================================
+# EasyDoc / API credentials
+*.secret
+*.secrets
+secrets.json
+**/secrets/**
+.env
+.env.*
+!.env.example
+*token*
+*.token
+client-secret*
+*client_secret*
+appsettings.*.json
+!appsettings.example.json
+
+# Signed documents / customer payloads (must never be in source control)
+*.pdf
+**/signed-documents/**
+**/payloads/**
+*.payload.json
+
+# ==========================================================================
+# Power Platform / Dataverse
+# ==========================================================================
+# Unpacked solution build artifacts
+**/bin/**
+**/obj/**
+**/out/**
+*.zip
+!**/exported-solutions/.gitkeep
+
+# PAC CLI / temp
+.pac/
+*.pac.tmp
+
+# ==========================================================================
+# PCF / Node
+# ==========================================================================
+node_modules/
+**/node_modules/**
+*.log
+npm-debug.log*
+.cache/
+generated/
+
+# ==========================================================================
+# Editor / OS
+# ==========================================================================
+.vs/
+.vscode/*
+!.vscode/extensions.json
+*.user
+*.suo
+Thumbs.db
+.DS_Store
+desktop.ini
