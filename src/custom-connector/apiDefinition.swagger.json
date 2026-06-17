@@ -136,6 +136,121 @@
         }
       }
     },
+    "/entity/me/templates/{templateId}/send": {
+      "post": {
+        "operationId": "SendTemplate",
+        "summary": "Send template",
+        "description": "Create and send a signature form from an existing template. The template's PDF, fields and settings are applied automatically; only the recipients (assignees) must be supplied. The form is sent immediately (status becomes 'waiting'). Each assignee receives a fill_url in the response.",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "EasyDoc template id, e.g. 68729."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Optional form name. Defaults to the template name."
+                },
+                "assignees": {
+                  "type": "array",
+                  "description": "Recipients who must fill/sign. Use profile.id for an existing EasyDoc profile, or email + name for a temporary recipient. Only one assignee may have recipient set to true.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "profile": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          }
+                        }
+                      },
+                      "email": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "sequence": {
+                        "type": "integer"
+                      },
+                      "notify_platform": {
+                        "type": "string",
+                        "description": "email, sms, or null."
+                      },
+                      "recipient": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                },
+                "meta_data": {
+                  "type": "object",
+                  "description": "Optional metadata. Use meta_data.client to store custom key/values (e.g. the Dynamics 365 record id and table) for correlation.",
+                  "properties": {
+                    "client": {
+                      "type": "object"
+                    }
+                  }
+                }
+              },
+              "required": [
+                "assignees"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/entity/me/templates/{templateId}/form": {
+      "post": {
+        "operationId": "CreateFormFromTemplate",
+        "summary": "Create draft form from template",
+        "description": "Create a DRAFT signature form from a template without sending it. The template's PDF and fields are applied. No email is sent (status becomes 'incomplete'). Use this for preview before sending.",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "EasyDoc template id, e.g. 68729."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Optional form name. Defaults to the template name."
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/entity/me/forms": {
       "get": {
         "operationId": "ListForms",
