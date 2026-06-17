@@ -185,7 +185,7 @@ erDiagram
     ALEX_SIGNATURETEMPLATE ||--o{ ALEX_SIGNATUREREQUEST : "alex_templateid"
     ALEX_SIGNATUREREQUEST ||--o{ ALEX_SIGNATURERECIPIENT : "alex_signaturerequestid (required)"
     ALEX_SIGNATUREREQUEST ||--o{ ALEX_SIGNATUREDOCUMENT : "alex_signaturerequestid (required)"
-    ALEX_SIGNATUREREQUEST ..|| ALEX_INTEGRATIONLOG : "string ref (elastic, no lookup)"
+    ALEX_SIGNATUREREQUEST ||..o{ ALEX_INTEGRATIONLOG : "string ref (elastic, no lookup)"
 
     ALEX_SIGNATURETEMPLATE {
         text alex_name PK
@@ -239,8 +239,35 @@ flowchart TD
     R -. each API call .-> L[Integration Log<br/>elastic]
 ```
 
+## Request lifecycle (status)
 
-## Forms & views
+> **תקציר בעברית:** תרשים המצבים מציג את מחזור החיים של בקשת חתימה לפי רשימת
+> הבחירה `alex_signaturestatus` — מ-Draft ועד מצב סופי (Completed / Declined /
+> Cancelled / Expired / Failed). מצבי הביניים מתעדכנים ע"י flow ה-polling.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> ReadyToSend
+    ReadyToSend --> Sent
+    Sent --> Delivered
+    Delivered --> Viewed
+    Viewed --> InProgress
+    InProgress --> Completed
+    InProgress --> Declined
+    Sent --> Failed
+    Failed --> PendingRetry
+    PendingRetry --> Sent
+    Sent --> Cancelled
+    Delivered --> Expired
+    Completed --> [*]
+    Declined --> [*]
+    Cancelled --> [*]
+    Expired --> [*]
+    Failed --> [*]
+```
+
+
 
 Every table has a **main form** ("Information") organized into meaningful,
 labelled sections (e.g. Request Details, Tracking, Support & Diagnostics) rather
