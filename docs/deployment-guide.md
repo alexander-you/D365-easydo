@@ -8,7 +8,7 @@
 
 | Stage | Environment |
 | --- | --- |
-| Development | `Demo Contact Center EN` — `https://demo-contact-center-en.crm4.dynamics.com/` |
+| Development | Dev environment (details kept outside the repo) |
 | Test | TBD |
 | Production | TBD |
 
@@ -18,12 +18,11 @@
 | --- | --- |
 | Display name | `D365 easydo` |
 | Logical name | `alex_d365_easydo` |
-| Publisher | `Alexander Yurpolsky` (`alexander_yurpolsky`) |
-| Prefix | `alex` |
+| Publisher prefix | `alex` |
 
 ## Lifecycle
 
-1. Develop in the **unmanaged** solution in `Demo Contact Center EN`.
+1. Develop in the **unmanaged** solution in the Dev environment.
 2. Export as **managed** for Test / Production.
 3. Bind Environment Variables and Connection References per target environment.
 4. Import in the correct order (see [import-order.md](../deployment/import-order.md)).

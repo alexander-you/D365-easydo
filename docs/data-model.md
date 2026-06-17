@@ -8,8 +8,7 @@ This is the initial baseline data model. A deeper version — including an entit
 relationship diagram (ERD) and full solution-concept — is planned for the **next
 phase** (per project direction 2026-06-17).
 
-All tables use the publisher prefix **`alex_`** in the `Demo Contact Center EN`
-environment.
+All tables use the publisher prefix **`alex_`** in the Dev environment.
 
 ## Tables
 

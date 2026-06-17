@@ -9,6 +9,9 @@ secrets.json
 .env
 .env.*
 !.env.example
+# Local Dataverse environment config (holds the environment URL) - never commit
+**/.env.ps1
+!**/.env.example.ps1
 *token*
 *.token
 client-secret*

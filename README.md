@@ -66,13 +66,10 @@ Polling flow updates status → on signed/approved → store signed PDF in Datav
 
 See [docs/](docs/) for detailed documentation.
 
-## Target environment
+## Solution
 
 | Item | Value |
 | --- | --- |
-| Environment | `Demo Contact Center EN` |
-| URL | `https://demo-contact-center-en.crm4.dynamics.com/` |
-| Publisher | `Alexander Yurpolsky` (`alexander_yurpolsky`) |
 | Publisher prefix | `alex` |
 | Solution (display) | `D365 easydo` |
 | Solution (logical) | `alex_d365_easydo` |
