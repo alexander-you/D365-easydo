@@ -23,8 +23,8 @@
     "api_key": {
       "type": "apiKey",
       "in": "header",
-      "name": "Authorization",
-      "description": "EasyDoc bearer token. Enter the value as: Bearer <your EasyDoc API token>."
+      "name": "api_key",
+      "description": "EasyDoc API token. Enter only the token (the connector adds the 'Bearer ' prefix automatically)."
     }
   },
   "security": [
