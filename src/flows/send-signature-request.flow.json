@@ -1,0 +1,395 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_alex-5feasydoc-5f5849d39a0feaf28d": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "alex_EasyDoc"
+        },
+        "api": {
+          "name": "shared_alex-5feasydoc-5f5849d39a0feaf28d"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "alex_dataverse_easydo"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_a_signature_request_is_updated": {
+          "metadata": {
+            "operationMetadataId": "b2f0c1e2-0001-4a10-9c01-000000000001"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "SubscribeWebhookTrigger",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 4,
+              "subscriptionRequest/entityname": "alex_signaturerequest",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/filteringattributes": "alex_status"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "actions": {
+        "Process_only_when_Ready_to_Send": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "b2f0c1e2-0002-4a10-9c01-000000000002"
+          },
+          "type": "If",
+          "expression": {
+            "equals": [
+              "@triggerOutputs()?['body/alex_status']",
+              626210001
+            ]
+          },
+          "actions": {
+            "Try_to_send_the_signature_request": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "b2f0c1e2-0003-4a10-9c01-000000000003"
+              },
+              "type": "Scope",
+              "actions": {
+                "Get_the_signature_template": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "b2f0c1e2-0004-4a10-9c01-000000000004"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "GetItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "alex_signaturetemplates",
+                      "recordId": "@triggerOutputs()?['body/_alex_templateid_value']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "List_the_recipients": {
+                  "runAfter": {
+                    "Get_the_signature_template": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "b2f0c1e2-0005-4a10-9c01-000000000005"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "ListRecords",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "alex_signaturerecipients",
+                      "$select": "alex_name,alex_email,alex_signingorder,alex_externalprofileid,alex_recipienttype",
+                      "$filter": "@concat('_alex_signaturerequestid_value eq ', triggerOutputs()?['body/alex_signaturerequestid'])",
+                      "$orderby": "alex_signingorder asc"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Get_the_document_to_sign": {
+                  "runAfter": {
+                    "List_the_recipients": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "b2f0c1e2-0006-4a10-9c01-000000000006"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "ListRecords",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "alex_signaturedocuments",
+                      "$select": "alex_signaturedocumentid,alex_mimetype",
+                      "$filter": "@concat('_alex_signaturerequestid_value eq ', triggerOutputs()?['body/alex_signaturerequestid'], ' and alex_documenttype eq 626210000')",
+                      "$top": 1
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Download_the_PDF_content": {
+                  "runAfter": {
+                    "Get_the_document_to_sign": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "b2f0c1e2-0007-4a10-9c01-000000000007"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "GetEntityFileImageFieldContent",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "alex_signaturedocuments",
+                      "recordId": "@first(outputs('Get_the_document_to_sign')?['body/value'])?['alex_signaturedocumentid']",
+                      "fileImageFieldName": "alex_documentfile"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Build_the_assignees_list": {
+                  "runAfter": {
+                    "Download_the_PDF_content": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "b2f0c1e2-0008-4a10-9c01-000000000008"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@outputs('List_the_recipients')?['body/value']",
+                    "select": {
+                      "email": "@item()?['alex_email']",
+                      "name": "@item()?['alex_name']",
+                      "sequence": "@item()?['alex_signingorder']",
+                      "notify_platform": "email",
+                      "recipient": "@equals(item()?['alex_signingorder'], 1)"
+                    }
+                  }
+                },
+                "Create_the_EasyDoc_form": {
+                  "runAfter": {
+                    "Build_the_assignees_list": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "b2f0c1e2-0009-4a10-9c01-000000000009"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_alex-5feasydoc-5f5849d39a0feaf28d",
+                      "operationId": "CreateForm",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydoc-5f5849d39a0feaf28d"
+                    },
+                    "parameters": {
+                      "body/name": "@triggerOutputs()?['body/alex_name']",
+                      "body/draft": "@coalesce(triggerOutputs()?['body/alex_isdraft'], false)"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Set_the_form_assignees": {
+                  "runAfter": {
+                    "Create_the_EasyDoc_form": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "b2f0c1e2-000a-4a10-9c01-00000000000a"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_alex-5feasydoc-5f5849d39a0feaf28d",
+                      "operationId": "SetAssignees",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydoc-5f5849d39a0feaf28d"
+                    },
+                    "parameters": {
+                      "formId": "@string(outputs('Create_the_EasyDoc_form')?['body/id'])",
+                      "body/assignees": "@body('Build_the_assignees_list')"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Upload_the_PDF_to_the_form": {
+                  "runAfter": {
+                    "Set_the_form_assignees": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "b2f0c1e2-000b-4a10-9c01-00000000000b"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_alex-5feasydoc-5f5849d39a0feaf28d",
+                      "operationId": "UploadFile",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydoc-5f5849d39a0feaf28d"
+                    },
+                    "parameters": {
+                      "formId": "@string(outputs('Create_the_EasyDoc_form')?['body/id'])",
+                      "body/file/name": "@concat(triggerOutputs()?['body/alex_name'], '.pdf')",
+                      "body/file/data": "@base64(body('Download_the_PDF_content'))",
+                      "body/file/mime": "application/pdf"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Check_if_this_is_a_draft_preview": {
+                  "runAfter": {
+                    "Upload_the_PDF_to_the_form": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "b2f0c1e2-000c-4a10-9c01-00000000000c"
+                  },
+                  "type": "If",
+                  "expression": {
+                    "equals": [
+                      "@coalesce(triggerOutputs()?['body/alex_isdraft'], false)",
+                      true
+                    ]
+                  },
+                  "actions": {
+                    "Mark_request_as_preview_ready": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "b2f0c1e2-000d-4a10-9c01-00000000000d"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps",
+                          "operationId": "UpdateRecord",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "alex_signaturerequests",
+                          "recordId": "@triggerOutputs()?['body/alex_signaturerequestid']",
+                          "item/alex_externalformid": "@string(outputs('Create_the_EasyDoc_form')?['body/id'])",
+                          "item/alex_ispreviewgenerated": true
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Send_the_form_for_signature": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "b2f0c1e2-000e-4a10-9c01-00000000000e"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_alex-5feasydoc-5f5849d39a0feaf28d",
+                            "operationId": "SendForm",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydoc-5f5849d39a0feaf28d"
+                          },
+                          "parameters": {
+                            "formId": "@string(outputs('Create_the_EasyDoc_form')?['body/id'])",
+                            "body/meta_data/client": {
+                              "d365_request_id": "@triggerOutputs()?['body/alex_signaturerequestid']",
+                              "d365_table": "alex_signaturerequest",
+                              "easydoc_template_id": "@outputs('Get_the_signature_template')?['body/alex_externaltemplateid']"
+                            }
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      },
+                      "Mark_request_as_Sent": {
+                        "runAfter": {
+                          "Send_the_form_for_signature": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "b2f0c1e2-000f-4a10-9c01-00000000000f"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_commondataserviceforapps",
+                            "operationId": "UpdateRecord",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                          },
+                          "parameters": {
+                            "entityName": "alex_signaturerequests",
+                            "recordId": "@triggerOutputs()?['body/alex_signaturerequestid']",
+                            "item/alex_status": 626210002,
+                            "item/alex_externalformid": "@string(outputs('Create_the_EasyDoc_form')?['body/id'])",
+                            "item/alex_signinglink": "@first(outputs('Send_the_form_for_signature')?['body/assignees'])?['fill_url']",
+                            "item/alex_senton": "@utcNow()"
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Mark_request_as_Failed": {
+              "runAfter": {
+                "Try_to_send_the_signature_request": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b2f0c1e2-0010-4a10-9c01-000000000010"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "UpdateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "alex_signaturerequests",
+                  "recordId": "@triggerOutputs()?['body/alex_signaturerequestid']",
+                  "item/alex_status": 626210008,
+                  "item/alex_errormessage": "@concat('Send failed on ', utcNow(), '. See flow run history for details.')"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          }
+        }
+      }
+    }
+  },
+  "schemaVersion": "1.0.0.0"
+}
