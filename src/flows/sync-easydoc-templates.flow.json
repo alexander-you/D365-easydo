@@ -1,0 +1,185 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_alex-5feasydoc-5f5849d39a0feaf28d": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "alex_EasyDoc"
+        },
+        "api": {
+          "name": "shared_alex-5feasydoc-5f5849d39a0feaf28d"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "alex_dataverse_easydo"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "a1f0c1e2-0001-4a10-9c01-000000000001"
+          },
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {},
+              "required": []
+            }
+          }
+        }
+      },
+      "actions": {
+        "Get_templates_from_EasyDoc": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "a1f0c1e2-0002-4a10-9c01-000000000002"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_alex-5feasydoc-5f5849d39a0feaf28d",
+              "operationId": "GetTemplates",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydoc-5f5849d39a0feaf28d"
+            },
+            "parameters": {},
+            "authentication": {
+              "type": "Raw",
+              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+            }
+          }
+        },
+        "Apply_to_each_template": {
+          "foreach": "@outputs('Get_templates_from_EasyDoc')?['body/data']",
+          "actions": {
+            "List_existing_template": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "a1f0c1e2-0003-4a10-9c01-000000000003"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "alex_signaturetemplates",
+                  "$select": "alex_signaturetemplateid",
+                  "$filter": "@concat('alex_externaltemplateid eq ''', string(items('Apply_to_each_template')?['id']), '''')"
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            },
+            "Upsert_template": {
+              "actions": {
+                "Update_template": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "a1f0c1e2-0004-4a10-9c01-000000000004"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "UpdateOnlyRecord",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "alex_signaturetemplates",
+                      "recordId": "@first(outputs('List_existing_template')?['body/value'])?['alex_signaturetemplateid']",
+                      "item/alex_name": "@items('Apply_to_each_template')?['name']",
+                      "item/alex_isactive": "@equals(items('Apply_to_each_template')?['status'], 'active')",
+                      "item/alex_templatesummary": "@items('Apply_to_each_template')?['description']",
+                      "item/alex_lastsyncedon": "@utcNow()"
+                    },
+                    "authentication": {
+                      "type": "Raw",
+                      "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "List_existing_template": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Create_template": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "a1f0c1e2-0005-4a10-9c01-000000000005"
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_commondataserviceforapps",
+                        "operationId": "CreateRecord",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                      },
+                      "parameters": {
+                        "entityName": "alex_signaturetemplates",
+                        "item/alex_name": "@items('Apply_to_each_template')?['name']",
+                        "item/alex_externaltemplateid": "@string(items('Apply_to_each_template')?['id'])",
+                        "item/alex_isactive": "@equals(items('Apply_to_each_template')?['status'], 'active')",
+                        "item/alex_templatesummary": "@items('Apply_to_each_template')?['description']",
+                        "item/alex_lastsyncedon": "@utcNow()"
+                      },
+                      "authentication": {
+                        "type": "Raw",
+                        "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "greater": [
+                  "@length(outputs('List_existing_template')?['body/value'])",
+                  0
+                ]
+              },
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "Get_templates_from_EasyDoc": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a1f0c1e2-0006-4a10-9c01-000000000006"
+          },
+          "type": "Foreach"
+        }
+      }
+    }
+  },
+  "schemaVersion": "1.0.0.0"
+}
