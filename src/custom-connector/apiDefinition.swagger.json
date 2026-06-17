@@ -1,0 +1,467 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "EasyDoc",
+    "description": "Custom Connector for the EasyDoc digital-signature service. Actions only (no triggers in MVP). Used by the D365 easydo solution to create, send, track and download signature forms.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "D365 easydo"
+    }
+  },
+  "host": "api.easydo.co.il",
+  "basePath": "/api",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "Authorization",
+      "description": "EasyDoc bearer token. Enter the value as: Bearer <your EasyDoc API token>."
+    }
+  },
+  "security": [
+    {
+      "api_key": []
+    }
+  ],
+  "paths": {
+    "/entity/me": {
+      "get": {
+        "operationId": "GetEntity",
+        "summary": "Get entity (test connection)",
+        "description": "Returns the authenticated EasyDoc entity. Used to validate the connection.",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/entity/me/profiles": {
+      "get": {
+        "operationId": "GetProfiles",
+        "summary": "Get profiles",
+        "description": "List EasyDoc profiles/contacts for the entity. Returns a DataTables envelope; read the data array.",
+        "parameters": [
+          {
+            "name": "draw",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 1
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 0
+          },
+          {
+            "name": "length",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 25
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/entity/me/templates": {
+      "get": {
+        "operationId": "GetTemplates",
+        "summary": "Get templates",
+        "description": "List signature templates. Returns a DataTables envelope; read the data array.",
+        "parameters": [
+          {
+            "name": "draw",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 1
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 0
+          },
+          {
+            "name": "length",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 25
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/entity/me/templates/{templateId}": {
+      "get": {
+        "operationId": "GetTemplate",
+        "summary": "Get template (detail + fields)",
+        "description": "Get one template including its fields (payload.data and data_headers). Each field exposes a stable id, name, export.header, type and required.",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "EasyDoc template id, e.g. 68729."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/entity/me/forms": {
+      "get": {
+        "operationId": "ListForms",
+        "summary": "List forms",
+        "description": "List signature forms for the entity. Returns a DataTables envelope; read the data array.",
+        "parameters": [
+          {
+            "name": "draw",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 1
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 0
+          },
+          {
+            "name": "length",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 25
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "operationId": "CreateForm",
+        "summary": "Create form",
+        "description": "Create a signature form. Set draft to true to create a draft so a preview can be produced before sending.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Form name."
+                },
+                "draft": {
+                  "type": "boolean",
+                  "description": "Create as draft (enables preview before send).",
+                  "default": false
+                }
+              },
+              "required": [
+                "name"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/entity/me/forms/{formId}": {
+      "get": {
+        "operationId": "GetFormStatus",
+        "summary": "Get form status",
+        "description": "Get a form and its assignees' current status. Used by the scheduled polling flow.",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteForm",
+        "summary": "Delete form (draft)",
+        "description": "Delete a form. Use to remove a draft that will not be sent.",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/entity/me/forms/{formId}/assignees": {
+      "post": {
+        "operationId": "SetAssignees",
+        "summary": "Set assignees",
+        "description": "Attach the recipient(s) who must sign. Only one assignee may have recipient set to true.",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "assignees": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "profile": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          }
+                        }
+                      },
+                      "email": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "sequence": {
+                        "type": "integer"
+                      },
+                      "notify_platform": {
+                        "type": "string",
+                        "description": "email, sms, or null."
+                      },
+                      "recipient": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              },
+              "required": [
+                "assignees"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/entity/me/forms/{formId}/upload": {
+      "post": {
+        "operationId": "UploadFile",
+        "summary": "Upload file",
+        "description": "Upload the PDF to be signed. The file content is base64-encoded. PDF only.",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "file": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "string",
+                      "description": "Base64-encoded PDF content."
+                    },
+                    "mime": {
+                      "type": "string",
+                      "default": "application/pdf"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "data"
+                  ]
+                }
+              },
+              "required": [
+                "file"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/entity/me/forms/{formId}/send": {
+      "put": {
+        "operationId": "SendForm",
+        "summary": "Send form",
+        "description": "Send the form to the recipient(s) for signature (exits draft).",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "settings": {
+                  "type": "object",
+                  "properties": {
+                    "notify_emails": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "email": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "meta_data": {
+                  "type": "object",
+                  "description": "Custom correlation data, e.g. the D365 record id and table name.",
+                  "properties": {
+                    "client": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/entity/me/forms/{formId}/download": {
+      "get": {
+        "operationId": "DownloadDocument",
+        "summary": "Download document (preview / signed)",
+        "description": "Download the PDF. Before completion only the draft preview is available; the complete PDF exists once the form is signed or approved.",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/entity/me/forms/{formId}/cancel": {
+      "put": {
+        "operationId": "CancelForm",
+        "summary": "Cancel form",
+        "description": "Cancel an in-flight signature request. Only PUT is accepted.",
+        "parameters": [
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {},
+  "parameters": {},
+  "responses": {},
+  "tags": []
+}

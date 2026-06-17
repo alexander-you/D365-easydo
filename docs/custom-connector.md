@@ -28,6 +28,38 @@ Environment Variables, never in source control.
 - **DLP**: the connector is classified so it cannot be mixed with disallowed connectors.
 - The dev token shared during early testing **must be regenerated before production**.
 
+## Connection — what the user enters
+
+> **תקציר בעברית:** המשתמש/אדמין שמקים את החיבור מזין **רק את הטוקן של EasyDoc**.
+> אין שם משתמש/סיסמה ואין סוד נוסף. הטוקן נשמר בתוך ה-Connection המאובטח של
+> Power Platform ולא נחשף ב-flows או בקוד.
+
+The connector authenticates with an **API key** sent as the `Authorization`
+header. When creating a **Connection**, the only thing the user provides is the
+**EasyDoc API token**:
+
+| Field | Value to enter |
+| --- | --- |
+| EasyDoc token | `Bearer <your EasyDoc API token>` |
+
+- The token is generated in the **EasyDoc portal** (Company settings → API).
+- It is stored inside the Power Platform **Connection** (secure), not in flows,
+  not in the connector definition, and not in source control.
+- One Connection can be shared by all flows in the solution. For Test/Prod it is
+  recommended that a **service principal / application user** owns the Connection.
+- Rotating the token = update the Connection only; no flow changes needed.
+
+## Definition files (in source control)
+
+The connector is defined declaratively and added to the unmanaged solution:
+
+| File | Purpose |
+| --- | --- |
+| [../src/custom-connector/apiDefinition.swagger.json](../src/custom-connector/apiDefinition.swagger.json) | OpenAPI 2.0 — all actions/paths |
+| [../src/custom-connector/apiProperties.json](../src/custom-connector/apiProperties.json) | Auth (API key) + connection parameter UI |
+
+These contain **no secrets** — the token is entered at connection time.
+
 ---
 
 ## Actions
@@ -58,6 +90,21 @@ ids are passed by the flow, not typed by the user.
   `input-signature`, `input-checkbox`, `input-date`, …), `required`, and `role_id`
   (recipient role). Use `id` or `name` as the stable key for
   `alex_templatefieldmapping.alex_externalfieldid` / `alex_externalfieldname`.
+
+#### Template synchronization (import templates + their fields)
+
+> **תקציר בעברית:** ייבוא תבנית מושך גם את כל השדות שלה. תחילה רשימת התבניות, ואז
+> פירוט כל תבנית עם השדות (שם, תווית, סוג, חובה, מזהה יציב). נוצרת רשומת תבנית אחת
+> (`alex_signaturetemplate`) ורשומת מיפוי לכל שדה (`alex_templatefieldmapping`).
+> צד EasyDoc מתמלא אוטומטית; את צד Dynamics (`alex_dynamicsfield`) משלים אדמין.
+
+```mermaid
+flowchart LR
+    A["GET /entity/me/templates<br/>(templates list)"] --> B["GET /entity/me/templates/{id}<br/>(detail + payload.data fields)"]
+    B --> C["Upsert alex_signaturetemplate<br/>(one template record)"]
+    B --> D["Upsert alex_templatefieldmapping<br/>(one record per field)"]
+    D --> E["Admin maps alex_dynamicsfield<br/>(EasyDoc field -> Dynamics field)"]
+```
 
 ### 3. Create Form
 - **Purpose**: Create a signature form from a template. With `draft:true` it is

@@ -1,0 +1,26 @@
+{
+  "properties": {
+    "connectionParameters": {
+      "api_key": {
+        "type": "securestring",
+        "uiDefinition": {
+          "displayName": "EasyDoc token (Bearer <token>)",
+          "description": "Enter the value as: Bearer <your EasyDoc API token>. The token is generated in the EasyDoc portal (Company settings -> API).",
+          "tooltip": "Bearer <your EasyDoc API token>",
+          "constraints": {
+            "tabIndex": 2,
+            "clearText": false,
+            "required": "true"
+          }
+        }
+      }
+    },
+    "iconBrandColor": "#1F4E79",
+    "capabilities": [
+      "actions"
+    ],
+    "policyTemplateInstances": [],
+    "publisher": "AlexanderYurpolsky",
+    "stackOwner": "EasyDoc"
+  }
+}
