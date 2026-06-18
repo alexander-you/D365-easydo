@@ -651,9 +651,17 @@
             "description": "The EasyDoc form id to download. | מזהה הטופס ב-EasyDoc להורדה."
           }
         ],
+        "produces": [
+          "application/pdf"
+        ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "schema": {
+              "type": "string",
+              "format": "binary",
+              "description": "The PDF file content. | תוכן קובץ ה-PDF."
+            }
           }
         }
       }

@@ -332,6 +332,21 @@ It is **empty until the recipient submits**, at which point `has_data` flips to
 `true`. This object is **read-only / computed** (it cannot be written via `PUT`),
 and is the source for copying filled values back into Dynamics.
 
+The scheduled read-back flow iterates `payload.data[0]` (the field objects, which
+carry `name`, `label`, `type` and `export.header`), skips the `input-signature`
+field, and reads each value from the top-level `data[export.header]`. Checkbox
+values come back as `"checked"` / `"unchecked"`; dates as a datetime string.
+
+### Signed PDF download (verified live 2026-06-18)
+
+`GET /entity/me/forms/{id}/download` returns the PDF (`200`, `application/pdf`,
+`%PDF-…`, ~448 KB in testing). The **complete** PDF exists only once the form is
+`signed` / `approved`; before that the endpoint returns
+`400 record_not_accessible`. The connector's `DownloadDocument` operation declares
+a binary response so the bytes can be `base64()`-encoded into a Dataverse
+`annotation` (`documentbody`, `mimetype = application/pdf`, bound to the request via
+`objectid_alex_signaturerequest@odata.bind`).
+
 ### Approaches that do NOT work (do not retry)
 
 - Injecting `value` / `val` / `content` / `text` / `default` / `data` /

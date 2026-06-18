@@ -30,6 +30,16 @@ All notable changes to this project are documented here.
 - **Send flow** (`send-signature-request.flow.json`): on a real (non-draft) send it
   now lists the request's **Prefill** field values, builds the `prefill_data` array,
   and passes it to EasyDoc.
+- **Read-back flow** (`read-signature-results.flow.json`): a **scheduled** flow
+  (recurrence every 5 min) that first lists only **open** requests (status Sent /
+  Delivered / Viewed / In Progress with an `alex_externalformid`) — so a cycle with
+  nothing pending makes **zero** EasyDoc calls. For each, it reads the form; when
+  `has_data` is `true` it writes the recipient-entered values as
+  **`Read Back`** `alex_signaturefieldvalue` rows (keyed by `export.header`,
+  skipping the signature field), marks the request **Completed**, downloads the
+  signed PDF and attaches it to the request **Timeline** as a note.
+- **Connector**: `DownloadDocument` now declares a binary (`application/pdf`)
+  response so the signed PDF can be base64-encoded into a Dataverse annotation.
 - **Dataverse**: new table **`alex_signaturefieldvalue`** (per-request field value)
   with columns `alex_fieldname`, `alex_fieldlabel`, `alex_value`, `alex_direction`,
   `alex_isreadonly`, a lookup to `alex_signaturerequest`, a main form and two views
@@ -42,11 +52,17 @@ All notable changes to this project are documented here.
 - Prefill is **data-driven**: values live as Dataverse rows read at send time —
   **no Azure** and **no connector custom-code**. Connector dynamic-schema is not
   required (it would only improve design-time UX, not automation).
+- Read-back is **scheduled polling** (every 5 min), gated by an up-front open-request
+  query so idle cycles cost nothing; webhook remains a fast-follow.
+- Signed PDF is stored as a **note on the request Timeline** (annotation) for the
+  MVP; the dedicated `alex_signaturedocument` table (with its `alex_documentfile`
+  File column) remains an option a control setting can switch to later.
+- Read-back values are written as **new `Read Back` rows** (not upserts) to preserve
+  an audit trail of *sent* (Prefill) vs *returned* (Read Back) values.
 
 ### Pending
 
-- Read-back flow (poll/webhook) writing `Read Back` rows from the form `data`.
-- Re-import the connector + flows and activate.
+- Stage B: a smart mapping of `Read Back` values onto Contact (or other) columns.
 
 ## [Unreleased] — initial setup (2026-06-17)
 
