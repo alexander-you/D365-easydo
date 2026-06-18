@@ -25,12 +25,15 @@ interface MappingRow {
   external: string;      // alex_externalfieldname  (binding header, read only)
   externalId: string;    // alex_externalfieldid
   type: string;          // alex_externalfieldtype
-  table: string;         // alex_dynamicstable
+  lookup: string;        // alex_lookupfield (lookup on primary table; empty = direct)
+  table: string;         // alex_dynamicstable  (target table the column lives on)
   column: string;        // alex_dynamicsfield
   readOnly: boolean;     // alex_isreadonly
   direction: number | null; // alex_direction (choice)
   dirty: boolean;
 }
+
+interface LookupMeta { logical: string; display: string; targets: string[]; }
 
 const ENTITY = "alex_templatefieldmapping";
 const TEMPLATE_ENTITY = "alex_signaturetemplate";
@@ -64,7 +67,8 @@ const I18N: Record<Lang, Record<string, string>> = {
     primaryTableLabel: "Primary table", primaryHint: "The record this document is built on",
     contactPathLabel: "Path to contact", contactPathNone: "No contact link",
     choosePrimary: "Choose a base table…", contactDisplay: "Contact",
-    configHint: "Pick the base table, then how to reach the contact for personal details.",
+    viaSep: "via",
+    configHint: "Pick the base table this document is built on. Each field can then map to a column on that table or on a single related record (one lookup hop).",
     thSource: "Source", formSaveHint: "Changes are saved with the record",
     loadFailed: "Could not load data from Dynamics"
   },
@@ -94,7 +98,8 @@ const I18N: Record<Lang, Record<string, string>> = {
     primaryTableLabel: "טבלה ראשית", primaryHint: "הרשומה שעליה בנוי המסמך",
     contactPathLabel: "נתיב לאיש קשר", contactPathNone: "אין קישור לאיש קשר",
     choosePrimary: "בחרו טבלת בסיס…", contactDisplay: "איש קשר",
-    configHint: "בחרו את טבלת הבסיס, ואז כיצד להגיע לאיש הקשר לפרטים אישיים.",
+    viaSep: "דרך",
+    configHint: "בחרו את טבלת הבסיס שעליה בנוי המסמך. כל שדה יכול להימפות לעמודה בטבלה זו או ברשומה קשורה אחת (קפיצת lookup אחת).",
     thSource: "מקור", formSaveHint: "השינויים נשמרים יחד עם הרשומה",
     loadFailed: "טעינת הנתונים מדינמיקס נכשלה"
   }
@@ -102,8 +107,8 @@ const I18N: Record<Lang, Record<string, string>> = {
 
 /* ---- demo fallback ------------------------------------------------ */
 const DEMO_TABLES: Record<Lang, TableMeta[]> = {
-  en: [{ logical: "contact", display: "Contact" }, { logical: "account", display: "Account" }, { logical: "incident", display: "Case" }],
-  he: [{ logical: "contact", display: "איש קשר" }, { logical: "account", display: "לקוח" }, { logical: "incident", display: "פנייה" }]
+  en: [{ logical: "contact", display: "Contact" }, { logical: "account", display: "Account" }, { logical: "incident", display: "Case" }, { logical: "product", display: "Product" }],
+  he: [{ logical: "contact", display: "איש קשר" }, { logical: "account", display: "לקוח" }, { logical: "incident", display: "פנייה" }, { logical: "product", display: "מוצר" }]
 };
 const DEMO_COLS: Record<Lang, Record<string, ColMeta[]>> = {
   en: {
@@ -116,7 +121,8 @@ const DEMO_COLS: Record<Lang, Record<string, ColMeta[]>> = {
       { logical: "birthdate", display: "Birthdate", type: "Date" }
     ],
     account: [{ logical: "name", display: "Account Name", type: "Text" }, { logical: "telephone1", display: "Main Phone", type: "Phone" }],
-    incident: [{ logical: "title", display: "Case Title", type: "Text" }, { logical: "createdon", display: "Created On", type: "DateTime" }]
+    incident: [{ logical: "title", display: "Case Title", type: "Text" }, { logical: "createdon", display: "Created On", type: "DateTime" }],
+    product: [{ logical: "name", display: "Product Name", type: "Text" }, { logical: "productnumber", display: "Product ID", type: "Text" }]
   },
   he: {
     contact: [
@@ -128,17 +134,18 @@ const DEMO_COLS: Record<Lang, Record<string, ColMeta[]>> = {
       { logical: "birthdate", display: "תאריך לידה", type: "תאריך" }
     ],
     account: [{ logical: "name", display: "שם לקוח", type: "טקסט" }, { logical: "telephone1", display: "טלפון ראשי", type: "טלפון" }],
-    incident: [{ logical: "title", display: "כותרת פנייה", type: "טקסט" }, { logical: "createdon", display: "נוצר בתאריך", type: "תאריך ושעה" }]
+    incident: [{ logical: "title", display: "כותרת פנייה", type: "טקסט" }, { logical: "createdon", display: "נוצר בתאריך", type: "תאריך ושעה" }],
+    product: [{ logical: "name", display: "שם מוצר", type: "טקסט" }, { logical: "productnumber", display: "מק\"ט מוצר", type: "טקסט" }]
   }
 };
 function demoRows(): MappingRow[] {
   return [
-    { external: "contact.fullname", externalId: "custom_field_a", type: "input-text", table: "contact", column: "fullname", readOnly: true, direction: DIR.PREFILL },
-    { external: "contact.alex_governmentid", externalId: "custom_field_b", type: "input-text", table: "contact", column: "alex_governmentid", readOnly: true, direction: DIR.PREFILL },
-    { external: "contact.emailaddress1", externalId: "custom_field_c", type: "input-text", table: "contact", column: "emailaddress1", readOnly: false, direction: DIR.BIDIR },
-    { external: "contact.mobilephone", externalId: "custom_field_d", type: "input-text", table: "contact", column: "mobilephone", readOnly: false, direction: DIR.BIDIR },
-    { external: "Sign.Date", externalId: "custom_field_e", type: "input-date", table: "", column: "", readOnly: false, direction: null },
-    { external: "AcademicYear", externalId: "custom_field_f", type: "input-text", table: "", column: "", readOnly: false, direction: null }
+    { external: "contact.fullname", externalId: "custom_field_a", type: "input-text", lookup: "primarycontactid", table: "contact", column: "fullname", readOnly: true, direction: DIR.PREFILL },
+    { external: "contact.alex_governmentid", externalId: "custom_field_b", type: "input-text", lookup: "primarycontactid", table: "contact", column: "alex_governmentid", readOnly: true, direction: DIR.PREFILL },
+    { external: "contact.emailaddress1", externalId: "custom_field_c", type: "input-text", lookup: "primarycontactid", table: "contact", column: "emailaddress1", readOnly: false, direction: DIR.BIDIR },
+    { external: "product.name", externalId: "custom_field_d", type: "input-text", lookup: "productid", table: "product", column: "name", readOnly: true, direction: DIR.PREFILL },
+    { external: "Sign.Date", externalId: "custom_field_e", type: "input-date", lookup: "", table: "", column: "", readOnly: false, direction: null },
+    { external: "AcademicYear", externalId: "custom_field_f", type: "input-text", lookup: "", table: "", column: "", readOnly: false, direction: null }
   ].map(r => ({ ...r, id: "", dirty: false }));
 }
 
@@ -161,7 +168,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
 
   private primaryTable = "";
   private contactPath = "";
-  private contactLookups: { logical: string; display: string }[] = [];
+  private lookups: LookupMeta[] = [];
 
   /* ---- lifecycle -------------------------------------------------- */
   public init(
@@ -197,7 +204,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       this.rows = [];
       this.primaryTable = "";
       this.contactPath = "";
-      this.contactLookups = [];
+      this.lookups = [];
       this.renderLoading(I18N[this.lang].loadingMeta);
       void this.bootstrap();
       return;
@@ -266,7 +273,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       this.tables = await this.fetchTables();
       await this.fetchTemplateConfig();
       if (this.primaryTable) {
-        try { this.contactLookups = await this.fetchContactLookups(this.primaryTable); }
+        try { this.lookups = await this.fetchLookups(this.primaryTable); }
         catch (e) { console.warn("[easydo mapping] lookups load failed", e); }
       }
       this.renderLoading(I18N[this.lang].loadingRows);
@@ -289,8 +296,12 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     this.colCache = {};
     this.rows = demoRows();
     this.primaryTable = "incident";
-    this.contactPath = "primarycontactid";
-    this.contactLookups = [{ logical: "primarycontactid", display: this.lang === "he" ? "איש קשר ראשי" : "Primary Contact" }];
+    this.contactPath = "";
+    this.lookups = [
+      { logical: "primarycontactid", display: this.lang === "he" ? "איש קשר ראשי" : "Primary Contact", targets: ["contact"] },
+      { logical: "customerid", display: this.lang === "he" ? "לקוח" : "Customer", targets: ["account"] },
+      { logical: "productid", display: this.lang === "he" ? "מוצר" : "Product", targets: ["product"] }
+    ];
     if (!this.templateName) this.templateName = this.lang === "he" ? "חוזה לדוגמה" : "Sample template";
     this.render();
   }
@@ -352,7 +363,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
 
   private async fetchRows(): Promise<MappingRow[]> {
     const select = "alex_templatefieldmappingid,alex_externalfieldid,alex_externalfieldname," +
-      "alex_externalfieldtype,alex_dynamicstable,alex_dynamicsfield,alex_isreadonly,alex_direction";
+      "alex_externalfieldtype,alex_lookupfield,alex_dynamicstable,alex_dynamicsfield,alex_isreadonly,alex_direction";
     const q = `?$select=${select}&$filter=_alex_templateid_value eq ${this.templateId}&$orderby=alex_externalfieldname`;
     const res = await this.context.webAPI.retrieveMultipleRecords(ENTITY, q);
     return res.entities.map(e => ({
@@ -360,6 +371,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       external: (e["alex_externalfieldname"] as string) ?? (e["alex_externalfieldid"] as string) ?? "",
       externalId: (e["alex_externalfieldid"] as string) ?? "",
       type: (e["alex_externalfieldtype"] as string) ?? "",
+      lookup: (e["alex_lookupfield"] as string) ?? "",
       table: (e["alex_dynamicstable"] as string) ?? "",
       column: (e["alex_dynamicsfield"] as string) ?? "",
       readOnly: !!e["alex_isreadonly"],
@@ -381,23 +393,28 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     }
   }
 
-  private async fetchContactLookups(base: string): Promise<{ logical: string; display: string }[]> {
+  private async fetchLookups(base: string): Promise<LookupMeta[]> {
     if (!base) return [];
     if (this.demo) {
       return base === "incident"
-        ? [{ logical: "primarycontactid", display: this.lang === "he" ? "איש קשר ראשי" : "Primary Contact" }]
+        ? [
+            { logical: "primarycontactid", display: this.lang === "he" ? "איש קשר ראשי" : "Primary Contact", targets: ["contact"] },
+            { logical: "customerid", display: this.lang === "he" ? "לקוח" : "Customer", targets: ["account"] },
+            { logical: "productid", display: this.lang === "he" ? "מוצר" : "Product", targets: ["product"] }
+          ]
         : [];
     }
     const data = await this.metaFetch(
       `EntityDefinitions(LogicalName='${encodeURIComponent(base)}')/Attributes/Microsoft.Dynamics.CRM.LookupAttributeMetadata` +
       `?$select=LogicalName,DisplayName,Targets&$filter=IsValidForRead eq true`
     );
-    const out: { logical: string; display: string }[] = [];
+    const out: LookupMeta[] = [];
     for (const a of data.value) {
       const row = a as { LogicalName: string; Targets?: string[] };
-      if (!row.Targets || !row.Targets.includes("contact")) continue;
+      const targets = (row.Targets ?? []).filter(x => x && x !== "owner" && x !== "systemuser" && x !== "team" && x !== "businessunit");
+      if (targets.length === 0) continue;
       const display = this.label(a) || row.LogicalName;
-      out.push({ logical: row.LogicalName, display });
+      out.push({ logical: row.LogicalName, display, targets });
     }
     out.sort((x, y) => x.display.localeCompare(y.display, this.lang));
     return out;
@@ -420,6 +437,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     if (this.demo || !r.id) return;
     try {
       await this.context.webAPI.updateRecord(ENTITY, r.id, {
+        alex_lookupfield: r.lookup || null,
         alex_dynamicstable: r.table || null,
         alex_dynamicsfield: r.column || null,
         alex_isreadonly: r.readOnly,
@@ -607,17 +625,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     g1.appendChild(this.el("div", "edo-chint", t.primaryHint));
     strip.appendChild(g1);
 
-    strip.appendChild(this.el("div", "edo-carrow", "→"));
-
-    const g2 = this.el("div", "edo-cfield");
-    g2.appendChild(this.el("label", "edo-clabel", t.contactPathLabel));
-    const pathSel = this.buildCombo(
-      this.contactLookups.map(l => ({ value: l.logical, label: l.display })),
-      this.contactPath, t.contactPathNone,
-      (v) => { this.contactPath = v; void this.persistConfig(); this.render(); },
-      !this.primaryTable || this.contactLookups.length === 0
-    );
-    g2.appendChild(pathSel);
+    const g2 = this.el("div", "edo-cfield edo-chelp");
     g2.appendChild(this.el("div", "edo-chint", t.configHint));
     strip.appendChild(g2);
 
@@ -627,14 +635,14 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
   private async onPrimaryChanged(table: string): Promise<void> {
     this.primaryTable = table;
     this.contactPath = "";
-    this.contactLookups = [];
+    this.lookups = [];
     // Picking a new base table invalidates per-field mappings to old sources.
     const cleared: MappingRow[] = [];
     this.rows.forEach(r => {
-      if (r.table && r.table !== table) { r.table = ""; r.column = ""; cleared.push(r); }
+      if (r.table || r.lookup) { r.table = ""; r.column = ""; r.lookup = ""; cleared.push(r); }
     });
     if (table) {
-      try { this.contactLookups = await this.fetchContactLookups(table); }
+      try { this.lookups = await this.fetchLookups(table); }
       catch (e) { console.warn("[easydo mapping] lookups load failed", e); }
     }
     await this.persistConfig(true);
@@ -643,15 +651,29 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     this.render();
   }
 
+  // Per-field source options: the primary table directly, plus one option for
+  // each single lookup hop on the primary table (case -> product, case ->
+  // account, ...). The value encodes "<lookupLogical>|<targetTable>" so a row
+  // captures both the path and the target table; "" + primaryTable = direct.
   private sourceOptions(): { value: string; label: string }[] {
     const t = I18N[this.lang];
     const out: { value: string; label: string }[] = [];
-    if (this.primaryTable) {
-      const base = this.tables.find(x => x.logical === this.primaryTable);
-      out.push({ value: this.primaryTable, label: base?.display ?? this.primaryTable });
+    if (!this.primaryTable) return out;
+    const base = this.tables.find(x => x.logical === this.primaryTable);
+    out.push({ value: `|${this.primaryTable}`, label: base?.display ?? this.primaryTable });
+    for (const lk of this.lookups) {
+      for (const target of lk.targets) {
+        const td = this.tables.find(x => x.logical === target);
+        const tableDisplay = td?.display ?? target;
+        out.push({ value: `${lk.logical}|${target}`, label: `${tableDisplay} ${t.viaSep} ${lk.display}` });
+      }
     }
-    if (this.contactPath) out.push({ value: "contact", label: t.contactDisplay });
     return out;
+  }
+
+  private srcKey(r: MappingRow): string {
+    if (!r.table) return "";
+    return `${r.lookup}|${r.table}`;
   }
 
   private buildGrid(): HTMLElement {
@@ -738,11 +760,17 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     const tdTable = this.el("td");
     const tableSel = this.buildCombo(
       this.sourceOptions(),
-      r.table, t.choose,
-      (v) => { r.table = v; r.column = ""; void this.onTableChanged(r, tr); }
+      this.srcKey(r), t.choose,
+      (v) => {
+        const [lookup, table] = v.split("|");
+        r.lookup = lookup || "";
+        r.table = table || "";
+        r.column = "";
+        void this.onTableChanged(r, tr);
+      }
     );
     tdTable.appendChild(tableSel);
-    tdTable.appendChild(this.el("div", "edo-logic", r.table));
+    tdTable.appendChild(this.el("div", "edo-logic", r.lookup ? `${r.lookup} → ${r.table}` : r.table));
     tr.appendChild(tdTable);
 
     const tdCol = this.el("td");
@@ -802,7 +830,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     }
     const tableTd = tds[1];
     const cap = tableTd?.querySelector(".edo-logic");
-    if (cap) cap.textContent = r.table;
+    if (cap) cap.textContent = r.lookup ? `${r.lookup} → ${r.table}` : r.table;
     this.updateStatusCell(tr, r, t);
     void this.persistRow(r);
   }
