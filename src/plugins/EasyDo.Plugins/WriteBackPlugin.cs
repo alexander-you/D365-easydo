@@ -62,6 +62,12 @@ namespace EasyDo.Plugins
             EntityReference primary = null;
             if (!string.IsNullOrEmpty(primaryTable) && Guid.TryParse(primaryRecordId, out var prid))
                 primary = new EntityReference(primaryTable, prid);
+            // No explicit anchor: when the document is built directly on contact,
+            // fall back to the request's related contact so direct contact
+            // mappings (and contact hops) still resolve.
+            if (primary == null && relatedContact != null
+                && string.Equals(primaryTable, "contact", StringComparison.OrdinalIgnoreCase))
+                primary = relatedContact;
 
             // Map of easydo field name -> recipient answer (ReadBack values).
             var answers = LoadReadBackValues(svc, target.Id);
