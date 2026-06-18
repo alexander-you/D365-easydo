@@ -56,8 +56,28 @@
         }
       },
       "actions": {
-        "Process_only_when_Ready_to_Send": {
+        "Initialize_the_binding_prefill": {
           "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "b2f0c1e2-0013-4a10-9c01-000000000013"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "binding_prefill",
+                "type": "array",
+                "value": []
+              }
+            ]
+          }
+        },
+        "Process_only_when_Ready_to_Send": {
+          "runAfter": {
+            "Initialize_the_binding_prefill": [
+              "Succeeded"
+            ]
+          },
           "metadata": {
             "operationMetadataId": "b2f0c1e2-0002-4a10-9c01-000000000002"
           },
@@ -244,9 +264,114 @@
                           }
                         }
                       },
-                      "Send_the_template_for_signature": {
+                      "Resolve_field_bindings_from_the_source_record": {
                         "runAfter": {
                           "Build_the_prefill_data": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "b2f0c1e2-0014-4a10-9c01-000000000014"
+                        },
+                        "type": "If",
+                        "expression": {
+                          "and": [
+                            {
+                              "not": {
+                                "equals": [
+                                  "@coalesce(triggerOutputs()?['body/_alex_relatedcontactid_value'], '')",
+                                  ""
+                                ]
+                              }
+                            }
+                          ]
+                        },
+                        "actions": {
+                          "List_the_template_field_bindings": {
+                            "runAfter": {},
+                            "metadata": {
+                              "operationMetadataId": "b2f0c1e2-0015-4a10-9c01-000000000015"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_commondataserviceforapps",
+                                "operationId": "ListRecords",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                              },
+                              "parameters": {
+                                "entityName": "alex_templatefieldmappings",
+                                "$select": "alex_externalfieldid,alex_externalfieldname,alex_direction,alex_isreadonly",
+                                "$filter": "@concat('_alex_templateid_value eq ', triggerOutputs()?['body/_alex_templateid_value'], ' and (alex_direction eq 626210000 or alex_direction eq 626210002) and startswith(alex_externalfieldname,''contact.'')')"
+                              },
+                              "authentication": "@parameters('$authentication')"
+                            }
+                          },
+                          "Get_the_source_contact": {
+                            "runAfter": {
+                              "List_the_template_field_bindings": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "b2f0c1e2-0016-4a10-9c01-000000000016"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_commondataserviceforapps",
+                                "operationId": "GetItem",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                              },
+                              "parameters": {
+                                "entityName": "contacts",
+                                "recordId": "@triggerOutputs()?['body/_alex_relatedcontactid_value']"
+                              },
+                              "authentication": "@parameters('$authentication')"
+                            }
+                          },
+                          "Build_the_binding_prefill": {
+                            "runAfter": {
+                              "Get_the_source_contact": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "b2f0c1e2-0017-4a10-9c01-000000000017"
+                            },
+                            "type": "Select",
+                            "inputs": {
+                              "from": "@outputs('List_the_template_field_bindings')?['body/value']",
+                              "select": {
+                                "name": "@item()?['alex_externalfieldid']",
+                                "content_value": "@string(coalesce(outputs('Get_the_source_contact')?['body']?[last(split(item()?['alex_externalfieldname'], '.'))], ''))",
+                                "read_only": "@coalesce(item()?['alex_isreadonly'], false)"
+                              }
+                            }
+                          },
+                          "Remember_the_binding_prefill": {
+                            "runAfter": {
+                              "Build_the_binding_prefill": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "b2f0c1e2-0018-4a10-9c01-000000000018"
+                            },
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "binding_prefill",
+                              "value": "@body('Build_the_binding_prefill')"
+                            }
+                          }
+                        },
+                        "else": {
+                          "actions": {}
+                        }
+                      },
+                      "Send_the_template_for_signature": {
+                        "runAfter": {
+                          "Resolve_field_bindings_from_the_source_record": [
                             "Succeeded"
                           ]
                         },
@@ -264,7 +389,7 @@
                             "templateId": "@string(outputs('Get_the_signature_template')?['body/alex_externaltemplateid'])",
                             "body/name": "@triggerOutputs()?['body/alex_name']",
                             "body/assignees": "@body('Build_the_assignees_list')",
-                            "body/prefill_data": "@body('Build_the_prefill_data')",
+                            "body/prefill_data": "@union(body('Build_the_prefill_data'), variables('binding_prefill'))",
                             "body/meta_data/client": {
                               "d365_request_id": "@triggerOutputs()?['body/alex_signaturerequestid']",
                               "d365_table": "alex_signaturerequest",

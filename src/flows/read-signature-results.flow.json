@@ -184,6 +184,7 @@
                               "item/alex_name": "@coalesce(item()?['label'], item()?['export']?['header'], item()?['name'])",
                               "item/alex_fieldname": "@item()?['name']",
                               "item/alex_fieldlabel": "@item()?['label']",
+                              "item/alex_externalfieldname": "@item()?['export']?['header']",
                               "item/alex_value": "@string(coalesce(body('Get_the_form')?['data']?[item()?['export']?['header']], ''))",
                               "item/alex_direction": 626210001,
                               "item/alex_SignatureRequestId@odata.bind": "@concat('/alex_signaturerequests(', items('Process_each_open_request')?['alex_signaturerequestid'], ')')"
