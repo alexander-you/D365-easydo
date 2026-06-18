@@ -22,6 +22,7 @@ New-DVGlobalChoice -Name "alex_fielddirection" `
     -Options @(
         @{ Value=626210000; En="Prefill";   He="מילוי מקדים"; DescEn="The value is sent to EasyDoc to pre-fill the field before the recipient opens the form."; DescHe="הערך נשלח ל-EasyDoc כדי למלא מראש את השדה לפני שהנמען פותח את הטופס." }
         @{ Value=626210001; En="Read Back"; He="קריאה חזרה"; DescEn="The value captured from the field after the recipient filled and submitted the form."; DescHe="הערך שנקלט מהשדה לאחר שהנמען מילא ושלח את הטופס." }
+        @{ Value=626210002; En="Bidirectional"; He="דו-כיווני"; DescEn="The value is both prefilled into the form before sending and read back afterwards, so an edit by the recipient updates Dynamics 365."; DescHe="הערך גם ממולא מראש בטופס לפני השליחה וגם נקרא חזרה לאחר מכן, כך שעריכה של הנמען מעדכנת את Dynamics 365." }
     )
 
 # ----- 2) Table: Signature Field Value ------------------------------------
