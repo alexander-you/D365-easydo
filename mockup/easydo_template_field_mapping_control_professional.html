@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>easydo Template Field Mapping</title>
+<style>
+:root{--bg:#f3f2f1;--surface:#fff;--surface2:#faf9f8;--line:#edebe9;--line2:#d2d0ce;--text:#201f1e;--muted:#605e5c;--primary:#0f6cbd;--primary2:#115ea3;--ok:#107c10;--warn:#8a6100;--shadow:0 8px 26px rgba(0,0,0,.08);--font:"Segoe UI",Arial,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px var(--font)}
+body[dir=rtl]{text-align:right}
+.shell{min-height:100vh;display:grid;grid-template-rows:48px 1fr}
+.top{background:#0f172a;color:#fff;display:flex;align-items:center;gap:14px;padding:0 16px;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+body[dir=rtl] .top{flex-direction:row-reverse}
+.appicon{width:22px;height:22px;display:grid;grid-template-columns:repeat(3,4px);gap:3px}
+.appicon i{background:#fff;border-radius:1px}
+.divider{width:1px;height:22px;background:rgba(255,255,255,.25)}
+.wrap{padding:18px}
+.page{background:var(--surface);min-height:calc(100vh - 84px);border:1px solid var(--line);box-shadow:var(--shadow);display:grid;grid-template-rows:auto auto 1fr auto}
+.cmdbar{height:44px;display:flex;align-items:center;gap:2px;padding:0 12px;border-bottom:1px solid var(--line)}
+body[dir=rtl] .cmdbar{flex-direction:row-reverse}
+.spacer{flex:1}
+button{font:inherit;cursor:pointer}
+.cmd{height:34px;border:1px solid transparent;background:transparent;color:var(--text);border-radius:4px;padding:0 10px;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.cmd:hover{background:var(--surface2);border-color:var(--line)}
+.cmd.primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600}
+.cmd.primary:hover{background:var(--primary2)}
+.head{padding:18px 20px 16px;border-bottom:1px solid var(--line);background:linear-gradient(#fff,#fbfbfb)}
+.crumb{font-size:12px;color:var(--muted);margin-bottom:10px}
+.titleRow{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+body[dir=rtl] .titleRow{flex-direction:row-reverse}
+h1{margin:0;font-size:22px;font-weight:600}
+.sub{margin-top:4px;color:var(--muted);font-size:13px}
+.pills{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+body[dir=rtl] .pills{justify-content:flex-start}
+.pill{height:24px;display:inline-flex;align-items:center;border:1px solid var(--line2);background:#fff;border-radius:999px;padding:0 9px;font-size:12px;color:var(--muted);white-space:nowrap}
+.pill.ok{color:var(--ok);background:#f8fff0;border-color:#bad80a}
+.strip{margin-top:16px;display:grid;grid-template-columns:1.2fr 1fr 1fr 170px;gap:12px;align-items:end}
+.field{display:grid;gap:5px}
+.field label{font-size:12px;font-weight:600;color:var(--muted)}
+select,input{width:100%;height:34px;border:1px solid var(--line2);border-radius:4px;background:#fff;color:var(--text);padding:0 10px;font:inherit;outline:none}
+select:focus,input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(15,108,189,.16)}
+.body{display:grid;grid-template-columns:minmax(0,1fr) 340px;min-height:0}
+body[dir=rtl] .body{grid-template-columns:340px minmax(0,1fr)}
+body[dir=rtl] .grid{grid-column:2;grid-row:1}
+body[dir=rtl] .panel{grid-column:1;grid-row:1;border-left:0;border-right:1px solid var(--line)}
+.grid{display:grid;grid-template-rows:auto 1fr;min-width:0}
+.gridbar{height:42px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px;border-bottom:1px solid var(--line);background:var(--surface2)}
+body[dir=rtl] .gridbar{flex-direction:row-reverse}
+.gridtitle{font-weight:600}
+.gridmeta{font-size:12px;color:var(--muted)}
+.search{width:260px;position:relative}
+.search span{position:absolute;top:8px;left:9px;color:var(--muted)}
+body[dir=rtl] .search span{left:auto;right:9px}
+.search input{padding-left:30px}
+body[dir=rtl] .search input{padding-left:10px;padding-right:30px}
+.tablewrap{overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:1060px}
+th{position:sticky;top:0;z-index:1;height:42px;background:var(--surface2);color:var(--muted);font-weight:600;font-size:12px;text-align:left;border-bottom:1px solid var(--line2);padding:0 10px;white-space:nowrap}
+body[dir=rtl] th{text-align:right}
+td{height:56px;border-bottom:1px solid var(--line);padding:8px 10px;background:#fff;vertical-align:middle}
+tr:hover td{background:#f8fbff}
+tr.selected td{background:#eff6fc;border-bottom-color:#c7e0f4}
+.efield{display:flex;align-items:center;gap:9px;min-width:230px}
+body[dir=rtl] .efield{flex-direction:row-reverse}
+.num{width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:#f3f2f1;border:1px solid var(--line2);font-size:12px;color:var(--muted);flex:0 0 auto}
+.ename{font-weight:600}
+.ecode{font-size:12px;color:#8a8886;margin-top:2px;direction:ltr;unicode-bidi:plaintext}
+.logic{font-family:Consolas,monospace;font-size:12px;color:var(--muted);margin-top:2px;direction:ltr;unicode-bidi:plaintext}
+.hideLogic .logic{display:none}
+.chip{display:inline-flex;height:22px;align-items:center;border:1px solid var(--line2);border-radius:999px;background:#fff;color:var(--muted);padding:0 8px;font-size:12px;white-space:nowrap}
+.previewValue{display:inline-flex;align-items:center;max-width:240px;min-height:28px;border:1px solid #c7e0f4;background:#f3f9fd;color:#004578;padding:3px 8px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.valid{color:var(--ok);font-weight:600;white-space:nowrap}
+.toggle{display:inline-flex;align-items:center;gap:8px}
+body[dir=rtl] .toggle{flex-direction:row-reverse}
+.switch{position:relative;width:38px;height:20px;display:inline-block;flex:0 0 auto}
+.switch input{display:none}
+.slider{position:absolute;inset:0;background:#c8c6c4;border-radius:999px;cursor:pointer}
+.slider:before{content:"";position:absolute;width:16px;height:16px;top:2px;left:2px;background:#fff;border-radius:50%;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.switch input:checked+.slider{background:var(--primary)}
+.switch input:checked+.slider:before{transform:translateX(18px)}
+body[dir=rtl] .slider:before{left:auto;right:2px}
+body[dir=rtl] .switch input:checked+.slider:before{transform:translateX(-18px)}
+.panel{border-left:1px solid var(--line);background:#fff;display:grid;grid-template-rows:auto auto 1fr;min-height:0}
+.psection{padding:16px;border-bottom:1px solid var(--line)}
+.ptitle{font-weight:600;margin-bottom:10px}
+.card{border:1px solid var(--line);background:var(--surface2);border-radius:4px;padding:12px}
+.cardTitle{font-weight:600;margin-bottom:6px}
+.rline{display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--muted);padding:4px 0;border-top:1px solid #fff}
+body[dir=rtl] .rline{flex-direction:row-reverse}
+.rline:first-of-type{border-top:0}
+code{font-family:Consolas,monospace;direction:ltr;unicode-bidi:plaintext;color:#323130}
+.previewList{display:grid;gap:8px}
+.prow{border:1px solid var(--line);border-radius:4px;padding:9px 10px;background:#fff}
+.plabel{font-size:12px;color:var(--muted);margin-bottom:3px}
+.ptext{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.note{display:flex;gap:9px;padding:10px 12px;background:#fff4ce;border:1px solid #fde7a1;color:#605e5c;border-radius:4px;font-size:12px;line-height:1.4}
+body[dir=rtl] .note{flex-direction:row-reverse}
+.footer{min-height:34px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 16px;background:var(--surface2);color:var(--muted);font-size:12px}
+body[dir=rtl] .footer{flex-direction:row-reverse}
+.toast{position:fixed;bottom:18px;background:#323130;color:#fff;padding:10px 14px;border-radius:4px;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:999}
+@media(max-width:1120px){.body,body[dir=rtl] .body{grid-template-columns:1fr}.grid,body[dir=rtl] .grid,.panel,body[dir=rtl] .panel{grid-column:auto;grid-row:auto}.panel,body[dir=rtl] .panel{border-left:0;border-right:0;border-top:1px solid var(--line)}.strip{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){.wrap{padding:8px}.titleRow,.gridbar,.footer{flex-direction:column;align-items:stretch}.strip{grid-template-columns:1fr}.search{width:100%}.cmdbar{overflow-x:auto}}
+</style>
+</head>
+<body class="hideLogic">
+<div class="shell">
+<header class="top">
+<div class="appicon" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<div class="appt">Dynamics 365</div><div class="divider"></div><div class="appt">easydo Integration</div>
+</header>
+<main class="wrap">
+<section class="page">
+<div class="cmdbar">
+<button class="cmd primary" id="saveBtn">✓ <span data-i18n="save">Save</span></button>
+<button class="cmd" id="validateBtn">● <span data-i18n="validate">Validate</span></button>
+<button class="cmd" id="refreshBtn">↻ <span data-i18n="refresh">Refresh metadata</span></button>
+<button class="cmd" id="previewBtn">◉ <span data-i18n="preview">Preview values</span></button>
+<div class="spacer"></div>
+<button class="cmd" id="logicBtn">⌘ <span data-i18n="showLogical">Show logical names</span></button>
+<button class="cmd" id="langBtn">עברית</button>
+</div>
+
+<div class="head">
+<div class="crumb" data-i18n="breadcrumb">Signature template > Template field mapping</div>
+<div class="titleRow">
+<div>
+<h1 data-i18n="title">Template Field Mapping</h1>
+<div class="sub" data-i18n="subtitle">Map each easydo field to a Dynamics table and column. External field names are read only and remain owned by sync.</div>
+</div>
+<div class="pills">
+<span class="pill ok" data-i18n="metadataLoaded">Metadata loaded</span>
+<span class="pill">6/6 <span data-i18n="mapped">mapped</span></span>
+<span class="pill" data-i18n="directOnly">V1 direct fields only</span>
+</div>
+</div>
+<div class="strip">
+<div class="field"><label data-i18n="template">Template</label><select id="templateSelect"><option>Employee onboarding envelope</option><option>Customer consent form</option><option>Service agreement</option></select></div>
+<div class="field"><label data-i18n="sampleRecord">Sample Dynamics record</label><select id="contactSelect"><option value="yael">Yael Cohen - Contact</option><option value="david">David Levi - Contact</option><option value="maya">Maya Rosen - Contact</option></select></div>
+<div class="field"><label data-i18n="baseTable">Primary table</label><select><option>Contact</option><option>Account</option><option>Case</option></select></div>
+<div class="field"><label data-i18n="version">Mapping mode</label><select><option data-i18n="directFields">Direct fields</option></select></div>
+</div>
+</div>
+
+<div class="body">
+<section class="grid">
+<div class="gridbar">
+<div><div class="gridtitle" data-i18n="gridTitle">Field mappings</div><div class="gridmeta" data-i18n="gridMeta">Rows from alex_templatefieldmapping</div></div>
+<div class="search"><span>⌕</span><input id="searchInput" data-i18n-placeholder="search" placeholder="Search field"></div>
+</div>
+<div class="tablewrap">
+<table>
+<thead><tr>
+<th style="width:260px" data-i18n="thEasydo">easydo field</th>
+<th style="width:190px" data-i18n="thTable">Dynamics table</th>
+<th style="width:240px" data-i18n="thColumn">Dynamics column</th>
+<th style="width:110px" data-i18n="thType">Type</th>
+<th style="width:120px" data-i18n="thReadOnly">Read only</th>
+<th style="width:170px" data-i18n="thDirection">Direction</th>
+<th style="width:220px" data-i18n="thPreview">Preview</th>
+<th style="width:95px" data-i18n="thStatus">Status</th>
+</tr></thead>
+<tbody id="rows"></tbody>
+</table>
+</div>
+</section>
+
+<aside class="panel">
+<div class="psection">
+<div class="ptitle" data-i18n="recordContext">Record context</div>
+<div class="card">
+<div class="cardTitle" id="recordTitle">Employee onboarding envelope</div>
+<div class="rline"><span data-i18n="sourceTable">Source table</span><code>alex_signaturetemplate</code></div>
+<div class="rline"><span data-i18n="mappingTable">Mapping table</span><code>alex_templatefieldmapping</code></div>
+<div class="rline"><span data-i18n="solution">Solution</span><code>alex_d365_easydo</code></div>
+<div class="rline"><span data-i18n="prefix">Prefix</span><code>alex_</code></div>
+</div>
+</div>
+<div class="psection">
+<div class="ptitle" data-i18n="livePreview">Live preview</div>
+<div class="previewList" id="previewList"></div>
+</div>
+<div class="psection">
+<div class="ptitle" data-i18n="saveBehavior">Save behavior</div>
+<div class="note"><span>i</span><span data-i18n="saveNote">Only alex_dynamicstable, alex_dynamicsfield, alex_isreadonly and alex_direction are written. alex_externalfieldname is never overwritten.</span></div>
+</div>
+</aside>
+</div>
+
+<footer class="footer">
+<div><span data-i18n="apiSource">Dropdown source</span>: <code>EntityDefinitions / Attributes</code></div>
+<div><span data-i18n="fallback">Send flow fallback</span>: <code>68793 header split</code></div>
+</footer>
+</section>
+</main>
+</div>
+
+<script>
+const dict={
+en:{dir:"ltr",langBtn:"עברית",save:"Save",validate:"Validate",refresh:"Refresh metadata",preview:"Preview values",showLogical:"Show logical names",hideLogical:"Hide logical names",breadcrumb:"Signature template > Template field mapping",title:"Template Field Mapping",subtitle:"Map each easydo field to a Dynamics table and column. External field names are read only and remain owned by sync.",metadataLoaded:"Metadata loaded",mapped:"mapped",directOnly:"V1 direct fields only",template:"Template",sampleRecord:"Sample Dynamics record",baseTable:"Primary table",version:"Mapping mode",directFields:"Direct fields",gridTitle:"Field mappings",gridMeta:"Rows from alex_templatefieldmapping",search:"Search field",thEasydo:"easydo field",thTable:"Dynamics table",thColumn:"Dynamics column",thType:"Type",thReadOnly:"Read only",thDirection:"Direction",thPreview:"Preview",thStatus:"Status",recordContext:"Record context",sourceTable:"Source table",mappingTable:"Mapping table",solution:"Solution",prefix:"Prefix",livePreview:"Live preview",saveBehavior:"Save behavior",saveNote:"Only alex_dynamicstable, alex_dynamicsfield, alex_isreadonly and alex_direction are written. alex_externalfieldname is never overwritten.",apiSource:"Dropdown source",fallback:"Send flow fallback",valid:"Valid",editable:"Editable",readonly:"Read only",writeToEasydo:"Dynamics to easydo",writeToDynamics:"easydo to Dynamics",both:"Bidirectional",saved:"Mapping saved",validationPassed:"Validation passed",metadataRefreshed:"Metadata refreshed",
+tables:[["contact","Contact"],["account","Account"],["incident","Case"]],
+cols:{contact:[["fullname","Full Name","Text"],["alex_governmentid","Government ID","Text"],["emailaddress1","Email","Email"],["mobilephone","Mobile Phone","Phone"],["address1_composite","Address 1","Text"],["birthdate","Birthdate","Date"]],account:[["name","Account Name","Text"],["telephone1","Main Phone","Phone"],["primarycontactid","Primary Contact","Lookup"]],incident:[["title","Case Title","Text"],["ticketnumber","Ticket Number","Text"],["createdon","Created On","DateTime"]]}}
+,he:{dir:"rtl",langBtn:"English",save:"שמור",validate:"בדוק",refresh:"רענן מטא דאטה",preview:"תצוגה מקדימה",showLogical:"הצג שמות לוגיים",hideLogical:"הסתר שמות לוגיים",breadcrumb:"תבנית חתימה > מיפוי שדות תבנית",title:"מיפוי שדות תבנית",subtitle:"מיפוי כל שדה easydo לטבלה ועמודה ב Dynamics. שמות השדות החיצוניים הם לקריאה בלבד ונשארים בבעלות מנגנון הסנכרון.",metadataLoaded:"מטא דאטה נטען",mapped:"ממופים",directOnly:"גרסה 1 שדות ישירים בלבד",template:"תבנית",sampleRecord:"רשומת Dynamics לדוגמה",baseTable:"טבלה ראשית",version:"מצב מיפוי",directFields:"שדות ישירים",gridTitle:"מיפויי שדות",gridMeta:"שורות מתוך alex_templatefieldmapping",search:"חיפוש שדה",thEasydo:"שדה easydo",thTable:"טבלת Dynamics",thColumn:"עמודת Dynamics",thType:"סוג",thReadOnly:"קריאה בלבד",thDirection:"כיוון",thPreview:"תצוגה מקדימה",thStatus:"סטטוס",recordContext:"הקשר רשומה",sourceTable:"טבלת מקור",mappingTable:"טבלת מיפוי",solution:"פתרון",prefix:"תחילית",livePreview:"תצוגה מקדימה חיה",saveBehavior:"התנהגות שמירה",saveNote:"נכתבים רק alex_dynamicstable, alex_dynamicsfield, alex_isreadonly ו alex_direction. השדה alex_externalfieldname לעולם לא נדרס.",apiSource:"מקור Dropdown",fallback:"Fallback ב Send flow",valid:"תקין",editable:"ניתן לעריכה",readonly:"קריאה בלבד",writeToEasydo:"Dynamics אל easydo",writeToDynamics:"easydo אל Dynamics",both:"דו כיווני",saved:"המיפוי נשמר",validationPassed:"הבדיקה עברה",metadataRefreshed:"המטא דאטה רוענן",
+tables:[["contact","איש קשר"],["account","לקוח"],["incident","פנייה"]],
+cols:{contact:[["fullname","שם מלא","טקסט"],["alex_governmentid","מספר מזהה","טקסט"],["emailaddress1","דוא״ל","דוא״ל"],["mobilephone","טלפון נייד","טלפון"],["address1_composite","כתובת 1","טקסט"],["birthdate","תאריך לידה","תאריך"]],account:[["name","שם לקוח","טקסט"],["telephone1","טלפון ראשי","טלפון"],["primarycontactid","איש קשר ראשי","Lookup"]],incident:[["title","כותרת פנייה","טקסט"],["ticketnumber","מספר פנייה","טקסט"],["createdon","נוצר בתאריך","תאריך ושעה"]]}}};
+const contacts={yael:{"Customer full name":"Yael Cohen","National ID":"038245791","Email address":"yael.cohen@example.com","Mobile phone":"+972 54 222 1831","Home address":"18 HaArba'a St, Tel Aviv","Signature date":"18 Jun 2026"},david:{"Customer full name":"David Levi","National ID":"027190384","Email address":"david.levi@example.com","Mobile phone":"+972 52 771 6009","Home address":"5 Herzl St, Ramat Gan","Signature date":"18 Jun 2026"},maya:{"Customer full name":"Maya Rosen","National ID":"041772390","Email address":"maya.rosen@example.com","Mobile phone":"+972 50 304 1212","Home address":"9 Haneviim St, Jerusalem","Signature date":"18 Jun 2026"}};
+const maps=[["Customer full name","contact","fullname",true,"writeToEasydo"],["National ID","contact","alex_governmentid",true,"writeToEasydo"],["Email address","contact","emailaddress1",false,"both"],["Mobile phone","contact","mobilephone",false,"both"],["Home address","contact","address1_composite",false,"writeToEasydo"],["Signature date","incident","createdon",true,"writeToEasydo"]].map((x,i)=>({external:x[0],table:x[1],column:x[2],ro:x[3],dir:x[4],sel:i==0}));
+let lang="en",logic=false;
+const $=id=>document.getElementById(id), tr=k=>dict[lang][k]||k;
+function opt(v,t,s){const o=document.createElement("option");o.value=v;o.textContent=t;if(s)o.selected=true;return o}
+function col(table,logical){return (dict[lang].cols[table]||[]).find(c=>c[0]===logical)||(dict[lang].cols[table]||[])[0]}
+function renderText(){document.documentElement.lang=lang;document.body.dir=tr("dir");$("langBtn").textContent=tr("langBtn");document.querySelectorAll("[data-i18n]").forEach(e=>e.textContent=tr(e.dataset.i18n));document.querySelectorAll("[data-i18n-placeholder]").forEach(e=>e.placeholder=tr(e.dataset.i18nPlaceholder));$("logicBtn").querySelector("span").textContent=logic?tr("hideLogical"):tr("showLogical")}
+function renderRows(){const body=$("rows"),q=$("searchInput").value.toLowerCase(),sample=contacts[$("contactSelect").value];body.innerHTML="";maps.filter(m=>!q||m.external.toLowerCase().includes(q)).forEach((m,i)=>{let c=col(m.table,m.column);const row=document.createElement("tr");if(m.sel)row.className="selected";row.innerHTML=`<td><div class="efield"><span class="num">${i+1}</span><div><div class="ename">${m.external}</div><div class="ecode">alex_externalfieldname</div></div></div></td><td data-cell="table"></td><td data-cell="column"></td><td><span class="chip">${c[2]}</span></td><td><label class="toggle"><span class="switch"><input type="checkbox" ${m.ro?"checked":""}><span class="slider"></span></span><span>${m.ro?tr("readonly"):tr("editable")}</span></label></td><td data-cell="dir"></td><td><span class="previewValue">${sample[m.external]||""}</span></td><td><span class="valid">✓ ${tr("valid")}</span></td>`;
+const ts=document.createElement("select");dict[lang].tables.forEach(t=>ts.appendChild(opt(t[0],t[1],t[0]===m.table)));ts.onchange=()=>{m.table=ts.value;m.column=dict[lang].cols[m.table][0][0];renderRows();renderPreview()};
+const cs=document.createElement("select");dict[lang].cols[m.table].forEach(x=>cs.appendChild(opt(x[0],x[1],x[0]===m.column)));cs.onchange=()=>{m.column=cs.value;renderRows()};
+const ds=document.createElement("select");["writeToEasydo","writeToDynamics","both"].forEach(d=>ds.appendChild(opt(d,tr(d),d===m.dir)));ds.onchange=()=>m.dir=ds.value;
+row.querySelector('[data-cell="table"]').append(ts,Object.assign(document.createElement("div"),{className:"logic",textContent:m.table}));
+row.querySelector('[data-cell="column"]').append(cs,Object.assign(document.createElement("div"),{className:"logic",textContent:c[0]}));
+row.querySelector('[data-cell="dir"]').append(ds);
+row.querySelector("input[type=checkbox]").onchange=e=>{m.ro=e.target.checked;renderRows()};
+row.onclick=e=>{if(["SELECT","INPUT","SPAN"].includes(e.target.tagName))return;maps.forEach(x=>x.sel=false);m.sel=true;renderRows()};
+body.appendChild(row)})}
+function renderPreview(){const list=$("previewList"),sample=contacts[$("contactSelect").value];list.innerHTML="";maps.slice(0,5).forEach(m=>{const d=document.createElement("div");d.className="prow";d.innerHTML=`<div class="plabel">${m.external}</div><div class="ptext">${sample[m.external]||""}</div>`;list.appendChild(d)})}
+function toast(m){document.querySelectorAll(".toast").forEach(x=>x.remove());const d=document.createElement("div");d.className="toast";d.textContent=m;d.style.right=document.body.dir==="rtl"?"auto":"18px";d.style.left=document.body.dir==="rtl"?"18px":"auto";document.body.appendChild(d);setTimeout(()=>d.remove(),1600)}
+function render(){renderText();renderRows();renderPreview()}
+$("langBtn").onclick=()=>{lang=lang==="en"?"he":"en";render()};
+$("logicBtn").onclick=()=>{logic=!logic;document.body.classList.toggle("hideLogic",!logic);renderText()};
+$("contactSelect").onchange=()=>{renderRows();renderPreview()};
+$("searchInput").oninput=renderRows;
+$("saveBtn").onclick=()=>toast(tr("saved"));
+$("validateBtn").onclick=()=>toast(tr("validationPassed"));
+$("refreshBtn").onclick=()=>toast(tr("metadataRefreshed"));
+$("previewBtn").onclick=()=>{renderRows();renderPreview()};
+render();
+</script>
+</body>
+</html>

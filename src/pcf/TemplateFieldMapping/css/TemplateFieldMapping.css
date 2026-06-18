@@ -1,0 +1,398 @@
+/* =====================================================================
+   easydo Template Field Mapping  -  PCF control styles
+   Elevated, bilingual (EN / HE) with full RTL support.
+   Everything is scoped under .edo-root so it never leaks into the form.
+   ===================================================================== */
+
+.edo-root {
+  --edo-bg: #f7f8fb;
+  --edo-surface: #ffffff;
+  --edo-surface-2: #fbfcfe;
+  --edo-line: #eceef3;
+  --edo-line-2: #dfe3ea;
+  --edo-text: #14161a;
+  --edo-muted: #6b7280;
+  --edo-faint: #9aa1ad;
+  --edo-primary: #4f46e5;
+  --edo-primary-2: #4338ca;
+  --edo-primary-soft: #eef0ff;
+  --edo-accent: #0ea5e9;
+  --edo-ok: #16a34a;
+  --edo-ok-soft: #ecfdf3;
+  --edo-warn: #b45309;
+  --edo-warn-soft: #fffbeb;
+  --edo-lock: #9333ea;
+  --edo-radius: 14px;
+  --edo-radius-sm: 10px;
+  --edo-shadow: 0 10px 40px rgba(20, 22, 40, 0.10);
+  --edo-shadow-sm: 0 2px 10px rgba(20, 22, 40, 0.06);
+  --edo-font: "Segoe UI", -apple-system, BlinkMacSystemFont, "Inter", Arial, sans-serif;
+  --edo-mono: "Cascadia Code", "SF Mono", Consolas, monospace;
+
+  all: initial;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 640px;
+  font-family: var(--edo-font);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--edo-text);
+  background: var(--edo-bg);
+  -webkit-font-smoothing: antialiased;
+}
+.edo-root *, .edo-root *::before, .edo-root *::after { box-sizing: border-box; }
+.edo-root[dir="rtl"] { direction: rtl; }
+
+/* ---- shell -------------------------------------------------------- */
+.edo-shell {
+  margin: 0 auto;
+  max-width: 1500px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.edo-card {
+  background: var(--edo-surface);
+  border: 1px solid var(--edo-line);
+  border-radius: var(--edo-radius);
+  box-shadow: var(--edo-shadow-sm);
+}
+
+/* ---- hero header -------------------------------------------------- */
+.edo-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 22px 24px;
+  color: #fff;
+  border-radius: var(--edo-radius);
+  background: linear-gradient(120deg, #4f46e5 0%, #6366f1 45%, #0ea5e9 120%);
+  box-shadow: var(--edo-shadow);
+}
+.edo-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(620px 200px at 88% -40%, rgba(255,255,255,.35), transparent 60%),
+    radial-gradient(420px 220px at 6% 140%, rgba(255,255,255,.18), transparent 60%);
+  pointer-events: none;
+}
+.edo-hero-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  opacity: .9;
+  position: relative;
+  z-index: 1;
+}
+.edo-logo {
+  width: 22px; height: 22px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 2px;
+}
+.edo-logo i { background: #fff; border-radius: 2px; opacity: .92; }
+.edo-logo i:nth-child(2),
+.edo-logo i:nth-child(4),
+.edo-logo i:nth-child(6),
+.edo-logo i:nth-child(8) { opacity: .55; }
+.edo-hero-main {
+  position: relative;
+  z-index: 1;
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.edo-hero h1 { margin: 0; font-size: 25px; font-weight: 650; letter-spacing: -0.01em; }
+.edo-hero .edo-sub { margin-top: 6px; font-size: 13.5px; max-width: 720px; opacity: .92; }
+.edo-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.edo-pill {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.28);
+  backdrop-filter: blur(4px);
+  white-space: nowrap;
+}
+.edo-pill .edo-dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; }
+.edo-pill.ok .edo-dot { background: #bbf7d0; box-shadow: 0 0 8px #86efac; }
+
+/* ---- command bar -------------------------------------------------- */
+.edo-cmdbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  flex-wrap: wrap;
+}
+.edo-spacer { flex: 1; }
+.edo-btn {
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--edo-line-2);
+  background: var(--edo-surface);
+  color: var(--edo-text);
+  font: inherit;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, transform .1s, box-shadow .15s;
+}
+.edo-btn:hover { background: var(--edo-surface-2); border-color: #cdd3dd; }
+.edo-btn:active { transform: translateY(1px); }
+.edo-btn .edo-ico { font-size: 15px; line-height: 1; opacity: .85; }
+.edo-btn.primary {
+  background: linear-gradient(180deg, var(--edo-primary), var(--edo-primary-2));
+  border-color: var(--edo-primary-2);
+  color: #fff;
+  font-weight: 650;
+  box-shadow: 0 6px 18px rgba(79,70,229,.30);
+}
+.edo-btn.primary:hover { filter: brightness(1.05); }
+.edo-btn.primary:disabled { opacity: .55; cursor: default; box-shadow: none; filter: none; }
+.edo-btn.ghost { border-color: transparent; background: transparent; }
+.edo-btn.ghost:hover { background: var(--edo-surface-2); border-color: var(--edo-line); }
+
+/* ---- body grid ---------------------------------------------------- */
+.edo-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 332px;
+  gap: 16px;
+  align-items: start;
+}
+.edo-root[dir="rtl"] .edo-body { direction: rtl; }
+
+/* ---- grid panel --------------------------------------------------- */
+.edo-grid { overflow: hidden; }
+.edo-gridbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--edo-line);
+  background: var(--edo-surface-2);
+  flex-wrap: wrap;
+}
+.edo-gridtitle { font-weight: 650; font-size: 15px; }
+.edo-gridmeta { font-size: 12px; color: var(--edo-muted); margin-top: 2px; }
+.edo-gridmeta code { font-family: var(--edo-mono); font-size: 11.5px; color: var(--edo-faint); }
+.edo-search { position: relative; width: 250px; max-width: 100%; }
+.edo-search .edo-ico {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  inset-inline-start: 11px; color: var(--edo-faint); font-size: 14px; pointer-events: none;
+}
+.edo-search input {
+  width: 100%; height: 36px;
+  border: 1px solid var(--edo-line-2);
+  border-radius: 10px;
+  background: #fff;
+  padding-inline: 32px 12px;
+  font: inherit;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.edo-search input:focus { border-color: var(--edo-primary); box-shadow: 0 0 0 3px rgba(79,70,229,.15); }
+
+.edo-tablewrap { overflow: auto; max-height: calc(100vh - 360px); }
+.edo-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 980px; }
+.edo-table th {
+  position: sticky; top: 0; z-index: 2;
+  height: 44px;
+  background: var(--edo-surface-2);
+  color: var(--edo-muted);
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  text-align: start;
+  padding: 0 12px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--edo-line-2);
+}
+.edo-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--edo-line);
+  background: #fff;
+  vertical-align: middle;
+}
+.edo-table tr:last-child td { border-bottom: 0; }
+.edo-table tr.row:hover td { background: #f9fbff; }
+.edo-table tr.row.sel td { background: var(--edo-primary-soft); }
+.edo-table tr.row.sel td:first-child { box-shadow: inset 3px 0 0 var(--edo-primary); }
+.edo-root[dir="rtl"] .edo-table tr.row.sel td:first-child { box-shadow: inset -3px 0 0 var(--edo-primary); }
+
+.edo-efield { display: flex; align-items: center; gap: 11px; min-width: 210px; }
+.edo-num {
+  width: 26px; height: 26px; flex: 0 0 auto;
+  display: grid; place-items: center;
+  border-radius: 8px;
+  background: var(--edo-primary-soft);
+  color: var(--edo-primary-2);
+  font-size: 12px; font-weight: 650;
+}
+.edo-ename { font-weight: 600; }
+.edo-ecode {
+  font-family: var(--edo-mono); font-size: 11.5px; color: var(--edo-faint);
+  margin-top: 2px; direction: ltr; unicode-bidi: plaintext;
+}
+
+.edo-sel {
+  width: 100%; min-width: 130px; height: 36px;
+  border: 1px solid var(--edo-line-2);
+  border-radius: 10px;
+  background: #fff;
+  padding-inline: 11px 28px;
+  font: inherit; color: var(--edo-text);
+  outline: none; cursor: pointer;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--edo-faint) 50%), linear-gradient(135deg, var(--edo-faint) 50%, transparent 50%);
+  background-position: calc(100% - 16px) 15px, calc(100% - 11px) 15px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  transition: border-color .15s, box-shadow .15s;
+}
+.edo-root[dir="rtl"] .edo-sel { background-position: 16px 15px, 11px 15px; }
+.edo-sel:hover { border-color: #cdd3dd; }
+.edo-sel:focus { border-color: var(--edo-primary); box-shadow: 0 0 0 3px rgba(79,70,229,.15); }
+.edo-sel.empty { color: var(--edo-faint); }
+
+.edo-logic {
+  font-family: var(--edo-mono); font-size: 11px; color: var(--edo-faint);
+  margin-top: 4px; direction: ltr; unicode-bidi: plaintext;
+}
+.edo-root.hide-logic .edo-logic { display: none; }
+
+.edo-chip {
+  display: inline-flex; align-items: center; height: 24px;
+  padding: 0 10px; border-radius: 999px;
+  background: #eef1f6; color: var(--edo-muted);
+  font-size: 11.5px; font-weight: 600; white-space: nowrap;
+}
+
+/* toggle */
+.edo-toggle { display: inline-flex; align-items: center; gap: 9px; cursor: pointer; user-select: none; }
+.edo-switch { position: relative; width: 40px; height: 22px; flex: 0 0 auto; }
+.edo-switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.edo-slider {
+  position: absolute; inset: 0; border-radius: 999px;
+  background: #cfd4dd; transition: background .18s;
+}
+.edo-slider::before {
+  content: ""; position: absolute; top: 2px; inset-inline-start: 2px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  transition: transform .18s;
+}
+.edo-switch input:checked + .edo-slider { background: var(--edo-lock); }
+.edo-switch input:checked + .edo-slider::before { transform: translateX(18px); }
+.edo-root[dir="rtl"] .edo-switch input:checked + .edo-slider::before { transform: translateX(-18px); }
+.edo-toggle-label { font-size: 12.5px; color: var(--edo-muted); white-space: nowrap; }
+
+.edo-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.edo-status.ok { color: var(--edo-ok); }
+.edo-status.warn { color: var(--edo-warn); }
+.edo-status .edo-ico { font-size: 13px; }
+
+/* ---- side panel --------------------------------------------------- */
+.edo-side { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 18px; }
+.edo-psec { padding: 16px 18px; }
+.edo-psec + .edo-psec { border-top: 1px solid var(--edo-line); }
+.edo-ptitle { font-weight: 650; font-size: 13.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.edo-ptitle .edo-ico { color: var(--edo-primary); }
+
+.edo-ctx { display: grid; gap: 2px; }
+.edo-rline { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; font-size: 12.5px; }
+.edo-rline + .edo-rline { border-top: 1px dashed var(--edo-line); }
+.edo-rline .k { color: var(--edo-muted); }
+.edo-rline code { font-family: var(--edo-mono); font-size: 11.5px; color: var(--edo-text); direction: ltr; unicode-bidi: plaintext; }
+
+.edo-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.edo-stat {
+  border: 1px solid var(--edo-line);
+  border-radius: var(--edo-radius-sm);
+  background: var(--edo-surface-2);
+  padding: 12px 14px;
+}
+.edo-stat .n { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.edo-stat .l { font-size: 11.5px; color: var(--edo-muted); margin-top: 2px; }
+.edo-stat.accent .n { color: var(--edo-primary); }
+.edo-stat.lock .n { color: var(--edo-lock); }
+
+.edo-note {
+  display: flex; gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--edo-radius-sm);
+  background: var(--edo-warn-soft);
+  border: 1px solid #fde68a;
+  color: #92600c;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.edo-note .edo-ico { flex: 0 0 auto; }
+.edo-note code { font-family: var(--edo-mono); font-size: 11px; }
+
+/* ---- states ------------------------------------------------------- */
+.edo-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: 70px 24px; text-align: center; color: var(--edo-muted);
+}
+.edo-spinner {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 3px solid var(--edo-line-2); border-top-color: var(--edo-primary);
+  animation: edo-spin .8s linear infinite;
+}
+@keyframes edo-spin { to { transform: rotate(360deg); } }
+.edo-state .t { font-weight: 650; color: var(--edo-text); font-size: 15px; }
+.edo-state .d { font-size: 13px; max-width: 420px; }
+.edo-demo-tag {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 11px; border-radius: 999px;
+  background: var(--edo-warn-soft); border: 1px solid #fde68a; color: var(--edo-warn);
+  font-size: 12px; font-weight: 600;
+}
+
+/* ---- toast -------------------------------------------------------- */
+.edo-toast {
+  position: fixed; bottom: 22px; inset-inline-end: 22px; z-index: 9999;
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; border-radius: 12px;
+  background: #14161a; color: #fff;
+  box-shadow: 0 12px 34px rgba(0,0,0,.28);
+  font-weight: 550;
+  animation: edo-rise .25s ease;
+}
+.edo-toast.ok .edo-ico { color: #86efac; }
+.edo-toast.err { background: #7f1d1d; }
+@keyframes edo-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ---- responsive --------------------------------------------------- */
+@media (max-width: 1140px) {
+  .edo-body { grid-template-columns: 1fr; }
+  .edo-side { position: static; }
+}
+@media (max-width: 720px) {
+  .edo-shell { padding: 10px; }
+  .edo-hero-main { align-items: flex-start; }
+  .edo-search { width: 100%; }
+}
