@@ -1,4 +1,4 @@
-# D365 easydo — Digital Signature Integration for Dynamics 365
+# D365 easydo — Digital Signature Integration for Dynamics 365 | אינטגרציית חתימה דיגיטלית ל-Dynamics 365
 
 Business-driven digital signature capability that lets a Dynamics 365 user send a
 document for signature from a CRM record, track its status, and receive the signed
@@ -8,7 +8,7 @@ Power Platform.
 
 > Status: **MVP in development** — see [docs/release-notes.md](docs/release-notes.md).
 
-> **תקציר בעברית:** הפרויקט מאפשר למשתמש עסקי לשלוח מסמך לחתימה דיגיטלית ישירות
+> הפרויקט מאפשר למשתמש עסקי לשלוח מסמך לחתימה דיגיטלית ישירות
 > מתוך רשומת Dynamics 365, לעקוב אחר הסטטוס, ולקבל בחזרה את המסמך החתום לרשומה.
 > ה-MVP מתמקד ברשומת **Contact**, אחסון ב-**Dataverse File**, מעקב ב-**Polling**,
 > ותצוגה מקדימה לפני שליחה — בנוי על Power Platform עם תמיכה מלאה בעברית ובאנגלית.
@@ -65,8 +65,10 @@ Polling flow updates status → on signed/approved → store signed PDF in Datav
 ```
 
 See [docs/](docs/) for detailed documentation, including
-[docs/data-model.md](docs/data-model.md) (tables, ERD, data flow) and
-[docs/custom-connector.md](docs/custom-connector.md) (EasyDoc connector actions).
+[docs/data-model.md](docs/data-model.md) (tables, ERD, data flow),
+[docs/custom-connector.md](docs/custom-connector.md) (EasyDoc connector actions) and
+[docs/business-user-guide.md](docs/business-user-guide.md) (a plain-language guide
+to every connector action).
 
 ## Solution
 
@@ -84,5 +86,4 @@ See [docs/](docs/) for detailed documentation, including
   [docs/security-model.md](docs/security-model.md).
 - Credentials are held only in Power Platform Environment Variables / Connection
   References.
-- The EasyDoc API token used during early development was shared in a chat session
-  and **must be regenerated before any production use**.
+- The EasyDoc API token is rotated before any production use.

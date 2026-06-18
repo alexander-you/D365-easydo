@@ -1,16 +1,13 @@
-# Data Model
+# Data Model | מודל נתונים
 
-> **תקציר בעברית:** מסמך זה מתאר את מודל הנתונים שנבנה בפועל ב-Dataverse עבור פתרון
+> מסמך זה מתאר את מודל הנתונים שנבנה בפועל ב-Dataverse עבור פתרון
 > חתימה דיגיטלית מול EasyDoc. הוא כולל 6 טבלאות (5 רגילות וטבלת יומן מסוג Elastic),
 > רשימות בחירה גלובליות, קשרים, טפסים ותצוגות — הכל עם תוויות ותיאורים בעברית
-> ובאנגלית. כל הרכיבים נבנו דרך ה-Dataverse Web API ונוספו ל-solution הלא-מנוהל.
+> ובאנגלית.
 
-The model was built entirely through the **Dataverse Web API** (no CLI table
-creation, no manually imported XML) and added to the unmanaged solution
-`alex_d365_easydo`. All tables, columns, choices, relationships, forms and views
-carry **English (1033) and Hebrew (1037)** labels and descriptions.
-
-All components use the publisher prefix **`alex_`** in the Dev environment.
+All tables, columns, choices, relationships, forms and views carry **English (1033)
+and Hebrew (1037)** labels and descriptions. All components use the publisher prefix
+**`alex_`** and belong to the unmanaged solution `alex_d365_easydo`.
 
 ## Build scripts
 
@@ -173,9 +170,9 @@ Integration Log → Signature Request               (string reference; elastic, 
 
 ## Architecture diagram (ERD)
 
-> **תקציר בעברית:** התרשים מציג את הטבלאות והקשרים ביניהן. הקווים המלאים הם קשרי
-> Lookup אמיתיים ב-Dataverse; הקו המקווקו מ-Integration Log הוא הפניית מחרוזת
-> (לא Lookup) מאחר שטבלת ה-Elastic אינה תומכת בקשרים.
+> התרשים מציג את הטבלאות והקשרים ביניהן. הקווים המלאים הם קשרי Lookup אמיתיים
+> ב-Dataverse; הקו המקווקו מ-Integration Log הוא הפניית מחרוזת (לא Lookup) מאחר
+> שטבלת ה-Elastic אינה תומכת בקשרים.
 
 ```mermaid
 erDiagram
@@ -241,7 +238,7 @@ flowchart TD
 
 ## Request lifecycle (status)
 
-> **תקציר בעברית:** תרשים המצבים מציג את מחזור החיים של בקשת חתימה לפי רשימת
+> תרשים המצבים מציג את מחזור החיים של בקשת חתימה לפי רשימת
 > הבחירה `alex_signaturestatus` — מ-Draft ועד מצב סופי (Completed / Declined /
 > Cancelled / Expired / Failed). מצבי הביניים מתעדכנים ע"י flow ה-polling.
 

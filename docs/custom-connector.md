@@ -1,10 +1,9 @@
-# Custom Connector — EasyDoc
+# Custom Connector — EasyDoc | קונקטור מותאם
 
-> **תקציר בעברית:** מסמך זה מתאר את ה-Custom Connector היחיד שמחבר את Dynamics 365
+> מסמך זה מתאר את ה-Custom Connector היחיד שמחבר את Dynamics 365
 > ל-EasyDoc. הקונקטור מכיל **actions בלבד** (ללא triggers ב-MVP). לכל פעולה מתואר:
 > מה היא עושה, מי מפעיל אותה (משתמש או flow), מה המשתמש מזין/רואה, ומה הפעולה מחזירה.
 > בשלב הבא (fast-follow) ניתן יהיה להוסיף **trigger יחיד** מסוג Webhook במקום ה-polling.
-> כל הרכיבים נכנסים ל-solution הלא-מנוהל `alex_d365_easydo`.
 
 ## Overview
 
@@ -30,7 +29,7 @@ Environment Variables, never in source control.
 
 ## Connection — what the user enters
 
-> **תקציר בעברית:** המשתמש/אדמין שמקים את החיבור מזין **רק את הטוקן של EasyDoc**.
+> המשתמש/אדמין שמקים את החיבור מזין **רק את הטוקן של EasyDoc**.
 > אין שם משתמש/סיסמה ואין סוד נוסף. הטוקן נשמר בתוך ה-Connection המאובטח של
 > Power Platform ולא נחשף ב-flows או בקוד.
 
@@ -93,7 +92,7 @@ ids are passed by the flow, not typed by the user.
 
 #### Template synchronization (import templates + their fields)
 
-> **תקציר בעברית:** ייבוא תבנית מושך גם את כל השדות שלה. תחילה רשימת התבניות, ואז
+> ייבוא תבנית מושך גם את כל השדות שלה: תחילה רשימת התבניות, ואז
 > פירוט כל תבנית עם השדות (שם, תווית, סוג, חובה, מזהה יציב). נוצרת רשומת תבנית אחת
 > (`alex_signaturetemplate`) ורשומת מיפוי לכל שדה (`alex_templatefieldmapping`).
 > צד EasyDoc מתמלא אוטומטית; את צד Dynamics (`alex_dynamicsfield`) משלים אדמין.

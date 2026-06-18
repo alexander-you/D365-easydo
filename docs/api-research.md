@@ -1,4 +1,4 @@
-# EasyDoc API — Research & Verification
+# EasyDoc API — Research & Verification | מחקר ואימות ה-API
 
 Source: <https://easydoc.stoplight.io/docs/easydoc>
 Last verified against the live API: **2026-06-17** (production).
@@ -7,7 +7,7 @@ This document captures the EasyDoc API behaviour relevant to the Dynamics 365
 digital-signature integration. It is the reference for building the Custom
 Connector and Power Automate flows.
 
-> **תקציר בעברית:** מסמך זה מתעד את ה-API של EasyDoc לאחר אימות מול הסביבה החיה
+> מסמך זה מתעד את ה-API של EasyDoc לאחר אימות מול הסביבה החיה
 > (production, 17/06/2026). מאומת: אימות באמצעות Bearer token תקף לשנה, שליפת פרטי
 > הישות (`/entity/me`) ורשימת הפרופילים (`/entity/me/profiles`). תהליך השליחה מורכב
 > מ-4 קריאות: יצירת טופס → הגדרת נמענים → העלאת PDF → שליחה. מצב `draft:true` מאפשר

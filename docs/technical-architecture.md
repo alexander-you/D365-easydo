@@ -1,4 +1,4 @@
-# Technical Architecture
+# Technical Architecture | ארכיטקטורה טכנית
 
 ## Overview
 
@@ -7,7 +7,7 @@ Power Platform components to integrate with the EasyDoc signing service. No Azur
 Function is used in the MVP; the architecture is designed so the integration layer
 can later be swapped for an Azure Function without changing the data model or UX.
 
-> **תקציר בעברית:** הארכיטקטורה משאירה את Dynamics 365 כנקודת ההפעלה והמעקב
+> הארכיטקטורה משאירה את Dynamics 365 כנקודת ההפעלה והמעקב
 > המרכזית. הזרימה: כפתור ב-Command Bar בטופס Contact → Custom Page מונחה → Power
 > Automate → Custom Connector → EasyDoc API, כאשר Dataverse מאחסן את כל הנתונים.
 > אין Azure Function ב-MVP, אך התכנון מאפשר החלפת שכבת האינטגרציה בעתיד ללא שינוי

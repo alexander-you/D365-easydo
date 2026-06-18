@@ -1,6 +1,6 @@
-# Release Notes
+# Release Notes | יומן גרסאות
 
-> **תקציר בעברית:** יומן גרסאות ושלבי התקדמות הפרויקט.
+> יומן גרסאות ושלבי התקדמות הפרויקט.
 
 All notable changes to this project are documented here.
 
@@ -11,7 +11,6 @@ All notable changes to this project are documented here.
 - Repository structure and initial documentation baseline.
 - `docs/api-research.md` — EasyDoc API research, **verified live against production**
   (`/entity/me` and `/entity/me/profiles` returned 200; entity `35866`).
-- `docs/business-requirements.md` + `docs/requirements-he.md` (original brief).
 - `docs/technical-architecture.md`, `docs/data-model.md` (baseline),
   `docs/security-model.md`, `docs/deployment-guide.md`.
 - `.gitignore` blocking secrets, tokens, signed PDFs and payloads.
