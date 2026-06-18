@@ -115,24 +115,27 @@
 }
 .edo-hero h1 { margin: 0; font-size: 25px; font-weight: 650; letter-spacing: -0.01em; }
 .edo-hero .edo-sub { margin-top: 6px; font-size: 13.5px; max-width: 720px; opacity: .92; }
-.edo-pills { display: flex; gap: 8px; flex-wrap: wrap; }
-.edo-pill {
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0 12px;
-  border-radius: 999px;
-  font-size: 12.5px;
-  font-weight: 600;
+
+.edo-hero-demo {
+  display: inline-flex; align-items: center;
+  padding: 2px 10px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 600;
+  background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.30);
   color: #fff;
-  background: rgba(255,255,255,.16);
-  border: 1px solid rgba(255,255,255,.28);
-  backdrop-filter: blur(4px);
-  white-space: nowrap;
 }
-.edo-pill .edo-dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; }
-.edo-pill.ok .edo-dot { background: #bbf7d0; box-shadow: 0 0 8px #86efac; }
+.edo-hero-stats { display: flex; gap: 10px; flex-wrap: wrap; position: relative; z-index: 1; }
+.edo-hstat {
+  min-width: 78px;
+  padding: 9px 16px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.14);
+  border: 1px solid rgba(255,255,255,.26);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  text-align: center;
+}
+.edo-hstat .n { font-size: 23px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; }
+.edo-hstat .l { font-size: 11px; opacity: .88; margin-top: 1px; }
 
 /* ---- command bar -------------------------------------------------- */
 .edo-cmdbar {
@@ -143,6 +146,16 @@
   flex-wrap: wrap;
 }
 .edo-spacer { flex: 1; }
+.edo-savehint {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12.5px; font-weight: 600; color: var(--edo-primary);
+  padding: 0 6px;
+}
+.edo-savehint .edo-ico {
+  width: 18px; height: 18px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(79,70,229,.12); font-size: 12px;
+}
 .edo-btn {
   height: 38px;
   display: inline-flex;
@@ -181,6 +194,26 @@
   align-items: start;
 }
 .edo-root[dir="rtl"] .edo-body { direction: rtl; }
+
+/* ---- config strip ------------------------------------------------- */
+.edo-config {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 16px 18px;
+  flex-wrap: wrap;
+}
+.edo-cfield { display: flex; flex-direction: column; gap: 6px; min-width: 240px; flex: 1; }
+.edo-clabel { font-size: 12px; font-weight: 650; color: var(--edo-muted); }
+.edo-chint { font-size: 11.5px; color: var(--edo-faint); }
+.edo-carrow {
+  align-self: center;
+  margin-top: 14px;
+  font-size: 20px;
+  color: var(--edo-primary);
+  opacity: .7;
+}
+.edo-root[dir="rtl"] .edo-carrow { transform: scaleX(-1); }
 
 /* ---- grid panel --------------------------------------------------- */
 .edo-grid { overflow: hidden; }

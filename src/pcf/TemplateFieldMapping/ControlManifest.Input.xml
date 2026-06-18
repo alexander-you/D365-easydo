@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest>
-  <control namespace="EasyDo" constructor="TemplateFieldMapping" version="0.1.0" display-name-key="TemplateFieldMapping_Display" description-key="TemplateFieldMapping_Desc" control-type="standard" >
+  <control namespace="EasyDo" constructor="TemplateFieldMapping" version="0.1.1" display-name-key="TemplateFieldMapping_Display" description-key="TemplateFieldMapping_Desc" control-type="standard" >
     <external-service-usage enabled="false">
     </external-service-usage>
     <!-- Anchor: bound to the alex_pcfhost column on the template form. The control

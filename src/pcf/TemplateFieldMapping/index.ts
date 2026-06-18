@@ -60,7 +60,12 @@ const I18N: Record<Lang, Record<string, string>> = {
     saved: "Mapping saved", nothingToSave: "No changes to save", validOk: "All mappings are valid", validFail: "Some fields are missing a table or column", refreshed: "Metadata refreshed", saveErr: "Save failed",
     loadingMeta: "Loading metadata…", loadingRows: "Loading field mappings…",
     demoTitle: "Demo preview", demoDesc: "No template record in context — showing sample data. Open this control on a template form to load live fields.",
-    noRows: "This template has no synced fields yet", noRowsDesc: "Run the easydo template sync, then reopen this template."
+    noRows: "This template has no synced fields yet", noRowsDesc: "Run the easydo template sync, then reopen this template.",
+    primaryTableLabel: "Primary table", primaryHint: "The record this document is built on",
+    contactPathLabel: "Path to contact", contactPathNone: "No contact link",
+    choosePrimary: "Choose a base table…", contactDisplay: "Contact",
+    configHint: "Pick the base table, then how to reach the contact for personal details.",
+    thSource: "Source", formSaveHint: "Changes are saved with the record"
   },
   he: {
     dir: "rtl", langBtn: "English",
@@ -84,7 +89,12 @@ const I18N: Record<Lang, Record<string, string>> = {
     saved: "המיפוי נשמר", nothingToSave: "אין שינויים לשמירה", validOk: "כל המיפויים תקינים", validFail: "בחלק מהשדות חסרה טבלה או עמודה", refreshed: "המטא‑דאטה רוענן", saveErr: "השמירה נכשלה",
     loadingMeta: "טוען מטא‑דאטה…", loadingRows: "טוען מיפויי שדות…",
     demoTitle: "תצוגת דמו", demoDesc: "אין רשומת תבנית בהקשר — מוצגים נתוני דוגמה. פתחו את הפקד על טופס תבנית כדי לטעון שדות חיים.",
-    noRows: "לתבנית זו אין עדיין שדות מסונכרנים", noRowsDesc: "הריצו את סנכרון תבניות easydo ופתחו מחדש את התבנית."
+    noRows: "לתבנית זו אין עדיין שדות מסונכרנים", noRowsDesc: "הריצו את סנכרון תבניות easydo ופתחו מחדש את התבנית.",
+    primaryTableLabel: "טבלה ראשית", primaryHint: "הרשומה שעליה בנוי המסמך",
+    contactPathLabel: "נתיב לאיש קשר", contactPathNone: "אין קישור לאיש קשר",
+    choosePrimary: "בחרו טבלת בסיס…", contactDisplay: "איש קשר",
+    configHint: "בחרו את טבלת הבסיס, ואז כיצד להגיע לאיש הקשר לפרטים אישיים.",
+    thSource: "מקור", formSaveHint: "השינויים נשמרים יחד עם הרשומה"
   }
 };
 
@@ -148,14 +158,23 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
   private rows: MappingRow[] = [];
   private filter = "";
 
+  private primaryTable = "";
+  private contactPath = "";
+  private contactLookups: { logical: string; display: string }[] = [];
+  private configDirty = false;
+
+  private notify?: () => void;
+  private formHooked = false;
+
   /* ---- lifecycle -------------------------------------------------- */
   public init(
     context: ComponentFramework.Context<IInputs>,
-    _notify: () => void,
+    notifyOutputChanged: () => void,
     _state: ComponentFramework.Dictionary,
     container: HTMLDivElement
   ): void {
     this.context = context;
+    this.notify = notifyOutputChanged;
     this.root = document.createElement("div");
     this.root.className = "edo-root hide-logic";
     container.appendChild(this.root);
@@ -171,6 +190,24 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
   public updateView(context: ComponentFramework.Context<IInputs>): void {
     this.context = context;
     this.hostValue = context.parameters.hostField?.raw ?? "";
+
+    // Reload when the host record changes (navigating between template records
+    // without the control being destroyed/re-created).
+    const newId = this.getTemplateId();
+    if (newId && newId !== this.templateId) {
+      this.templateId = newId;
+      this.templateName = this.getTemplateName();
+      this.colCache = {};
+      this.rows = [];
+      this.primaryTable = "";
+      this.contactPath = "";
+      this.contactLookups = [];
+      this.configDirty = false;
+      this.renderLoading(I18N[this.lang].loadingMeta);
+      void this.bootstrap();
+      return;
+    }
+
     const newLang = this.resolveLang(context);
     if (newLang !== this.lang) { this.lang = newLang; if (this.demo) this.enterDemo(); else this.render(); }
   }
@@ -231,10 +268,16 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     }
     try {
       this.tables = await this.fetchTables();
+      await this.fetchTemplateConfig();
+      if (this.primaryTable) {
+        try { this.contactLookups = await this.fetchContactLookups(this.primaryTable); }
+        catch (e) { console.warn("[easydo mapping] lookups load failed", e); }
+      }
       this.renderLoading(I18N[this.lang].loadingRows);
       this.rows = await this.fetchRows();
       const used = Array.from(new Set(this.rows.map(r => r.table).filter(Boolean)));
       await Promise.all(used.map(t => this.fetchColumns(t)));
+      this.attachFormSave();
       this.demo = false;
       this.render();
     } catch (e) {
@@ -248,6 +291,10 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     this.tables = DEMO_TABLES[this.lang];
     this.colCache = {};
     this.rows = demoRows();
+    this.primaryTable = "incident";
+    this.contactPath = "primarycontactid";
+    this.contactLookups = [{ logical: "primarycontactid", display: this.lang === "he" ? "איש קשר ראשי" : "Primary Contact" }];
+    this.configDirty = false;
     if (!this.templateName) this.templateName = this.lang === "he" ? "חוזה לדוגמה" : "Sample template";
     this.render();
   }
@@ -325,13 +372,76 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     }));
   }
 
+  private async fetchTemplateConfig(): Promise<void> {
+    try {
+      const rec = await this.context.webAPI.retrieveRecord(
+        TEMPLATE_ENTITY, this.templateId, "?$select=alex_primarytable,alex_contactpath,alex_name"
+      );
+      this.primaryTable = (rec["alex_primarytable"] as string) ?? "";
+      this.contactPath = (rec["alex_contactpath"] as string) ?? "";
+      if (!this.templateName && rec["alex_name"]) this.templateName = rec["alex_name"] as string;
+    } catch (e) {
+      console.warn("[easydo mapping] config load failed", e);
+    }
+  }
+
+  private async fetchContactLookups(base: string): Promise<{ logical: string; display: string }[]> {
+    if (!base) return [];
+    if (this.demo) {
+      return base === "incident"
+        ? [{ logical: "primarycontactid", display: this.lang === "he" ? "איש קשר ראשי" : "Primary Contact" }]
+        : [];
+    }
+    const data = await this.metaFetch(
+      `EntityDefinitions(LogicalName='${encodeURIComponent(base)}')/Attributes/Microsoft.Dynamics.CRM.LookupAttributeMetadata` +
+      `?$select=LogicalName,DisplayName,Targets&$filter=IsValidForRead/Value eq true`
+    );
+    const out: { logical: string; display: string }[] = [];
+    for (const a of data.value) {
+      const row = a as { LogicalName: string; Targets?: string[] };
+      if (!row.Targets || !row.Targets.includes("contact")) continue;
+      const display = this.label(a) || row.LogicalName;
+      out.push({ logical: row.LogicalName, display });
+    }
+    out.sort((x, y) => x.display.localeCompare(y.display, this.lang));
+    return out;
+  }
+
+  private async saveTemplateConfig(): Promise<void> {
+    if (!this.templateId) return;
+    await this.context.webAPI.updateRecord(TEMPLATE_ENTITY, this.templateId, {
+      alex_primarytable: this.primaryTable || null,
+      alex_contactpath: this.contactPath || null
+    });
+  }
+
+  /* ---- record-driven save --------------------------------------- */
+  private attachFormSave(): void {
+    if (this.formHooked) return;
+    const x = window as unknown as {
+      Xrm?: { Page?: { data?: { entity?: { addOnSave?: (h: () => void) => void } } } };
+    };
+    try {
+      const add = x.Xrm?.Page?.data?.entity?.addOnSave;
+      if (add) { add(() => { void this.save(); }); this.formHooked = true; }
+    } catch { /* ignore */ }
+  }
+
+  // Marks the host record dirty so the form's own Save button lights up.
+  private markDirty(): void {
+    this.hostValue = `m:${Date.now()}`;
+    try { this.notify?.(); } catch { /* ignore */ }
+  }
+
   /* ---- save / actions -------------------------------------------- */
   private async save(): Promise<void> {
     const t = I18N[this.lang];
+    if (this.demo) return;
     const dirty = this.rows.filter(r => r.dirty && r.id);
-    if (this.demo || dirty.length === 0) { this.toast(t.nothingToSave); return; }
-    this.saving = true; this.render();
+    if (!this.configDirty && dirty.length === 0) return;
+    this.saving = true;
     try {
+      if (this.configDirty) { await this.saveTemplateConfig(); this.configDirty = false; }
       for (const r of dirty) {
         await this.context.webAPI.updateRecord(ENTITY, r.id, {
           alex_dynamicstable: r.table || null,
@@ -346,7 +456,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       console.error("[easydo mapping] save failed", e);
       this.toast(t.saveErr, "err");
     } finally {
-      this.saving = false; this.render();
+      this.saving = false;
     }
   }
 
@@ -400,11 +510,8 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     const shell = this.el("div", "edo-shell");
     shell.appendChild(this.buildHero());
     shell.appendChild(this.buildCmdBar());
-
-    const body = this.el("div", "edo-body");
-    body.appendChild(this.buildGrid());
-    body.appendChild(this.buildSide());
-    shell.appendChild(body);
+    shell.appendChild(this.buildConfigStrip());
+    shell.appendChild(this.buildGrid());
 
     this.root.appendChild(shell);
   }
@@ -418,6 +525,11 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     for (let i = 0; i < 9; i++) logo.appendChild(this.el("i"));
     top.appendChild(logo);
     top.appendChild(this.el("span", undefined, t.brand));
+    if (this.demo) {
+      const tag = this.el("span", "edo-hero-demo");
+      tag.appendChild(this.el("span", undefined, "● " + t.metadataDemo));
+      top.appendChild(tag);
+    }
     hero.appendChild(top);
 
     const main = this.el("div", "edo-hero-main");
@@ -426,32 +538,31 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     left.appendChild(this.el("div", "edo-sub", t.subtitle));
     main.appendChild(left);
 
-    const pills = this.el("div", "edo-pills");
-    const meta = this.el("span", "edo-pill ok");
-    meta.appendChild(this.el("span", "edo-dot"));
-    meta.appendChild(this.el("span", undefined, this.demo ? t.metadataDemo : t.metadataLoaded));
-    pills.appendChild(meta);
-    const mappedN = this.rows.filter(r => r.table && r.column).length;
-    const cnt = this.el("span", "edo-pill");
-    cnt.appendChild(this.el("span", undefined, `${mappedN}/${this.rows.length} ${t.mapped}`));
-    pills.appendChild(cnt);
-    pills.appendChild(this.el("span", "edo-pill", t.directOnly));
-    main.appendChild(pills);
+    const total = this.rows.length;
+    const mapped = this.rows.filter(r => r.table && r.column).length;
+    const locked = this.rows.filter(r => r.readOnly).length;
+    const bound = this.rows.filter(r => /\./.test(r.external)).length;
+    const tiles = this.el("div", "edo-hero-stats");
+    tiles.appendChild(this.heroStat(String(total), t.total));
+    tiles.appendChild(this.heroStat(String(mapped), t.mappedN));
+    tiles.appendChild(this.heroStat(String(locked), t.lockedN));
+    tiles.appendChild(this.heroStat(String(bound), t.bindings));
+    main.appendChild(tiles);
 
     hero.appendChild(main);
     return hero;
   }
 
+  private heroStat(n: string, label: string): HTMLElement {
+    const s = this.el("div", "edo-hstat");
+    s.appendChild(this.el("div", "n", n));
+    s.appendChild(this.el("div", "l", label));
+    return s;
+  }
+
   private buildCmdBar(): HTMLElement {
     const t = I18N[this.lang];
     const bar = this.el("div", "edo-card edo-cmdbar");
-
-    const save = this.el("button", "edo-btn primary") as HTMLButtonElement;
-    save.appendChild(this.el("span", "edo-ico", "✓"));
-    save.appendChild(this.el("span", undefined, this.saving ? t.saving : t.save));
-    save.disabled = this.saving || this.demo;
-    save.onclick = () => void this.save();
-    bar.appendChild(save);
 
     const validate = this.btn("◇", t.validate);
     validate.onclick = () => this.validate();
@@ -463,13 +574,14 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
 
     bar.appendChild(this.el("div", "edo-spacer"));
 
+    const hint = this.el("span", "edo-savehint");
+    hint.appendChild(this.el("span", "edo-ico", "✓"));
+    hint.appendChild(this.el("span", undefined, t.formSaveHint));
+    bar.appendChild(hint);
+
     const logic = this.btn("⌥", this.showLogical ? t.hideLogical : t.showLogical, "ghost");
     logic.onclick = () => { this.showLogical = !this.showLogical; this.render(); };
     bar.appendChild(logic);
-
-    const lang = this.btn("🌐", t.langBtn, "ghost");
-    lang.onclick = () => { this.lang = this.lang === "en" ? "he" : "en"; if (this.demo) this.enterDemo(); else this.render(); };
-    bar.appendChild(lang);
 
     return bar;
   }
@@ -479,6 +591,71 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     b.appendChild(this.el("span", "edo-ico", ico));
     b.appendChild(this.el("span", undefined, label));
     return b;
+  }
+
+  private buildConfigStrip(): HTMLElement {
+    const t = I18N[this.lang];
+    const strip = this.el("div", "edo-card edo-config");
+
+    const g1 = this.el("div", "edo-cfield");
+    g1.appendChild(this.el("label", "edo-clabel", t.primaryTableLabel));
+    const tableSel = this.buildSelect(
+      this.tables.map(tb => ({ value: tb.logical, label: tb.display })),
+      this.primaryTable, t.choosePrimary
+    );
+    tableSel.onchange = () => void this.onPrimaryChanged(tableSel.value);
+    g1.appendChild(tableSel);
+    g1.appendChild(this.el("div", "edo-chint", t.primaryHint));
+    strip.appendChild(g1);
+
+    strip.appendChild(this.el("div", "edo-carrow", "→"));
+
+    const g2 = this.el("div", "edo-cfield");
+    g2.appendChild(this.el("label", "edo-clabel", t.contactPathLabel));
+    const pathSel = this.buildSelect(
+      this.contactLookups.map(l => ({ value: l.logical, label: l.display })),
+      this.contactPath, t.contactPathNone
+    );
+    pathSel.disabled = !this.primaryTable || this.contactLookups.length === 0;
+    pathSel.onchange = () => {
+      this.contactPath = pathSel.value;
+      this.configDirty = true;
+      this.markDirty();
+      this.render();
+    };
+    g2.appendChild(pathSel);
+    g2.appendChild(this.el("div", "edo-chint", t.configHint));
+    strip.appendChild(g2);
+
+    return strip;
+  }
+
+  private async onPrimaryChanged(table: string): Promise<void> {
+    this.primaryTable = table;
+    this.contactPath = "";
+    this.contactLookups = [];
+    this.configDirty = true;
+    this.markDirty();
+    // Picking a new base table invalidates per-field mappings to old sources.
+    this.rows.forEach(r => {
+      if (r.table && r.table !== table) { r.table = ""; r.column = ""; r.dirty = true; }
+    });
+    if (table) {
+      try { this.contactLookups = await this.fetchContactLookups(table); }
+      catch (e) { console.warn("[easydo mapping] lookups load failed", e); }
+    }
+    this.render();
+  }
+
+  private sourceOptions(): { value: string; label: string }[] {
+    const t = I18N[this.lang];
+    const out: { value: string; label: string }[] = [];
+    if (this.primaryTable) {
+      const base = this.tables.find(x => x.logical === this.primaryTable);
+      out.push({ value: this.primaryTable, label: base?.display ?? this.primaryTable });
+    }
+    if (this.contactPath) out.push({ value: "contact", label: t.contactDisplay });
+    return out;
   }
 
   private buildGrid(): HTMLElement {
@@ -502,6 +679,15 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     input.value = this.filter;
     bar.appendChild(search);
     grid.appendChild(bar);
+
+    if (!this.primaryTable) {
+      const state = this.el("div", "edo-state");
+      state.appendChild(this.el("div", "t", t.choosePrimary));
+      state.appendChild(this.el("div", "d", t.configHint));
+      grid.appendChild(state);
+      search.appendChild(input);
+      return grid;
+    }
 
     if (this.rows.length === 0) {
       const state = this.el("div", "edo-state");
@@ -555,13 +741,14 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
 
     const tdTable = this.el("td");
     const tableSel = this.buildSelect(
-      this.tables.map(tb => ({ value: tb.logical, label: tb.display })),
+      this.sourceOptions(),
       r.table, t.choose
     );
     tableSel.onchange = () => {
       r.table = tableSel.value;
       r.column = "";
       r.dirty = true;
+      this.markDirty();
       void this.onTableChanged(r, tr);
     };
     tdTable.appendChild(tableSel);
@@ -575,7 +762,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       r.column, t.choose
     );
     colSel.disabled = !r.table;
-    colSel.onchange = () => { r.column = colSel.value; r.dirty = true; this.updateStatusCell(tr, r, t); };
+    colSel.onchange = () => { r.column = colSel.value; r.dirty = true; this.markDirty(); this.updateStatusCell(tr, r, t); };
     tdCol.appendChild(colSel);
     tdCol.appendChild(this.el("div", "edo-logic", r.column));
     tr.appendChild(tdCol);
@@ -593,7 +780,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       this.dirOptions().map(o => ({ value: String(o.v), label: o.label })),
       r.direction != null ? String(r.direction) : "", t.choose
     );
-    dirSel.onchange = () => { r.direction = dirSel.value ? Number(dirSel.value) : null; r.dirty = true; };
+    dirSel.onchange = () => { r.direction = dirSel.value ? Number(dirSel.value) : null; r.dirty = true; this.markDirty(); };
     tdDir.appendChild(dirSel);
     tr.appendChild(tdDir);
 
@@ -616,7 +803,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       const cols = this.demo ? (DEMO_COLS[this.lang][r.table] ?? []) : (this.colCache[r.table] ?? []);
       const colSel = this.buildSelect(cols.map(c => ({ value: c.logical, label: c.display })), r.column, t.choose);
       colSel.disabled = !r.table;
-      colSel.onchange = () => { r.column = colSel.value; r.dirty = true; this.updateStatusCell(tr, r, t); };
+      colSel.onchange = () => { r.column = colSel.value; r.dirty = true; this.markDirty(); this.updateStatusCell(tr, r, t); };
       colTd.appendChild(colSel);
       colTd.appendChild(this.el("div", "edo-logic", r.column));
     }
@@ -660,81 +847,12 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     cb.type = "checkbox";
     cb.checked = r.readOnly;
     const label = this.el("span", "edo-toggle-label", r.readOnly ? t.locked : t.editable);
-    cb.onchange = () => { r.readOnly = cb.checked; r.dirty = true; label.textContent = cb.checked ? t.locked : t.editable; };
+    cb.onchange = () => { r.readOnly = cb.checked; r.dirty = true; this.markDirty(); label.textContent = cb.checked ? t.locked : t.editable; };
     sw.appendChild(cb);
     sw.appendChild(this.el("span", "edo-slider"));
     wrap.appendChild(sw);
     wrap.appendChild(label);
     return wrap;
-  }
-
-  private buildSide(): HTMLElement {
-    const t = I18N[this.lang];
-    const side = this.el("aside", "edo-side");
-
-    const ctx = this.el("section", "edo-card edo-psec");
-    const ct = this.el("div", "edo-ptitle");
-    ct.appendChild(this.el("span", "edo-ico", "▦"));
-    ct.appendChild(this.el("span", undefined, t.recordContext));
-    ctx.appendChild(ct);
-    const box = this.el("div", "edo-ctx");
-    if (this.templateName) box.appendChild(this.kv(t.template, this.templateName, false));
-    box.appendChild(this.kv(t.sourceTable, TEMPLATE_ENTITY, true));
-    box.appendChild(this.kv(t.mappingTable, ENTITY, true));
-    box.appendChild(this.kv(t.solution, "alex_d365_easydo", true));
-    box.appendChild(this.kv(t.prefix, "alex_", true));
-    ctx.appendChild(box);
-    side.appendChild(ctx);
-
-    const sum = this.el("section", "edo-card edo-psec");
-    const st = this.el("div", "edo-ptitle");
-    st.appendChild(this.el("span", "edo-ico", "◴"));
-    st.appendChild(this.el("span", undefined, t.summary));
-    sum.appendChild(st);
-    const stats = this.el("div", "edo-stats");
-    const total = this.rows.length;
-    const mapped = this.rows.filter(r => r.table && r.column).length;
-    const locked = this.rows.filter(r => r.readOnly).length;
-    const bound = this.rows.filter(r => /\./.test(r.external)).length;
-    stats.appendChild(this.stat(String(total), t.total));
-    stats.appendChild(this.stat(String(mapped), t.mappedN, "accent"));
-    stats.appendChild(this.stat(String(locked), t.lockedN, "lock"));
-    stats.appendChild(this.stat(String(bound), t.bindings));
-    sum.appendChild(stats);
-    side.appendChild(sum);
-
-    const note = this.el("section", "edo-card edo-psec");
-    const nt = this.el("div", "edo-ptitle");
-    nt.appendChild(this.el("span", "edo-ico", "♦"));
-    nt.appendChild(this.el("span", undefined, t.saveBehavior));
-    note.appendChild(nt);
-    const n = this.el("div", "edo-note");
-    n.appendChild(this.el("span", "edo-ico", "ℹ"));
-    n.appendChild(this.el("span", undefined, t.saveNote));
-    note.appendChild(n);
-    if (this.demo) {
-      const tag = this.el("div", "edo-demo-tag");
-      tag.style.marginTop = "12px";
-      tag.appendChild(this.el("span", undefined, "● " + t.demoTitle));
-      note.appendChild(tag);
-    }
-    side.appendChild(note);
-
-    return side;
-  }
-
-  private kv(k: string, v: string, mono: boolean): HTMLElement {
-    const line = this.el("div", "edo-rline");
-    line.appendChild(this.el("span", "k", k));
-    line.appendChild(this.el(mono ? "code" : "span", undefined, v));
-    return line;
-  }
-
-  private stat(n: string, label: string, mod = ""): HTMLElement {
-    const s = this.el("div", `edo-stat ${mod}`.trim());
-    s.appendChild(this.el("div", "n", n));
-    s.appendChild(this.el("div", "l", label));
-    return s;
   }
 
   private toast(msg: string, kind: "ok" | "err" | "" = ""): void {
