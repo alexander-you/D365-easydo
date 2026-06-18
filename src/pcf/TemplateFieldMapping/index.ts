@@ -153,7 +153,6 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
   private demo = false;
   private templateId = "";
   private templateName = "";
-  private saving = false;
 
   private tables: TableMeta[] = [];
   private colCache: Record<string, ColMeta[]> = {};
@@ -163,20 +162,15 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
   private primaryTable = "";
   private contactPath = "";
   private contactLookups: { logical: string; display: string }[] = [];
-  private configDirty = false;
-
-  private notify?: () => void;
-  private formHooked = false;
 
   /* ---- lifecycle -------------------------------------------------- */
   public init(
     context: ComponentFramework.Context<IInputs>,
-    notifyOutputChanged: () => void,
+    _notify: () => void,
     _state: ComponentFramework.Dictionary,
     container: HTMLDivElement
   ): void {
     this.context = context;
-    this.notify = notifyOutputChanged;
     this.root = document.createElement("div");
     this.root.className = "edo-root hide-logic";
     container.appendChild(this.root);
@@ -204,7 +198,6 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       this.primaryTable = "";
       this.contactPath = "";
       this.contactLookups = [];
-      this.configDirty = false;
       this.renderLoading(I18N[this.lang].loadingMeta);
       void this.bootstrap();
       return;
@@ -264,7 +257,8 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
 
   /* ---- data load -------------------------------------------------- */
   private async bootstrap(): Promise<void> {
-    if (!this.templateId || !this.context.webAPI) {
+    // No record context, no webAPI, or no real client URL (e.g. PCF harness) -> demo.
+    if (!this.templateId || !this.context.webAPI || !this.getClientUrl()) {
       this.enterDemo();
       return;
     }
@@ -279,7 +273,6 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       this.rows = await this.fetchRows();
       const used = Array.from(new Set(this.rows.map(r => r.table).filter(Boolean)));
       await Promise.all(used.map(t => this.fetchColumns(t)));
-      this.attachFormSave();
       this.demo = false;
       this.render();
     } catch (e) {
@@ -298,7 +291,6 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     this.primaryTable = "incident";
     this.contactPath = "primarycontactid";
     this.contactLookups = [{ logical: "primarycontactid", display: this.lang === "he" ? "איש קשר ראשי" : "Primary Contact" }];
-    this.configDirty = false;
     if (!this.templateName) this.templateName = this.lang === "he" ? "חוזה לדוגמה" : "Sample template";
     this.render();
   }
@@ -419,51 +411,41 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     });
   }
 
-  /* ---- record-driven save --------------------------------------- */
-  private attachFormSave(): void {
-    if (this.formHooked) return;
-    const x = window as unknown as {
-      Xrm?: { Page?: { data?: { entity?: { addOnSave?: (h: () => void) => void } } } };
-    };
-    try {
-      const add = x.Xrm?.Page?.data?.entity?.addOnSave;
-      if (add) { add(() => { void this.save(); }); this.formHooked = true; }
-    } catch { /* ignore */ }
-  }
-
-  // Marks the host record dirty so the form's own Save button lights up.
-  private markDirty(): void {
-    this.hostValue = `m:${Date.now()}`;
-    try { this.notify?.(); } catch { /* ignore */ }
-  }
-
-  /* ---- save / actions -------------------------------------------- */
-  private async save(): Promise<void> {
+  /* ---- auto-save (immediate persistence) ------------------------ */
+  // Each field change is persisted directly to Dataverse right away. This is
+  // far more reliable than hooking the form OnSave (which races with Save&Close
+  // and is not always reachable from the control iframe).
+  private async persistRow(r: MappingRow, silent = false): Promise<void> {
     const t = I18N[this.lang];
-    if (this.demo) return;
-    const dirty = this.rows.filter(r => r.dirty && r.id);
-    if (!this.configDirty && dirty.length === 0) return;
-    this.saving = true;
+    if (this.demo || !r.id) return;
     try {
-      if (this.configDirty) { await this.saveTemplateConfig(); this.configDirty = false; }
-      for (const r of dirty) {
-        await this.context.webAPI.updateRecord(ENTITY, r.id, {
-          alex_dynamicstable: r.table || null,
-          alex_dynamicsfield: r.column || null,
-          alex_isreadonly: r.readOnly,
-          alex_direction: r.direction
-        });
-        r.dirty = false;
-      }
-      this.toast(t.saved, "ok");
+      await this.context.webAPI.updateRecord(ENTITY, r.id, {
+        alex_dynamicstable: r.table || null,
+        alex_dynamicsfield: r.column || null,
+        alex_isreadonly: r.readOnly,
+        alex_direction: r.direction
+      });
+      r.dirty = false;
+      if (!silent) this.toast(t.saved, "ok");
     } catch (e) {
-      console.error("[easydo mapping] save failed", e);
+      console.error("[easydo mapping] row save failed", e);
       this.toast(t.saveErr, "err");
-    } finally {
-      this.saving = false;
     }
   }
 
+  private async persistConfig(silent = false): Promise<void> {
+    const t = I18N[this.lang];
+    if (this.demo || !this.templateId) return;
+    try {
+      await this.saveTemplateConfig();
+      if (!silent) this.toast(t.saved, "ok");
+    } catch (e) {
+      console.error("[easydo mapping] config save failed", e);
+      this.toast(t.saveErr, "err");
+    }
+  }
+
+  /* ---- actions --------------------------------------------------- */
   private validate(): void {
     const t = I18N[this.lang];
     const bad = this.rows.some(r => (r.table && !r.column) || (!r.table && r.column));
@@ -616,11 +598,11 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
 
     const g1 = this.el("div", "edo-cfield");
     g1.appendChild(this.el("label", "edo-clabel", t.primaryTableLabel));
-    const tableSel = this.buildSelect(
+    const tableSel = this.buildCombo(
       this.tables.map(tb => ({ value: tb.logical, label: tb.display })),
-      this.primaryTable, t.choosePrimary
+      this.primaryTable, t.choosePrimary,
+      (v) => void this.onPrimaryChanged(v)
     );
-    tableSel.onchange = () => void this.onPrimaryChanged(tableSel.value);
     g1.appendChild(tableSel);
     g1.appendChild(this.el("div", "edo-chint", t.primaryHint));
     strip.appendChild(g1);
@@ -629,17 +611,12 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
 
     const g2 = this.el("div", "edo-cfield");
     g2.appendChild(this.el("label", "edo-clabel", t.contactPathLabel));
-    const pathSel = this.buildSelect(
+    const pathSel = this.buildCombo(
       this.contactLookups.map(l => ({ value: l.logical, label: l.display })),
-      this.contactPath, t.contactPathNone
+      this.contactPath, t.contactPathNone,
+      (v) => { this.contactPath = v; void this.persistConfig(); this.render(); },
+      !this.primaryTable || this.contactLookups.length === 0
     );
-    pathSel.disabled = !this.primaryTable || this.contactLookups.length === 0;
-    pathSel.onchange = () => {
-      this.contactPath = pathSel.value;
-      this.configDirty = true;
-      this.markDirty();
-      this.render();
-    };
     g2.appendChild(pathSel);
     g2.appendChild(this.el("div", "edo-chint", t.configHint));
     strip.appendChild(g2);
@@ -651,16 +628,18 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     this.primaryTable = table;
     this.contactPath = "";
     this.contactLookups = [];
-    this.configDirty = true;
-    this.markDirty();
     // Picking a new base table invalidates per-field mappings to old sources.
+    const cleared: MappingRow[] = [];
     this.rows.forEach(r => {
-      if (r.table && r.table !== table) { r.table = ""; r.column = ""; r.dirty = true; }
+      if (r.table && r.table !== table) { r.table = ""; r.column = ""; cleared.push(r); }
     });
     if (table) {
       try { this.contactLookups = await this.fetchContactLookups(table); }
       catch (e) { console.warn("[easydo mapping] lookups load failed", e); }
     }
+    await this.persistConfig(true);
+    for (const r of cleared) await this.persistRow(r, true);
+    this.toast(I18N[this.lang].saved, "ok");
     this.render();
   }
 
@@ -757,29 +736,23 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     tr.appendChild(tdField);
 
     const tdTable = this.el("td");
-    const tableSel = this.buildSelect(
+    const tableSel = this.buildCombo(
       this.sourceOptions(),
-      r.table, t.choose
+      r.table, t.choose,
+      (v) => { r.table = v; r.column = ""; void this.onTableChanged(r, tr); }
     );
-    tableSel.onchange = () => {
-      r.table = tableSel.value;
-      r.column = "";
-      r.dirty = true;
-      this.markDirty();
-      void this.onTableChanged(r, tr);
-    };
     tdTable.appendChild(tableSel);
     tdTable.appendChild(this.el("div", "edo-logic", r.table));
     tr.appendChild(tdTable);
 
     const tdCol = this.el("td");
     const cols = this.demo ? (DEMO_COLS[this.lang][r.table] ?? []) : (this.colCache[r.table] ?? []);
-    const colSel = this.buildSelect(
+    const colSel = this.buildCombo(
       cols.map(c => ({ value: c.logical, label: c.display })),
-      r.column, t.choose
+      r.column, t.choose,
+      (v) => { r.column = v; this.updateStatusCell(tr, r, t); void this.persistRow(r); },
+      !r.table
     );
-    colSel.disabled = !r.table;
-    colSel.onchange = () => { r.column = colSel.value; r.dirty = true; this.markDirty(); this.updateStatusCell(tr, r, t); };
     tdCol.appendChild(colSel);
     tdCol.appendChild(this.el("div", "edo-logic", r.column));
     tr.appendChild(tdCol);
@@ -793,11 +766,11 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     tr.appendChild(tdLock);
 
     const tdDir = this.el("td");
-    const dirSel = this.buildSelect(
+    const dirSel = this.buildCombo(
       this.dirOptions().map(o => ({ value: String(o.v), label: o.label })),
-      r.direction != null ? String(r.direction) : "", t.choose
+      r.direction != null ? String(r.direction) : "", t.choose,
+      (v) => { r.direction = v ? Number(v) : null; void this.persistRow(r); }
     );
-    dirSel.onchange = () => { r.direction = dirSel.value ? Number(dirSel.value) : null; r.dirty = true; this.markDirty(); };
     tdDir.appendChild(dirSel);
     tr.appendChild(tdDir);
 
@@ -818,9 +791,12 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     if (colTd) {
       colTd.innerHTML = "";
       const cols = this.demo ? (DEMO_COLS[this.lang][r.table] ?? []) : (this.colCache[r.table] ?? []);
-      const colSel = this.buildSelect(cols.map(c => ({ value: c.logical, label: c.display })), r.column, t.choose);
-      colSel.disabled = !r.table;
-      colSel.onchange = () => { r.column = colSel.value; r.dirty = true; this.markDirty(); this.updateStatusCell(tr, r, t); };
+      const colSel = this.buildCombo(
+        cols.map(c => ({ value: c.logical, label: c.display })),
+        r.column, t.choose,
+        (v) => { r.column = v; this.updateStatusCell(tr, r, t); void this.persistRow(r); },
+        !r.table
+      );
       colTd.appendChild(colSel);
       colTd.appendChild(this.el("div", "edo-logic", r.column));
     }
@@ -828,6 +804,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     const cap = tableTd?.querySelector(".edo-logic");
     if (cap) cap.textContent = r.table;
     this.updateStatusCell(tr, r, t);
+    void this.persistRow(r);
   }
 
   private updateStatusCell(tr: HTMLElement, r: MappingRow, t: Record<string, string>): void {
@@ -841,20 +818,82 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     cell.appendChild(s);
   }
 
-  private buildSelect(options: { value: string; label: string }[], selected: string, placeholder: string): HTMLSelectElement {
-    const sel = this.el("select", "edo-sel") as HTMLSelectElement;
-    const ph = this.el("option", undefined, placeholder) as HTMLOptionElement;
-    ph.value = "";
-    sel.appendChild(ph);
-    for (const o of options) {
-      const opt = this.el("option", undefined, o.label) as HTMLOptionElement;
-      opt.value = o.value;
-      if (o.value === selected) opt.selected = true;
-      sel.appendChild(opt);
-    }
-    if (!selected) sel.classList.add("empty");
-    sel.addEventListener("change", () => sel.classList.toggle("empty", !sel.value));
-    return sel;
+  // Searchable combobox: a text input with a filterable popup list. The popup is
+  // appended to <body> with fixed positioning so it is never clipped by the
+  // scrolling table. onChange fires only when a real option is picked.
+  private buildCombo(
+    options: { value: string; label: string }[],
+    selected: string,
+    placeholder: string,
+    onChange: (value: string) => void,
+    disabled = false
+  ): HTMLElement {
+    const wrap = this.el("div", "edo-combo");
+    if (disabled) wrap.classList.add("disabled");
+    const input = this.el("input", "edo-combo-input") as HTMLInputElement;
+    input.type = "text";
+    input.placeholder = placeholder;
+    input.autocomplete = "off";
+    input.spellcheck = false;
+    input.disabled = disabled;
+
+    let current = selected;
+    const labelFor = (v: string) => options.find(o => o.value === v)?.label ?? "";
+    input.value = labelFor(current);
+    if (!current) input.classList.add("empty");
+
+    const pop = this.el("div", "edo-combo-pop");
+    pop.style.display = "none";
+    let open = false;
+
+    const place = (): void => {
+      const rect = input.getBoundingClientRect();
+      pop.style.position = "fixed";
+      pop.style.top = `${rect.bottom + 2}px`;
+      pop.style.left = `${rect.left}px`;
+      pop.style.width = `${Math.max(rect.width, 180)}px`;
+    };
+    const renderList = (filter: string): void => {
+      pop.innerHTML = "";
+      const q = filter.trim().toLowerCase();
+      const matches = options.filter(o => !q || o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q));
+      if (matches.length === 0) { pop.appendChild(this.el("div", "edo-combo-empty", "—")); return; }
+      matches.slice(0, 200).forEach(o => {
+        const item = this.el("div", "edo-combo-item");
+        item.appendChild(this.el("span", "edo-combo-lbl", o.label));
+        if (this.showLogical) item.appendChild(this.el("span", "edo-combo-code", o.value));
+        if (o.value === current) item.classList.add("sel");
+        item.onmousedown = (e: MouseEvent) => {
+          e.preventDefault();
+          current = o.value;
+          input.value = o.label;
+          input.classList.remove("empty");
+          close();
+          onChange(o.value);
+        };
+        pop.appendChild(item);
+      });
+    };
+    const openPop = (): void => {
+      if (disabled) return;
+      if (!pop.parentElement) document.body.appendChild(pop);
+      open = true; place(); pop.style.display = "block"; renderList(""); input.select();
+    };
+    const close = (): void => {
+      open = false; pop.style.display = "none";
+      if (pop.parentElement) pop.parentElement.removeChild(pop);
+    };
+
+    input.onfocus = () => { if (!open) openPop(); };
+    input.oninput = () => {
+      if (!open) openPop();
+      input.classList.toggle("empty", !input.value);
+      renderList(input.value);
+    };
+    input.onblur = () => { setTimeout(() => { input.value = labelFor(current); input.classList.toggle("empty", !current); close(); }, 160); };
+
+    wrap.appendChild(input);
+    return wrap;
   }
 
   private buildToggle(r: MappingRow, t: Record<string, string>): HTMLElement {
@@ -864,7 +903,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     cb.type = "checkbox";
     cb.checked = r.readOnly;
     const label = this.el("span", "edo-toggle-label", r.readOnly ? t.locked : t.editable);
-    cb.onchange = () => { r.readOnly = cb.checked; r.dirty = true; this.markDirty(); label.textContent = cb.checked ? t.locked : t.editable; };
+    cb.onchange = () => { r.readOnly = cb.checked; label.textContent = cb.checked ? t.locked : t.editable; void this.persistRow(r); };
     sw.appendChild(cb);
     sw.appendChild(this.el("span", "edo-slider"));
     wrap.appendChild(sw);
