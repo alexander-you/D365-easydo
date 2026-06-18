@@ -302,7 +302,7 @@
                               "parameters": {
                                 "entityName": "alex_templatefieldmappings",
                                 "$select": "alex_externalfieldid,alex_externalfieldname,alex_direction,alex_isreadonly",
-                                "$filter": "@concat('_alex_templateid_value eq ', triggerOutputs()?['body/_alex_templateid_value'], ' and (alex_direction eq 626210000 or alex_direction eq 626210002) and startswith(alex_externalfieldname,''contact.'')')"
+                                "$filter": "@concat('_alex_templateid_value eq ', triggerOutputs()?['body/_alex_templateid_value'], ' and (alex_direction eq null or alex_direction eq 626210000 or alex_direction eq 626210002) and startswith(alex_externalfieldname,''contact.'')')"
                               },
                               "authentication": "@parameters('$authentication')"
                             }
