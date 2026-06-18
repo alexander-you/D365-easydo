@@ -1,7 +1,9 @@
 # EasyDoc API — Research & Verification | מחקר ואימות ה-API
 
 Source: <https://easydoc.stoplight.io/docs/easydoc>
-Last verified against the live API: **2026-06-17** (production).
+Last verified against the live API: **2026-06-18** (production).
+The field **prefill + lock** behaviour (§12) was reverse-engineered from the live
+web app and **verified end-to-end** on 2026-06-18.
 
 This document captures the EasyDoc API behaviour relevant to the Dynamics 365
 digital-signature integration. It is the reference for building the Custom
@@ -266,6 +268,81 @@ the MVP uses scheduled polling and does not require a public HTTPS endpoint.
 5. Profile lists use a **paginated DataTables envelope** — read `data[]`.
 6. Handle the documented error messages explicitly in flows (esp. package limit and
    unauthenticated → token refresh).
+
+## 12. Field prefill & lock (verified live 2026-06-18)
+
+> זהו הממצא המרכזי של שלב זה: כיצד למלא מראש ערכים משדות D365 לתוך טופס EasyDoc,
+> ובאופן אופציונלי לנעול אותם כך שהנמען לא יוכל לערוך. המנגנון אומת מקצה-לקצה מול
+> ה-API החי: הערכים (שם הלקוח, ת"ז) הוצגו בטופס, ועם `read_only:true` השדה הפך לאין
+> ניתן לעריכה (disabled). תבנית: 68729 “הכר את הלקוח”.
+
+### The send endpoint that carries prefill
+
+A template is sent (and prefilled in the same call) via:
+
+```http
+POST https://api.easydo.co.il/api/entity/me/templates/{templateId}/send
+Authorization: Bearer <token>
+{
+  "assignees": [
+    { "name": "דנה לוי", "email": "dana@example.co.il", "sequence": 1, "recipient": true }
+  ],
+  "prefill_data": [
+    { "name": "custom_field",               "content_value": "דנה לוי",  "read_only": true  },
+    { "name": "custom_field_6a32cedc7ede2", "content_value": "302154879", "read_only": true  },
+    { "name": "custom_field_6a32cf0ea456f", "content_value": "checked",   "read_only": false }
+  ]
+}
+```
+
+### `prefill_data` item shape
+
+| Property | Type | Meaning |
+| --- | --- | --- |
+| `name` | string | The field's **technical `name`** (e.g. `custom_field`, `custom_field_6a32cedc7ede2`). **Not** `export.header` and **not** the GUID `id`. Matches `alex_templatefieldmapping.alex_externalfieldid`. |
+| `content_value` | string | The value to place in the field. For a **checkbox** use `"checked"` / `"unchecked"`. |
+| `read_only` | boolean | When `true`, the field is rendered **disabled** — the recipient sees the value but cannot change it. |
+
+### How it was verified (renderer logic)
+
+- The web app's quick-send (`sendQuickSend()`) posts `{ recipient_id, assignees,
+  prefill_data }` to the template `…/send` endpoint.
+- The form renderer matches a prefill item to a field by **`prefillItem.name ===
+  field.name`** and displays `content_value`.
+- The read-only decision is `isReadOnly = !!isSystem || (prefillItem.read_only ??
+  field.isReadOnly)`.
+
+> **CRITICAL:** the template-builder per-field lock (the “נעול” checkbox, which sets
+> `field.isReadOnly = true`) is **not enforced on a sent form by itself** — a sent
+> form still allowed typing. To actually lock a value you **must pass
+> `read_only: true` in the `prefill_data` item** at send time.
+
+### `prefill_enabled` template flag
+
+`prefill_enabled` (UI: “מילוי מקדם לפני שליחה”) can be toggled via
+`PUT /entity/me/templates/{id}` `{ "prefill_enabled": true }`. It governs the manual
+sender prefill UI; `prefill_data` on `…/send` rendered even independently of it in
+testing. Keep it `true` to be safe.
+
+### Read-back (recipient-entered values)
+
+`GET /entity/me/forms/{id}` returns a top-level **`data`** object keyed by
+`export.header` (e.g. `{ "customer_name": "", "customer_id": "", "q1": "", … }`).
+It is **empty until the recipient submits**, at which point `has_data` flips to
+`true`. This object is **read-only / computed** (it cannot be written via `PUT`),
+and is the source for copying filled values back into Dynamics.
+
+### Approaches that do NOT work (do not retry)
+
+- Injecting `value` / `val` / `content` / `text` / `default` / `data` /
+  `default_value` / `defaultValue` / `default_data` / `defaultData` onto the
+  `payload.data[][]` field objects via `PUT /forms/{id}` — the values persist on the
+  payload but the renderer **ignores** them.
+- `PUT /forms/{id}` with `data` as a header-keyed object → **400 invalid_input**
+  (the `data` body must be the `payload.data` array).
+- The top-level header-keyed `data` is read-only/computed and cannot be set.
+- No `…/forms/{id}/fill|values|prefill|submit|save` write endpoints exist
+  (404 / 405).
 
 ## 11. Documentation page slugs
 

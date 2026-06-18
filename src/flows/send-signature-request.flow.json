@@ -205,8 +205,51 @@
                   },
                   "else": {
                     "actions": {
-                      "Send_the_template_for_signature": {
+                      "List_the_prefill_values": {
                         "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "b2f0c1e2-0011-4a10-9c01-000000000011"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_commondataserviceforapps",
+                            "operationId": "ListRecords",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                          },
+                          "parameters": {
+                            "entityName": "alex_signaturefieldvalues",
+                            "$select": "alex_fieldname,alex_value,alex_isreadonly",
+                            "$filter": "@concat('_alex_signaturerequestid_value eq ', triggerOutputs()?['body/alex_signaturerequestid'], ' and alex_direction eq 626210000')"
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      },
+                      "Build_the_prefill_data": {
+                        "runAfter": {
+                          "List_the_prefill_values": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "b2f0c1e2-0012-4a10-9c01-000000000012"
+                        },
+                        "type": "Select",
+                        "inputs": {
+                          "from": "@outputs('List_the_prefill_values')?['body/value']",
+                          "select": {
+                            "name": "@item()?['alex_fieldname']",
+                            "content_value": "@item()?['alex_value']",
+                            "read_only": "@coalesce(item()?['alex_isreadonly'], false)"
+                          }
+                        }
+                      },
+                      "Send_the_template_for_signature": {
+                        "runAfter": {
+                          "Build_the_prefill_data": [
+                            "Succeeded"
+                          ]
+                        },
                         "metadata": {
                           "operationMetadataId": "b2f0c1e2-000e-4a10-9c01-00000000000e"
                         },
@@ -221,6 +264,7 @@
                             "templateId": "@string(outputs('Get_the_signature_template')?['body/alex_externaltemplateid'])",
                             "body/name": "@triggerOutputs()?['body/alex_name']",
                             "body/assignees": "@body('Build_the_assignees_list')",
+                            "body/prefill_data": "@body('Build_the_prefill_data')",
                             "body/meta_data/client": {
                               "d365_request_id": "@triggerOutputs()?['body/alex_signaturerequestid']",
                               "d365_table": "alex_signaturerequest",

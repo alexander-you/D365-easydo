@@ -145,7 +145,7 @@ function New-PublicView {
 # ======================================================================
 Write-Output "Loading metadata..."
 $m = @{}
-foreach ($t in @('alex_signaturetemplate','alex_signaturerequest','alex_templatefieldmapping','alex_signaturerecipient','alex_signaturedocument','alex_integrationlog')) {
+foreach ($t in @('alex_signaturetemplate','alex_signaturerequest','alex_templatefieldmapping','alex_signaturerecipient','alex_signaturedocument','alex_signaturefieldvalue','alex_integrationlog')) {
     $m[$t] = Get-TableMeta -Table $t
     Write-Output "  $t otc=$($m[$t].Otc)"
 }
@@ -202,6 +202,16 @@ New-MainForm -Table $t -Meta $m[$t] -NameEn "Information" -NameHe "מידע" -De
 )
 New-PublicView -Table $t -Meta $m[$t] -NameEn "All Documents" -DescEn "All signature documents." -Columns @('alex_name','alex_documenttype','alex_filename','alex_issigned','alex_retrievedon') -IsDefault $true
 New-PublicView -Table $t -Meta $m[$t] -NameEn "Signed Documents" -DescEn "Final signed documents." -Columns @('alex_name','alex_filename','alex_retrievedon') -OrderBy 'alex_retrievedon'
+
+# ---------------- Signature Field Value ----------------
+$t = 'alex_signaturefieldvalue'
+Write-Output "== $t =="
+New-MainForm -Table $t -Meta $m[$t] -NameEn "Information" -NameHe "מידע" -DescEn "Main form for a signature field value." -DescHe "טופס ראשי לערך שדה חתימה." -Sections @(
+    @{ En="Field Value"; He="ערך שדה"; Fields=@('alex_name','alex_signaturerequestid','alex_direction','alex_fieldlabel','alex_fieldname') }
+    @{ En="Value"; He="ערך"; Fields=@('alex_value','alex_isreadonly') }
+)
+New-PublicView -Table $t -Meta $m[$t] -NameEn "All Field Values" -DescEn "All signature field values." -Columns @('alex_name','alex_signaturerequestid','alex_direction','alex_fieldname','alex_isreadonly') -IsDefault $true
+New-PublicView -Table $t -Meta $m[$t] -NameEn "Prefill Values" -DescEn "Values used to prefill fields before sending." -Columns @('alex_name','alex_signaturerequestid','alex_fieldname','alex_value','alex_isreadonly') -OrderBy 'alex_name'
 
 # ---------------- Integration Log (elastic) ----------------
 $t = 'alex_integrationlog'

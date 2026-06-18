@@ -24,6 +24,7 @@ The model is reproducible via the scripts in [src/scripts/](../src/scripts/):
 | `06-create-relationships.ps1` | Lookups / relationships |
 | `07-create-file-column.ps1` | Dataverse File column for the document binary |
 | `08-create-forms-views.ps1` | Main forms + system views, then publish |
+| `09-create-fieldvalue-table.ps1` | Per-request field value table (prefill / read-back) + its choice, columns and lookup |
 
 ## Global choices
 
@@ -37,6 +38,7 @@ The model is reproducible via the scripts in [src/scripts/](../src/scripts/):
 | `alex_language` | Language | Hebrew, English |
 | `alex_logdirection` | Integration direction | Outbound, Inbound |
 | `alex_logresult` | Integration outcome | Success, Warning, Failure, Info |
+| `alex_fielddirection` | Field value direction | Prefill (626210000), Read Back (626210001) |
 
 ## Tables
 
@@ -156,7 +158,26 @@ High-volume telemetry for each call / status update exchanged with EasyDoc.
 | `alex_errorcode` / `alex_errormessage` | Text / Multiline | (support) |
 | `alex_summary` | Multiline | Safe, non-sensitive event summary |
 
-## Relationships
+### `alex_signaturefieldvalue` — Signature Field Value (Standard)
+
+Per-request, per-field value used to **prefill** an EasyDoc field before sending
+(and, later, to record the value **read back** after signing). The send flow reads
+the `Prefill` rows for a request and builds the `prefill_data` array (see
+[api-research.md §12](api-research.md#12-field-prefill--lock-verified-live-2026-06-18)).
+
+> טבלה זו מחזיקה ערך מוחשי לכל שדה בבקשת חתימה ספציפית — משמשת למילוי
+> מקדם (Prefill) ולקריאה חזרה (Read Back). `alex_fieldname` תואם לשם הטכני של השדה
+> ב-EasyDoc, ו-`alex_isreadonly` נועל את הערך מפני הנמען.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `alex_name` | Text | Primary name — Field Value Name |
+| `alex_signaturerequestid` | Lookup → Signature Request, required | Parent request |
+| `alex_fieldname` | Text (100), required | EasyDoc field **technical name** (matches `alex_templatefieldmapping.alex_externalfieldid`) |
+| `alex_fieldlabel` | Text (200) | Human-readable label (UX only) |
+| `alex_value` | Multiline (4000) | Value to prefill / value read back. Checkbox = `checked` / `unchecked` |
+| `alex_direction` | Choice (`alex_fielddirection`), required | Prefill / Read Back |
+| `alex_isreadonly` | Yes/No (Locked/Editable), default No | Lock the value for the recipient → `prefill_data.read_only` |
 
 ```text
 Signature Template 1 ──< Template Field Mapping   (alex_templateid, required)
@@ -165,6 +186,7 @@ Signature Request  1 ──< Signature Recipient      (alex_signaturerequestid, 
 Signature Request  1 ──< Signature Document       (alex_signaturerequestid, required)
 Contact            1 ──< Signature Recipient      (alex_contactid)
 Contact            1 ──< Signature Request        (alex_relatedcontactid)
+Signature Request  1 ──< Signature Field Value    (alex_signaturerequestid, required)
 Integration Log → Signature Request               (string reference; elastic, no lookup)
 ```
 
@@ -182,6 +204,7 @@ erDiagram
     ALEX_SIGNATURETEMPLATE ||--o{ ALEX_SIGNATUREREQUEST : "alex_templateid"
     ALEX_SIGNATUREREQUEST ||--o{ ALEX_SIGNATURERECIPIENT : "alex_signaturerequestid (required)"
     ALEX_SIGNATUREREQUEST ||--o{ ALEX_SIGNATUREDOCUMENT : "alex_signaturerequestid (required)"
+    ALEX_SIGNATUREREQUEST ||--o{ ALEX_SIGNATUREFIELDVALUE : "alex_signaturerequestid (required)"
     ALEX_SIGNATUREREQUEST ||..o{ ALEX_INTEGRATIONLOG : "string ref (elastic, no lookup)"
 
     ALEX_SIGNATURETEMPLATE {
@@ -220,6 +243,13 @@ erDiagram
         text alex_signaturerequestref
         choice alex_direction
         choice alex_result
+    }
+    ALEX_SIGNATUREFIELDVALUE {
+        text alex_name PK
+        lookup alex_signaturerequestid FK
+        text alex_fieldname
+        choice alex_direction
+        bool alex_isreadonly
     }
 ```
 
@@ -276,6 +306,7 @@ than a default field dump, and **multiple system views** beyond the defaults:
 - Signature Recipient: *All Recipients* (default), *Pending Recipients*
 - Signature Document: *All Documents* (default), *Signed Documents*
 - Integration Log: *Recent Integration Events* (default), *Integration Failures*
+- Signature Field Value: *All Field Values* (default), *Prefill Values*
 
 Technical/support-only fields (EasyDoc ids, correlation ids, error codes, raw
 references) are labelled clearly and grouped under support sections so they are not
