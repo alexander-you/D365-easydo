@@ -36,8 +36,8 @@
     "/entity/me": {
       "get": {
         "operationId": "GetEntity",
-        "summary": "Get entity (test connection)",
-        "description": "Returns the authenticated EasyDoc entity. Used to validate the connection.",
+        "summary": "Get entity (test connection) | אחזור ישות (בדיקת חיבור)",
+        "description": "Returns the authenticated EasyDoc entity. Used to validate the connection. | מחזיר את הישות (החברה) המאומתת ב-EasyDoc. משמש לבדיקת תקינות החיבור.",
         "responses": {
           "200": {
             "description": "OK"
@@ -48,29 +48,35 @@
     "/entity/me/profiles": {
       "get": {
         "operationId": "GetProfiles",
-        "summary": "Get profiles",
-        "description": "List EasyDoc profiles/contacts for the entity. Returns a DataTables envelope; read the data array.",
+        "summary": "Get profiles / contacts | אחזור פרופילים / אנשי קשר",
+        "description": "List EasyDoc profiles/contacts for the entity. Returns a DataTables envelope; read the data array. | מחזיר רשימת פרופילים / אנשי קשר ב-EasyDoc. התוצאה במבנה DataTables — קרא את מערך data.",
         "parameters": [
           {
             "name": "draw",
             "in": "query",
             "required": false,
             "type": "integer",
-            "default": 1
+            "default": 1,
+            "x-ms-summary": "Request counter | מונה בקשה",
+            "description": "DataTables draw counter — leave the default value. | מונה בקשה של DataTables — השאר את ברירת המחדל."
           },
           {
             "name": "start",
             "in": "query",
             "required": false,
             "type": "integer",
-            "default": 0
+            "default": 0,
+            "x-ms-summary": "Start offset | היסט התחלה",
+            "description": "Index of the first record to return (paging). | האינדקס של הרשומה הראשונה להחזרה (דפדוף)."
           },
           {
             "name": "length",
             "in": "query",
             "required": false,
             "type": "integer",
-            "default": 25
+            "default": 25,
+            "x-ms-summary": "Page size | גודל עמוד",
+            "description": "Number of records to return per page. | מספר הרשומות להחזרה בכל עמוד."
           }
         ],
         "responses": {
@@ -83,29 +89,35 @@
     "/entity/me/templates": {
       "get": {
         "operationId": "GetTemplates",
-        "summary": "Get templates",
-        "description": "List signature templates. Returns a DataTables envelope; read the data array.",
+        "summary": "Get templates from EasyDoc | אחזור תבניות מ-EasyDoc",
+        "description": "List signature templates. Returns a DataTables envelope; read the data array. | מחזיר את רשימת תבניות החתימה. התוצאה במבנה DataTables — קרא את מערך data.",
         "parameters": [
           {
             "name": "draw",
             "in": "query",
             "required": false,
             "type": "integer",
-            "default": 1
+            "default": 1,
+            "x-ms-summary": "Request counter | מונה בקשה",
+            "description": "DataTables draw counter — leave the default value. | מונה בקשה של DataTables — השאר את ברירת המחדל."
           },
           {
             "name": "start",
             "in": "query",
             "required": false,
             "type": "integer",
-            "default": 0
+            "default": 0,
+            "x-ms-summary": "Start offset | היסט התחלה",
+            "description": "Index of the first record to return (paging). | האינדקס של הרשומה הראשונה להחזרה (דפדוף)."
           },
           {
             "name": "length",
             "in": "query",
             "required": false,
             "type": "integer",
-            "default": 25
+            "default": 25,
+            "x-ms-summary": "Page size | גודל עמוד",
+            "description": "Number of records to return per page. | מספר הרשומות להחזרה בכל עמוד."
           }
         ],
         "responses": {
@@ -118,15 +130,16 @@
     "/entity/me/templates/{templateId}": {
       "get": {
         "operationId": "GetTemplate",
-        "summary": "Get template (detail + fields)",
-        "description": "Get one template including its fields (payload.data and data_headers). Each field exposes a stable id, name, export.header, type and required.",
+        "summary": "Get template detail and fields | אחזור פרטי תבנית ושדות",
+        "description": "Get one template including its fields (payload.data and data_headers). Each field exposes a stable id, name, export.header, type and required. | מחזיר תבנית אחת כולל השדות שלה (מזהה, שם, כותרת, סוג וחובה).",
         "parameters": [
           {
             "name": "templateId",
             "in": "path",
             "required": true,
             "type": "string",
-            "description": "EasyDoc template id, e.g. 68729."
+            "x-ms-summary": "Template ID | מזהה תבנית",
+            "description": "The EasyDoc template id (for example 68729). | מזהה התבנית ב-EasyDoc (לדוגמה 68729)."
           }
         ],
         "responses": {
@@ -139,15 +152,16 @@
     "/entity/me/templates/{templateId}/send": {
       "post": {
         "operationId": "SendTemplate",
-        "summary": "Send template",
-        "description": "Create and send a signature form from an existing template. The template's PDF, fields and settings are applied automatically; only the recipients (assignees) must be supplied. The form is sent immediately (status becomes 'waiting'). Each assignee receives a fill_url in the response.",
+        "summary": "Send template for signature | שליחת תבנית לחתימה",
+        "description": "Create and send a signature form from an existing template. The template's PDF, fields and settings are applied automatically; only the recipients (assignees) must be supplied. The form is sent immediately (status becomes 'waiting'). Each assignee receives a fill_url in the response. | יוצר ושולח טופס חתימה מתוך תבנית קיימת. ה-PDF, השדות וההגדרות מוחלים אוטומטית מהתבנית — צריך לספק רק את הנמענים. הטופס נשלח מיד וכל נמען מקבל קישור מילוי (fill_url).",
         "parameters": [
           {
             "name": "templateId",
             "in": "path",
             "required": true,
             "type": "string",
-            "description": "EasyDoc template id, e.g. 68729."
+            "x-ms-summary": "Template ID | מזהה תבנית",
+            "description": "The EasyDoc template id to send (for example 68729). | מזהה התבנית ב-EasyDoc לשליחה (לדוגמה 68729)."
           },
           {
             "name": "body",
@@ -158,11 +172,13 @@
               "properties": {
                 "name": {
                   "type": "string",
-                  "description": "Optional form name. Defaults to the template name."
+                  "x-ms-summary": "Form name | שם הטופס",
+                  "description": "Optional form name. Defaults to the template name. | שם הטופס (אופציונלי). ברירת המחדל היא שם התבנית."
                 },
                 "assignees": {
                   "type": "array",
-                  "description": "Recipients who must fill/sign. Use profile.id for an existing EasyDoc profile, or email + name for a temporary recipient. Only one assignee may have recipient set to true.",
+                  "x-ms-summary": "Recipients | נמענים",
+                  "description": "Recipients who must fill/sign. Use profile.id for an existing EasyDoc profile, or email + name for a temporary recipient. Only one assignee may have recipient set to true. | הנמענים שצריכים למלא/לחתום. השתמש ב-profile.id לפרופיל קיים, או ב-email + name לנמען זמני. רק נמען אחד יכול להיות recipient=true.",
                   "items": {
                     "type": "object",
                     "properties": {
@@ -170,32 +186,44 @@
                         "type": "object",
                         "properties": {
                           "id": {
-                            "type": "integer"
+                            "type": "integer",
+                            "x-ms-summary": "Profile ID | מזהה פרופיל",
+                            "description": "Existing EasyDoc profile id. | מזהה פרופיל קיים ב-EasyDoc."
                           }
                         }
                       },
                       "email": {
-                        "type": "string"
+                        "type": "string",
+                        "x-ms-summary": "Email | דוא\"ל",
+                        "description": "Recipient email (for a temporary recipient). | דוא\"ל הנמען (לנמען זמני)."
                       },
                       "name": {
-                        "type": "string"
+                        "type": "string",
+                        "x-ms-summary": "Recipient name | שם הנמען",
+                        "description": "Recipient display name. | שם הנמען לתצוגה."
                       },
                       "sequence": {
-                        "type": "integer"
+                        "type": "integer",
+                        "x-ms-summary": "Signing order | סדר חתימה",
+                        "description": "Signing order (1 = first). | סדר החתימה (1 = ראשון)."
                       },
                       "notify_platform": {
                         "type": "string",
-                        "description": "email, sms, or null."
+                        "x-ms-summary": "Notify channel | ערוץ התראה",
+                        "description": "How to notify the recipient: email, sms, or null. | אופן ההתראה לנמען: email, sms או null."
                       },
                       "recipient": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "x-ms-summary": "Is signer | האם חותם",
+                        "description": "True for the main signer. Only one recipient may be true. | True עבור החותם הראשי. רק נמען אחד יכול להיות true."
                       }
                     }
                   }
                 },
                 "meta_data": {
                   "type": "object",
-                  "description": "Optional metadata. Use meta_data.client to store custom key/values (e.g. the Dynamics 365 record id and table) for correlation.",
+                  "x-ms-summary": "Correlation metadata | מטא-דאטה לשיוך",
+                  "description": "Optional metadata. Use meta_data.client to store custom key/values (e.g. the Dynamics 365 record id and table) for correlation. | מטא-דאטה אופציונלית. השתמש ב-meta_data.client לשמירת מצבים (למשל מזהה הרשומה והטבלה ב-D365) לשיוך.",
                   "properties": {
                     "client": {
                       "type": "object"
@@ -219,15 +247,16 @@
     "/entity/me/templates/{templateId}/form": {
       "post": {
         "operationId": "CreateFormFromTemplate",
-        "summary": "Create draft form from template",
-        "description": "Create a DRAFT signature form from a template without sending it. The template's PDF and fields are applied. No email is sent (status becomes 'incomplete'). Use this for preview before sending.",
+        "summary": "Create draft form from template | יצירת טיוטה מתבנית",
+        "description": "Create a DRAFT signature form from a template without sending it. The template's PDF and fields are applied. No email is sent (status becomes 'incomplete'). Use this for preview before sending. | יוצר טיוטת טופס חתימה מתבנית בלי לשלוח. ה-PDF והשדות מוחלים מהתבנית. לא נשלח מייל. מתאים לתצוגה מקדימה לפני שליחה.",
         "parameters": [
           {
             "name": "templateId",
             "in": "path",
             "required": true,
             "type": "string",
-            "description": "EasyDoc template id, e.g. 68729."
+            "x-ms-summary": "Template ID | מזהה תבנית",
+            "description": "The EasyDoc template id (for example 68729). | מזהה התבנית ב-EasyDoc (לדוגמה 68729)."
           },
           {
             "name": "body",
@@ -238,7 +267,8 @@
               "properties": {
                 "name": {
                   "type": "string",
-                  "description": "Optional form name. Defaults to the template name."
+                  "x-ms-summary": "Form name | שם הטופס",
+                  "description": "Optional form name. Defaults to the template name. | שם הטופס (אופציונלי). ברירת המחדל היא שם התבנית."
                 }
               }
             }
@@ -254,29 +284,35 @@
     "/entity/me/forms": {
       "get": {
         "operationId": "ListForms",
-        "summary": "List forms",
-        "description": "List signature forms for the entity. Returns a DataTables envelope; read the data array.",
+        "summary": "List forms | רשימת טפסים",
+        "description": "List signature forms for the entity. Returns a DataTables envelope; read the data array. | מחזיר את רשימת טפסי החתימה. התוצאה במבנה DataTables — קרא את מערך data.",
         "parameters": [
           {
             "name": "draw",
             "in": "query",
             "required": false,
             "type": "integer",
-            "default": 1
+            "default": 1,
+            "x-ms-summary": "Request counter | מונה בקשה",
+            "description": "DataTables draw counter — leave the default value. | מונה בקשה של DataTables — השאר את ברירת המחדל."
           },
           {
             "name": "start",
             "in": "query",
             "required": false,
             "type": "integer",
-            "default": 0
+            "default": 0,
+            "x-ms-summary": "Start offset | היסט התחלה",
+            "description": "Index of the first record to return (paging). | האינדקס של הרשומה הראשונה להחזרה (דפדוף)."
           },
           {
             "name": "length",
             "in": "query",
             "required": false,
             "type": "integer",
-            "default": 25
+            "default": 25,
+            "x-ms-summary": "Page size | גודל עמוד",
+            "description": "Number of records to return per page. | מספר הרשומות להחזרה בכל עמוד."
           }
         ],
         "responses": {
@@ -287,8 +323,8 @@
       },
       "post": {
         "operationId": "CreateForm",
-        "summary": "Create form",
-        "description": "Create a signature form. Set draft to true to create a draft so a preview can be produced before sending.",
+        "summary": "Create form (blank) | יצירת טופס (ריק)",
+        "description": "Create a signature form. Set draft to true to create a draft so a preview can be produced before sending. | יוצר טופס חתימה ריק. הגדר draft=true כדי ליצור טיוטה לתצוגה לפני שליחה.",
         "parameters": [
           {
             "name": "body",
@@ -299,11 +335,13 @@
               "properties": {
                 "name": {
                   "type": "string",
-                  "description": "Form name."
+                  "x-ms-summary": "Form name | שם הטופס",
+                  "description": "Form name. | שם הטופס."
                 },
                 "draft": {
                   "type": "boolean",
-                  "description": "Create as draft (enables preview before send).",
+                  "x-ms-summary": "Create as draft | יצירה כטיוטה",
+                  "description": "Create as draft (enables preview before send). | יצירה כטיוטה (מאפשר תצוגה לפני שליחה).",
                   "default": false
                 }
               },
@@ -323,14 +361,16 @@
     "/entity/me/forms/{formId}": {
       "get": {
         "operationId": "GetFormStatus",
-        "summary": "Get form status",
-        "description": "Get a form and its assignees' current status. Used by the scheduled polling flow.",
+        "summary": "Get form status | אחזור סטטוס טופס",
+        "description": "Get a form and its assignees' current status. Used by the scheduled polling flow. | מחזיר טופס ואת הסטטוס הנוכחי של הנמענים. משמש את זרימת הסנכרון המתוזמנת.",
         "parameters": [
           {
             "name": "formId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "x-ms-summary": "Form ID | מזהה טופס",
+            "description": "The EasyDoc form id returned when the form was created/sent. | מזהה הטופס ב-EasyDoc שהתקבל בעת יצירת/שליחת הטופס."
           }
         ],
         "responses": {
@@ -341,14 +381,16 @@
       },
       "delete": {
         "operationId": "DeleteForm",
-        "summary": "Delete form (draft)",
-        "description": "Delete a form. Use to remove a draft that will not be sent.",
+        "summary": "Delete draft form | מחיקת טיוטת טופס",
+        "description": "Delete a form. Use to remove a draft that will not be sent. | מוחק טופס. משמש להסרת טיוטה שלא תישלח.",
         "parameters": [
           {
             "name": "formId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "x-ms-summary": "Form ID | מזהה טופס",
+            "description": "The EasyDoc form id to delete. | מזהה הטופס ב-EasyDoc למחיקה."
           }
         ],
         "responses": {
@@ -361,14 +403,16 @@
     "/entity/me/forms/{formId}/assignees": {
       "post": {
         "operationId": "SetAssignees",
-        "summary": "Set assignees",
-        "description": "Attach the recipient(s) who must sign. Only one assignee may have recipient set to true.",
+        "summary": "Set form recipients | הגדרת נמענים לטופס",
+        "description": "Attach the recipient(s) who must sign. Only one assignee may have recipient set to true. | מצרף את הנמענים שצריכים לחתום. רק נמען אחד יכול להיות recipient=true.",
         "parameters": [
           {
             "name": "formId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "x-ms-summary": "Form ID | מזהה טופס",
+            "description": "The EasyDoc form id to attach recipients to. | מזהה הטופס ב-EasyDoc לשיוך הנמענים."
           },
           {
             "name": "body",
@@ -379,6 +423,8 @@
               "properties": {
                 "assignees": {
                   "type": "array",
+                  "x-ms-summary": "Recipients | נמענים",
+                  "description": "List of recipients. Only one may have recipient=true. | רשימת הנמענים. רק אחד יכול להיות recipient=true.",
                   "items": {
                     "type": "object",
                     "properties": {
@@ -386,25 +432,36 @@
                         "type": "object",
                         "properties": {
                           "id": {
-                            "type": "integer"
+                            "type": "integer",
+                            "x-ms-summary": "Profile ID | מזהה פרופיל",
+                            "description": "Existing EasyDoc profile id. | מזהה פרופיל קיים ב-EasyDoc."
                           }
                         }
                       },
                       "email": {
-                        "type": "string"
+                        "type": "string",
+                        "x-ms-summary": "Email | דוא\"ל",
+                        "description": "Recipient email (for a temporary recipient). | דוא\"ל הנמען (לנמען זמני)."
                       },
                       "name": {
-                        "type": "string"
+                        "type": "string",
+                        "x-ms-summary": "Recipient name | שם הנמען",
+                        "description": "Recipient display name. | שם הנמען לתצוגה."
                       },
                       "sequence": {
-                        "type": "integer"
+                        "type": "integer",
+                        "x-ms-summary": "Signing order | סדר חתימה",
+                        "description": "Signing order (1 = first). | סדר החתימה (1 = ראשון)."
                       },
                       "notify_platform": {
                         "type": "string",
-                        "description": "email, sms, or null."
+                        "x-ms-summary": "Notify channel | ערוץ התראה",
+                        "description": "How to notify the recipient: email, sms, or null. | אופן ההתראה לנמען: email, sms או null."
                       },
                       "recipient": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "x-ms-summary": "Is signer | האם חותם",
+                        "description": "True for the main signer. Only one recipient may be true. | True עבור החותם הראשי. רק נמען אחד יכול להיות true."
                       }
                     }
                   }
@@ -426,14 +483,16 @@
     "/entity/me/forms/{formId}/upload": {
       "post": {
         "operationId": "UploadFile",
-        "summary": "Upload file",
-        "description": "Upload the PDF to be signed. The file content is base64-encoded. PDF only.",
+        "summary": "Upload PDF to form | העלאת PDF לטופס",
+        "description": "Upload the PDF to be signed. The file content is base64-encoded. PDF only. | מעלה את קובץ ה-PDF לחתימה. תוכן הקובץ מקודד base64. PDF בלבד.",
         "parameters": [
           {
             "name": "formId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "x-ms-summary": "Form ID | מזהה טופס",
+            "description": "The EasyDoc form id to upload the PDF to. | מזהה הטופס ב-EasyDoc שאליו מעלים את ה-PDF."
           },
           {
             "name": "body",
@@ -444,17 +503,24 @@
               "properties": {
                 "file": {
                   "type": "object",
+                  "x-ms-summary": "PDF file | קובץ PDF",
+                  "description": "The PDF file to upload. | קובץ ה-PDF להעלאה.",
                   "properties": {
                     "name": {
-                      "type": "string"
+                      "type": "string",
+                      "x-ms-summary": "File name | שם הקובץ",
+                      "description": "File name including .pdf extension. | שם הקובץ כולל סיומת .pdf."
                     },
                     "data": {
                       "type": "string",
-                      "description": "Base64-encoded PDF content."
+                      "x-ms-summary": "File content (base64) | תוכן הקובץ (base64)",
+                      "description": "Base64-encoded PDF content. | תוכן ה-PDF מקודד ב-base64."
                     },
                     "mime": {
                       "type": "string",
-                      "default": "application/pdf"
+                      "default": "application/pdf",
+                      "x-ms-summary": "Content type | סוג תוכן",
+                      "description": "MIME type. Keep application/pdf. | סוג ה-MIME. השאר application/pdf."
                     }
                   },
                   "required": [
@@ -479,14 +545,16 @@
     "/entity/me/forms/{formId}/send": {
       "put": {
         "operationId": "SendForm",
-        "summary": "Send form",
-        "description": "Send the form to the recipient(s) for signature (exits draft).",
+        "summary": "Send form for signature | שליחת טופס לחתימה",
+        "description": "Send the form to the recipient(s) for signature (exits draft). | שולח את הטופס לנמענים לחתימה (יוצא ממצב טיוטה).",
         "parameters": [
           {
             "name": "formId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "x-ms-summary": "Form ID | מזהה טופס",
+            "description": "The EasyDoc form id to send. | מזהה הטופס ב-EasyDoc לשליחה."
           },
           {
             "name": "body",
@@ -497,17 +565,25 @@
               "properties": {
                 "settings": {
                   "type": "object",
+                  "x-ms-summary": "Send settings | הגדרות שליחה",
+                  "description": "Optional send settings such as extra notification emails. | הגדרות שליחה אופציונליות, כגון כתובות להתראה נוספות.",
                   "properties": {
                     "notify_emails": {
                       "type": "array",
+                      "x-ms-summary": "Notification emails | כתובות להתראה",
+                      "description": "Additional people to notify. | אנשים נוספים לעדכון.",
                       "items": {
                         "type": "object",
                         "properties": {
                           "email": {
-                            "type": "string"
+                            "type": "string",
+                            "x-ms-summary": "Email | דוא\"ל",
+                            "description": "Notification email address. | כתובת דוא\"ל להתראה."
                           },
                           "name": {
-                            "type": "string"
+                            "type": "string",
+                            "x-ms-summary": "Name | שם",
+                            "description": "Display name. | שם לתצוגה."
                           }
                         }
                       }
@@ -516,7 +592,8 @@
                 },
                 "meta_data": {
                   "type": "object",
-                  "description": "Custom correlation data, e.g. the D365 record id and table name.",
+                  "x-ms-summary": "Correlation metadata | מטא-דאטה לשיוך",
+                  "description": "Custom correlation data, e.g. the D365 record id and table name. | נתוני שיוך מותאמים, למשל מזהה הרשומה ושם הטבלה ב-D365.",
                   "properties": {
                     "client": {
                       "type": "object"
@@ -537,14 +614,16 @@
     "/entity/me/forms/{formId}/download": {
       "get": {
         "operationId": "DownloadDocument",
-        "summary": "Download document (preview / signed)",
-        "description": "Download the PDF. Before completion only the draft preview is available; the complete PDF exists once the form is signed or approved.",
+        "summary": "Download document (preview / signed) | הורדת מסמך (תצוגה / חתום)",
+        "description": "Download the PDF. Before completion only the draft preview is available; the complete PDF exists once the form is signed or approved. | מוריד את ה-PDF. לפני סיום זמינה רק תצוגת טיוטה; ה-PDF המלא קיים רק לאחר שהטופס נחתם או אושר.",
         "parameters": [
           {
             "name": "formId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "x-ms-summary": "Form ID | מזהה טופס",
+            "description": "The EasyDoc form id to download. | מזהה הטופס ב-EasyDoc להורדה."
           }
         ],
         "responses": {
@@ -557,14 +636,16 @@
     "/entity/me/forms/{formId}/cancel": {
       "put": {
         "operationId": "CancelForm",
-        "summary": "Cancel form",
-        "description": "Cancel an in-flight signature request. Only PUT is accepted.",
+        "summary": "Cancel form | ביטול טופס",
+        "description": "Cancel an in-flight signature request. Only PUT is accepted. | מבטל בקשת חתימה שנמצאת בתהליך. מתקבל PUT בלבד.",
         "parameters": [
           {
             "name": "formId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "x-ms-summary": "Form ID | מזהה טופס",
+            "description": "The EasyDoc form id to cancel. | מזהה הטופס ב-EasyDoc לביטול."
           }
         ],
         "responses": {
