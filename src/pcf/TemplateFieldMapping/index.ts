@@ -65,7 +65,8 @@ const I18N: Record<Lang, Record<string, string>> = {
     contactPathLabel: "Path to contact", contactPathNone: "No contact link",
     choosePrimary: "Choose a base table…", contactDisplay: "Contact",
     configHint: "Pick the base table, then how to reach the contact for personal details.",
-    thSource: "Source", formSaveHint: "Changes are saved with the record"
+    thSource: "Source", formSaveHint: "Changes are saved with the record",
+    loadFailed: "Could not load data from Dynamics"
   },
   he: {
     dir: "rtl", langBtn: "English",
@@ -94,7 +95,8 @@ const I18N: Record<Lang, Record<string, string>> = {
     contactPathLabel: "נתיב לאיש קשר", contactPathNone: "אין קישור לאיש קשר",
     choosePrimary: "בחרו טבלת בסיס…", contactDisplay: "איש קשר",
     configHint: "בחרו את טבלת הבסיס, ואז כיצד להגיע לאיש הקשר לפרטים אישיים.",
-    thSource: "מקור", formSaveHint: "השינויים נשמרים יחד עם הרשומה"
+    thSource: "מקור", formSaveHint: "השינויים נשמרים יחד עם הרשומה",
+    loadFailed: "טעינת הנתונים מדינמיקס נכשלה"
   }
 };
 
@@ -281,8 +283,10 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       this.demo = false;
       this.render();
     } catch (e) {
-      console.warn("[easydo mapping] live load failed, falling back to demo:", e);
-      this.enterDemo();
+      // In a real form (template + webAPI present) do NOT show fake demo data —
+      // that hides the real problem. Surface an error state instead.
+      console.error("[easydo mapping] live load failed:", e);
+      this.renderError(e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -322,7 +326,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
 
   private async fetchTables(): Promise<TableMeta[]> {
     const data = await this.metaFetch(
-      "EntityDefinitions?$select=LogicalName,DisplayName&$filter=IsValidForAdvancedFind/Value eq true and IsIntersect eq false"
+      "EntityDefinitions?$select=LogicalName,DisplayName&$filter=IsValidForAdvancedFind eq true and IsIntersect eq false"
     );
     const out: TableMeta[] = [];
     for (const e of data.value) {
@@ -340,7 +344,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     if (this.demo) { return DEMO_COLS[this.lang][table] ?? []; }
     const data = await this.metaFetch(
       `EntityDefinitions(LogicalName='${encodeURIComponent(table)}')/Attributes` +
-      `?$select=LogicalName,DisplayName,AttributeType&$filter=IsValidForRead/Value eq true and AttributeOf eq null`
+      `?$select=LogicalName,DisplayName,AttributeType&$filter=IsValidForRead eq true and AttributeOf eq null`
     );
     const out: ColMeta[] = [];
     for (const a of data.value) {
@@ -394,7 +398,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     }
     const data = await this.metaFetch(
       `EntityDefinitions(LogicalName='${encodeURIComponent(base)}')/Attributes/Microsoft.Dynamics.CRM.LookupAttributeMetadata` +
-      `?$select=LogicalName,DisplayName,Targets&$filter=IsValidForRead/Value eq true`
+      `?$select=LogicalName,DisplayName,Targets&$filter=IsValidForRead eq true`
     );
     const out: { logical: string; display: string }[] = [];
     for (const a of data.value) {
@@ -498,6 +502,19 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     const state = this.el("div", "edo-state");
     state.appendChild(this.el("div", "edo-spinner"));
     state.appendChild(this.el("div", "t", msg));
+    this.root.appendChild(state);
+  }
+
+  private renderError(detail: string): void {
+    const t = I18N[this.lang];
+    this.root.dir = t.dir;
+    this.root.innerHTML = "";
+    const state = this.el("div", "edo-state");
+    state.appendChild(this.el("div", "t", t.loadFailed));
+    state.appendChild(this.el("div", "d", detail));
+    const retry = this.btn("↻", t.refresh);
+    retry.onclick = () => void this.refresh();
+    state.appendChild(retry);
     this.root.appendChild(state);
   }
 
