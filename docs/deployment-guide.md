@@ -36,13 +36,13 @@ Before deploying or running the solution, make sure the following are in place.
 - A **Power Platform environment** with Dataverse enabled (Dev, and later Test/Prod).
 - A **Power Automate** plan that allows custom connectors and the Dataverse connector.
 - A **dedicated service account** to own the connections (recommended for Test/Prod).
-- An **EasyDoc account** with API access enabled for the company entity.
+- An **easydo account** with API access enabled for the company entity.
 
-### EasyDoc side | בצד EasyDoc
+### easydo side | בצד easydo
 
-- An **API token** generated in the EasyDoc portal (Company settings → API).
-- At least one **template** created on the EasyDoc website, including its fields and
-  default recipients (templates are built in EasyDoc, not in Dynamics).
+- An **API token** generated in the easydo portal (Company settings → API).
+- At least one **template** created on the easydo website, including its fields and
+  default recipients (templates are built in easydo, not in Dynamics).
 
 ### Tooling | כלים
 
@@ -53,13 +53,13 @@ Before deploying or running the solution, make sure the following are in place.
 
 ### Configuration values | ערכי תצורה
 
-- The **EasyDoc API base URL** and **token**, supplied as an Environment Variable and
+- The **easydo API base URL** and **token**, supplied as an Environment Variable and
   a secure Connection — never committed to source control.
 - The target **Dataverse environment URL** (kept outside the repo, e.g. in a local
   `.env.ps1`).
 
 > לפני פריסה או הרצה יש לוודא: סביבת Power Platform עם Dataverse, רישוי Power Automate
-> לקונקטור מותאם, חשבון שירות ייעודי לחיבורים, וחשבון EasyDoc עם גישת API. בצד EasyDoc
+> לקונקטור מותאם, חשבון שירות ייעודי לחיבורים, וחשבון easydo עם גישת API. בצד easydo
 > נדרשים טוקן API ולפחות תבנית אחת עם שדות ונמענים. כלים: ‎pac CLI‏, ‎PowerShell 7+‏,
 > ‎Azure CLI‏ ו-Git. ערכי הסוד (כתובת ה-API והטוקן) נשמרים ב-Environment Variable
 > וב-Connection מאובטח בלבד — לעולם לא ב-Git.

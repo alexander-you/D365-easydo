@@ -9,7 +9,7 @@ secrets live, who can see signed documents, and how activity is recorded.
 
 ## 1. Where credentials live | היכן נשמרים הסודות
 
-The EasyDoc API token is the only secret the integration needs, and it never appears
+The easydo API token is the only secret the integration needs, and it never appears
 in source control, flow definitions, or this repository.
 
 | Aspect | How it is protected |
@@ -19,15 +19,15 @@ in source control, flow definitions, or this repository.
 | Source control | [.gitignore](../.gitignore) blocks tokens, secrets, signed PDFs and full payloads from ever being committed. |
 | Rotation | Replacing the token means updating the Connection only — no flow or code changes. Tokens are rotated before production use. |
 
-> הטוקן של EasyDoc הוא הסוד היחיד שהאינטגרציה צריכה. הוא נשמר אך ורק בתוך
+> הטוקן של easydo הוא הסוד היחיד שהאינטגרציה צריכה. הוא נשמר אך ורק בתוך
 > **Connection** מוצפן של Power Platform, וכתובת ה-API נשמרת ב-**Environment Variable**.
 > ה-flows מפנים ל-Connection Reference ולעולם אינם קוראים את ערך הטוקן עצמו.
 
 ## 2. How data moves | כיצד הנתונים נעים
 
-- **Outbound only (MVP).** Power Automate calls the EasyDoc API; nothing calls back
+- **Outbound only (MVP).** Power Automate calls the easydo API; nothing calls back
   into Dynamics in the MVP, so there is no inbound endpoint to attack.
-- **Encrypted in transit.** Every request to EasyDoc uses HTTPS/TLS.
+- **Encrypted in transit.** Every request to easydo uses HTTPS/TLS.
 - **The connector has no compute of its own** — it is a declarative API definition,
   so there is no server-side code to exploit.
 

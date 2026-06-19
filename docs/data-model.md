@@ -1,7 +1,7 @@
 # Data Model | מודל נתונים
 
 > מסמך זה מתאר את מודל הנתונים שנבנה בפועל ב-Dataverse עבור פתרון
-> חתימה דיגיטלית מול EasyDoc. הוא כולל 6 טבלאות (5 רגילות וטבלת יומן מסוג Elastic),
+> חתימה דיגיטלית מול easydo. הוא כולל 6 טבלאות (5 רגילות וטבלת יומן מסוג Elastic),
 > רשימות בחירה גלובליות, קשרים, טפסים ותצוגות — הכל עם תוויות ותיאורים בעברית
 > ובאנגלית.
 
@@ -44,12 +44,12 @@ The model is reproducible via the scripts in [src/scripts/](../src/scripts/):
 
 ### `alex_signaturetemplate` — Signature Template (Standard)
 
-Reusable EasyDoc template configuration.
+Reusable easydo template configuration.
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | `alex_name` | Text | Primary name — Template Name |
-| `alex_externaltemplateid` | Text | EasyDoc template id (admin) |
+| `alex_externaltemplateid` | Text | easydo template id (admin) |
 | `alex_relateddynamicstable` | Text | Typical source table |
 | `alex_language` | Choice (`alex_language`) | Default language |
 | `alex_defaultdeliverymethod` | Choice (`alex_deliverymethod`) | Default channel |
@@ -58,7 +58,7 @@ Reusable EasyDoc template configuration.
 | `alex_supportsmultiplesigners` | Yes/No | Multi-signer |
 | `alex_templateversion` | Text | Version label |
 | `alex_templatesummary` | Multiline | Business description |
-| `alex_lastsyncedon` | DateTime | Last refresh from EasyDoc |
+| `alex_lastsyncedon` | DateTime | Last refresh from easydo |
 
 ### `alex_signaturerequest` — Signature Request (Standard)
 
@@ -77,21 +77,21 @@ Central record for a single signature request.
 | `alex_ispreviewgenerated` | Yes/No | Preview already generated |
 | `alex_signinglink` | URL | Recipient signing link |
 | `alex_senton` / `alex_completedon` / `alex_cancelledon` | DateTime | |
-| `alex_externalformid` | Text | EasyDoc form id (support) |
-| `alex_externaldocumentid` | Text | EasyDoc document id (support) |
+| `alex_externalformid` | Text | easydo form id (support) |
+| `alex_externaldocumentid` | Text | easydo document id (support) |
 | `alex_laststatuscheckon` | DateTime | Polling timestamp (support) |
 | `alex_retrycount` | Number | Retry count (support) |
 | `alex_errorcode` / `alex_errormessage` | Text / Multiline | Last error (support) |
 
 ### `alex_templatefieldmapping` — Template Field Mapping (Standard)
 
-Maps Dynamics fields into EasyDoc template fields (configuration, not code).
+Maps Dynamics fields into easydo template fields (configuration, not code).
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | `alex_name` | Text | Primary name — Mapping Name |
 | `alex_templateid` | Lookup → Signature Template, required | |
-| `alex_externalfieldid` / `alex_externalfieldname` / `alex_externalfieldtype` | Text | EasyDoc field (admin) |
+| `alex_externalfieldid` / `alex_externalfieldname` / `alex_externalfieldtype` | Text | easydo field (admin) |
 | `alex_dynamicstable` / `alex_dynamicsfield` | Text | Source field |
 | `alex_defaultvalue` | Text | Fallback value |
 | `alex_isrequired` | Yes/No | Must have a value before send |
@@ -114,7 +114,7 @@ A person required to sign.
 | `alex_signingorder` | Number | Order for multi-signer |
 | `alex_recipientstatus` | Choice (`alex_recipientstatus`) | Signing progress |
 | `alex_preferredlanguage` | Choice (`alex_language`) | |
-| `alex_externalprofileid` | Text | EasyDoc profile id (support) |
+| `alex_externalprofileid` | Text | easydo profile id (support) |
 | `alex_recipientsigninglink` | URL | Personal signing link |
 | `alex_recipientsenton` / `alex_viewedon` / `alex_signedon` | DateTime | |
 
@@ -131,12 +131,12 @@ Document files associated with a request.
 | `alex_mimetype` | Text | e.g. application/pdf |
 | `alex_documentfile` | **File (Dataverse File storage)** | The actual binary, e.g. signed PDF |
 | `alex_issigned` | Yes/No | Final signed copy |
-| `alex_externalfileid` | Text | EasyDoc file id (support) |
-| `alex_retrievedon` | DateTime | When retrieved from EasyDoc |
+| `alex_externalfileid` | Text | easydo file id (support) |
+| `alex_retrievedon` | DateTime | When retrieved from easydo |
 
 ### `alex_integrationlog` — Integration Log (**Elastic**)
 
-High-volume telemetry for each call / status update exchanged with EasyDoc.
+High-volume telemetry for each call / status update exchanged with easydo.
 
 > **Why elastic:** this is an append-only, high-volume support/diagnostics log.
 > Elastic tables support standard columns, choices, forms, views, security and
@@ -160,20 +160,20 @@ High-volume telemetry for each call / status update exchanged with EasyDoc.
 
 ### `alex_signaturefieldvalue` — Signature Field Value (Standard)
 
-Per-request, per-field value used to **prefill** an EasyDoc field before sending
+Per-request, per-field value used to **prefill** an easydo field before sending
 (and, later, to record the value **read back** after signing). The send flow reads
 the `Prefill` rows for a request and builds the `prefill_data` array (see
 [api-research.md §12](api-research.md#12-field-prefill--lock-verified-live-2026-06-18)).
 
 > טבלה זו מחזיקה ערך מוחשי לכל שדה בבקשת חתימה ספציפית — משמשת למילוי
 > מקדם (Prefill) ולקריאה חזרה (Read Back). `alex_fieldname` תואם לשם הטכני של השדה
-> ב-EasyDoc, ו-`alex_isreadonly` נועל את הערך מפני הנמען.
+> ב-easydo, ו-`alex_isreadonly` נועל את הערך מפני הנמען.
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | `alex_name` | Text | Primary name — Field Value Name |
 | `alex_signaturerequestid` | Lookup → Signature Request, required | Parent request |
-| `alex_fieldname` | Text (100), required | EasyDoc field **technical name** (matches `alex_templatefieldmapping.alex_externalfieldid`) |
+| `alex_fieldname` | Text (100), required | easydo field **technical name** (matches `alex_templatefieldmapping.alex_externalfieldid`) |
 | `alex_fieldlabel` | Text (200) | Human-readable label (UX only) |
 | `alex_value` | Multiline (4000) | Value to prefill / value read back. Checkbox = `checked` / `unchecked` |
 | `alex_direction` | Choice (`alex_fielddirection`), required | Prefill / Read Back |
@@ -308,6 +308,6 @@ than a default field dump, and **multiple system views** beyond the defaults:
 - Integration Log: *Recent Integration Events* (default), *Integration Failures*
 - Signature Field Value: *All Field Values* (default), *Prefill Values*
 
-Technical/support-only fields (EasyDoc ids, correlation ids, error codes, raw
+Technical/support-only fields (easydo ids, correlation ids, error codes, raw
 references) are labelled clearly and grouped under support sections so they are not
 mistaken for end-user business data.

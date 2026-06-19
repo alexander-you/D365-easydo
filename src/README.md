@@ -1,13 +1,14 @@
 # Source
 
-> תיקיית קוד ורכיבי הפתרון. תתמלא בשלבים הבאים.
+> תיקיית הקוד ורכיבי הפתרון של האינטגרציה בין Dynamics 365 ל-easydo.
 
-Solution components (to be added in upcoming phases):
+Solution components:
 
 ```text
-power-platform-solution/   Exported Dataverse solution (unmanaged + managed)
-custom-connector/          EasyDoc Custom Connector (OpenAPI + settings)
-pcf-control/               PCF control (only if rich preview is required)
-custom-pages/              Custom Page source
-scripts/                   Helper / setup scripts
+custom-connector/   easydo custom connector (OpenAPI swagger + apiProperties)
+flows/              Solution-aware cloud flows (send / read / sync)
+pcf/                PCF control rendered on the signature-template form
+plugins/            Dataverse plug-ins (write-back + ResolvePrefill Custom API)
+scripts/            PowerShell setup/deploy scripts (Dataverse Web API)
 ```
+

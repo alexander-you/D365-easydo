@@ -19,7 +19,7 @@ $body = @{
     uniquename            = $solutionUnique
     friendlyname          = $solutionName
     version               = "1.0.0.0"
-    description           = "Digital signature integration between Dynamics 365 and EasyDoc (Power Platform MVP). Created via Dataverse Web API."
+    description           = "Digital signature integration between Dynamics 365 and easydo (Power Platform MVP). Created via Dataverse Web API."
     "publisherid@odata.bind" = "/publishers($publisherId)"
 }
 $res = Invoke-DV POST "solutions" -Body $body -ReturnHeaders

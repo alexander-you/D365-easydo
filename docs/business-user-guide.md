@@ -1,10 +1,10 @@
 # Connector Actions Guide | מדריך פעולות הקונקטור
 
-> מדריך זה מסביר **בשפה פשוטה** מה עושה כל אחת מ-15 הפעולות של קונקטור EasyDoc,
+> מדריך זה מסביר **בשפה פשוטה** מה עושה כל אחת מ-15 הפעולות של קונקטור easydo,
 > מתי משתמשים בה, מה ממלאים בכל שדה, ומה מקבלים בחזרה. כתוב למי שבונה זרימות
 > (flows) ב-Power Automate ולא בהכרח מכיר את ה-API. לכל פעולה יש מקום לצילום מסך.
 
-This guide explains, **in plain language**, what each of the 15 EasyDoc connector
+This guide explains, **in plain language**, what each of the 15 easydo connector
 actions does, when to use it, what you type into each field, and what you get back.
 It is written for someone building flows in Power Automate — no API knowledge needed.
 Screenshots are placeholders for now; replace the images under
@@ -18,14 +18,14 @@ Screenshots are placeholders for now; replace the images under
 
 ## How signing works in one minute | איך זה עובד בקצרה
 
-You build a **template** once on the EasyDoc website (the document plus the places
+You build a **template** once on the easydo website (the document plus the places
 people sign). After that, the everyday job is simply: pick a template, list who
-should sign, and send. EasyDoc emails each person a private signing link and reports
+should sign, and send. easydo emails each person a private signing link and reports
 the status back. Most flows only need three or four of the actions below — the rest
 are there for advanced scenarios.
 
-> בונים **תבנית** פעם אחת באתר EasyDoc (המסמך + המקומות לחתימה). לאחר מכן העבודה
-> היומיומית פשוטה: בוחרים תבנית, מציינים מי צריך לחתום, ושולחים. EasyDoc שולח לכל
+> בונים **תבנית** פעם אחת באתר easydo (המסמך + המקומות לחתימה). לאחר מכן העבודה
+> היומיומית פשוטה: בוחרים תבנית, מציינים מי צריך לחתום, ושולחים. easydo שולח לכל
 > אדם קישור חתימה אישי במייל ומדווח על הסטטוס. רוב הזרימות צריכות רק שלוש-ארבע מהפעולות.
 
 ---
@@ -47,7 +47,7 @@ The actions fall into four groups:
 
 ### 1. Get entity (test connection) | אחזור ישות (בדיקת חיבור)
 
-**Plain meaning:** "Is my EasyDoc connection working?" This asks EasyDoc for the
+**Plain meaning:** "Is my easydo connection working?" This asks easydo for the
 details of *your own* company account. If it answers, your token and connection are
 fine.
 
@@ -55,11 +55,11 @@ fine.
 
 **What you fill in:** Nothing.
 
-**What you get back:** Your company's name and ID in EasyDoc.
+**What you get back:** Your company's name and ID in easydo.
 
 ![Get entity action](images/01-get-entity.png)
 
-> **בעברית:** "האם החיבור ל-EasyDoc תקין?" הפעולה מבקשת את פרטי חשבון החברה שלך.
+> **בעברית:** "האם החיבור ל-easydo תקין?" הפעולה מבקשת את פרטי חשבון החברה שלך.
 > אם מתקבלת תשובה — הטוקן והחיבור תקינים. לא ממלאים כלום. משתמשים בה פעם אחת בהקמה
 > או לאיתור תקלות.
 
@@ -70,10 +70,10 @@ fine.
 ### 2. Get profiles / contacts | אחזור פרופילים / אנשי קשר
 
 **Plain meaning:** Get the list of contacts (people) that already exist in your
-EasyDoc account, so you can pick a saved recipient instead of typing their email
+easydo account, so you can pick a saved recipient instead of typing their email
 every time.
 
-**When to use:** When you want to send to someone already saved in EasyDoc.
+**When to use:** When you want to send to someone already saved in easydo.
 
 **What you fill in (all optional):**
 
@@ -81,20 +81,20 @@ every time.
 | --- | --- |
 | Page size | How many contacts to bring back at once (e.g. `25`). Leave it for the default. |
 | Start offset | Where to start in the list — `0` is the beginning. Use it only to fetch the *next* page (e.g. set it to `25` for the second page). |
-| Request counter | A technical number EasyDoc echoes back so it can match the response to your request. You can leave it as `1`. |
+| Request counter | A technical number easydo echoes back so it can match the response to your request. You can leave it as `1`. |
 
-**What you get back:** A list of contacts, each with a name, email and EasyDoc ID.
+**What you get back:** A list of contacts, each with a name, email and easydo ID.
 
 ![Get profiles action](images/02-get-profiles.png)
 
-> **בעברית:** מחזירה את רשימת אנשי הקשר השמורים ב-EasyDoc, כדי לבחור נמען שמור במקום
+> **בעברית:** מחזירה את רשימת אנשי הקשר השמורים ב-easydo, כדי לבחור נמען שמור במקום
 > להקליד מייל בכל פעם. כל השדות אופציונליים: "גודל עמוד" = כמה רשומות להביא; "היסט
 > התחלה" = מהיכן להתחיל (0 = מההתחלה, 25 = העמוד הבא); "מונה בקשה" = מספר טכני שאפשר
 > להשאיר 1.
 
-### 3. Get templates from EasyDoc | אחזור תבניות מ-EasyDoc
+### 3. Get templates from easydo | אחזור תבניות מ-easydo
 
-**Plain meaning:** Get the list of ready-made templates you built on the EasyDoc
+**Plain meaning:** Get the list of ready-made templates you built on the easydo
 website, so you can choose which document to send.
 
 **When to use:** To let a user pick a template, or to find a template's ID.
@@ -107,7 +107,7 @@ start offset, request counter) — usually left as defaults.
 
 ![Get templates action](images/03-get-templates.png)
 
-> **בעברית:** מחזירה את רשימת התבניות המוכנות שבנית באתר EasyDoc, כדי לבחור איזה מסמך
+> **בעברית:** מחזירה את רשימת התבניות המוכנות שבנית באתר easydo, כדי לבחור איזה מסמך
 > לשלוח. בכל תבנית מופיע השם ו**מזהה התבנית** (תזדקק לו כדי לשלוח). השדות זהים לפעולה
 > הקודמת ובדרך כלל נשארים בברירת המחדל.
 
@@ -381,7 +381,7 @@ need.
 | # | Action | One-line purpose |
 | --- | --- | --- |
 | 1 | Get entity | Test that the connection works. |
-| 2 | Get profiles | List saved contacts in EasyDoc. |
+| 2 | Get profiles | List saved contacts in easydo. |
 | 3 | Get templates | List your ready-made templates. |
 | 4 | Get template detail | See a template's fields. |
 | 5 | **Send template** ⭐ | Send a template for signature (main action). |

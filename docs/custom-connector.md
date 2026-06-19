@@ -1,7 +1,7 @@
-# Custom Connector — EasyDoc | קונקטור מותאם
+# Custom Connector — easydo | קונקטור מותאם
 
 > מסמך זה מתאר את ה-Custom Connector היחיד שמחבר את Dynamics 365
-> ל-EasyDoc. הקונקטור מכיל **actions בלבד** (ללא triggers ב-MVP). לכל פעולה מתואר:
+> ל-easydo. הקונקטור מכיל **actions בלבד** (ללא triggers ב-MVP). לכל פעולה מתואר:
 > מה היא עושה, מי מפעיל אותה (משתמש או flow), מה המשתמש מזין/רואה, ומה הפעולה מחזירה.
 > בשלב הבא (fast-follow) ניתן יהיה להוסיף **trigger יחיד** מסוג Webhook במקום ה-polling.
 
@@ -9,9 +9,9 @@
 
 | Item | Value |
 | --- | --- |
-| Connector | **one** Custom Connector for EasyDoc |
+| Connector | **one** Custom Connector for easydo |
 | Auth | API Key / Bearer token, stored in a secure **Connection** |
-| Base URL | EasyDoc API base, held in an **Environment Variable** (not committed) |
+| Base URL | easydo API base, held in an **Environment Variable** (not committed) |
 | Transport | Outbound HTTPS (TLS) only — no inbound endpoint in MVP |
 | Triggers (MVP) | **None** — status is read by a scheduled flow calling *Get Form Status* |
 | Triggers (later) | Optional single **Webhook** trigger ("Form Submitted") to replace polling |
@@ -22,26 +22,26 @@ Environment Variables, never in source control.
 
 ## Security model (summary)
 
-- **Outbound only**: Power Automate calls EasyDoc; nothing calls back into us in MVP.
+- **Outbound only**: Power Automate calls easydo; nothing calls back into us in MVP.
 - **TLS** on every request; **Bearer token** required; token lives in the Connection.
 - **DLP**: the connector is classified so it cannot be mixed with disallowed connectors.
 - The dev token shared during early testing **must be regenerated before production**.
 
 ## Connection — what the user enters
 
-> המשתמש/אדמין שמקים את החיבור מזין **רק את הטוקן של EasyDoc**.
+> המשתמש/אדמין שמקים את החיבור מזין **רק את הטוקן של easydo**.
 > אין שם משתמש/סיסמה ואין סוד נוסף. הטוקן נשמר בתוך ה-Connection המאובטח של
 > Power Platform ולא נחשף ב-flows או בקוד.
 
 The connector authenticates with an **API key** sent as the `Authorization`
 header. When creating a **Connection**, the only thing the user provides is the
-**EasyDoc API token**:
+**easydo API token**:
 
 | Field | Value to enter |
 | --- | --- |
-| EasyDoc token | `Bearer <your EasyDoc API token>` |
+| easydo token | `Bearer <your easydo API token>` |
 
-- The token is generated in the **EasyDoc portal** (Company settings → API).
+- The token is generated in the **easydo portal** (Company settings → API).
 - It is stored inside the Power Platform **Connection** (secure), not in flows,
   not in the connector definition, and not in source control.
 - One Connection can be shared by all flows in the solution. For Test/Prod it is
@@ -68,14 +68,14 @@ Notation: **Caller** = who invokes it (End user via Custom Page, or a background
 ids are passed by the flow, not typed by the user.
 
 ### 1. Get Profiles
-- **Purpose**: List EasyDoc profiles/contacts for the entity (to resolve a recipient).
+- **Purpose**: List easydo profiles/contacts for the entity (to resolve a recipient).
 - **Caller**: Flow (and indirectly the Custom Page when picking a recipient).
 - **User sees / enters**: optionally a search term (name / email).
 - **Returns**: list of profiles — `id`, `full_name`, `email`, `phone`, `status`.
 - **HTTP**: `GET /entity/me/profiles` *(verified live)*.
 
 ### 2. Get Templates
-- **Purpose**: Retrieve EasyDoc templates and their fields, to sync into Dataverse
+- **Purpose**: Retrieve easydo templates and their fields, to sync into Dataverse
   (`alex_signaturetemplate` + `alex_templatefieldmapping`).
 - **Caller**: Flow (admin-run sync, or scheduled).
 - **User sees / enters**: nothing (admin sync), or a template picker in config.
@@ -95,14 +95,14 @@ ids are passed by the flow, not typed by the user.
 > ייבוא תבנית מושך גם את כל השדות שלה: תחילה רשימת התבניות, ואז
 > פירוט כל תבנית עם השדות (שם, תווית, סוג, חובה, מזהה יציב). נוצרת רשומת תבנית אחת
 > (`alex_signaturetemplate`) ורשומת מיפוי לכל שדה (`alex_templatefieldmapping`).
-> צד EasyDoc מתמלא אוטומטית; את צד Dynamics (`alex_dynamicsfield`) משלים אדמין.
+> צד easydo מתמלא אוטומטית; את צד Dynamics (`alex_dynamicsfield`) משלים אדמין.
 
 ```mermaid
 flowchart LR
     A["GET /entity/me/templates<br/>(templates list)"] --> B["GET /entity/me/templates/{id}<br/>(detail + payload.data fields)"]
     B --> C["Upsert alex_signaturetemplate<br/>(one template record)"]
     B --> D["Upsert alex_templatefieldmapping<br/>(one record per field)"]
-    D --> E["Admin maps alex_dynamicsfield<br/>(EasyDoc field -> Dynamics field)"]
+    D --> E["Admin maps alex_dynamicsfield<br/>(easydo field -> Dynamics field)"]
 ```
 
 ### 3. Create Form
@@ -183,7 +183,7 @@ sequenceDiagram
     participant CP as Custom Page
     participant F as Power Automate
     participant DV as Dataverse
-    participant E as EasyDoc (Custom Connector)
+    participant E as easydo (Custom Connector)
 
     U->>CP: Click "Send for Signature"
     CP->>F: Start (record id, template, recipient)
@@ -211,7 +211,7 @@ sequenceDiagram
 
 ## Status mapping
 
-| EasyDoc status | `alex_signaturestatus` |
+| easydo status | `alex_signaturestatus` |
 | --- | --- |
 | (draft created) | Draft |
 | sent | Sent |

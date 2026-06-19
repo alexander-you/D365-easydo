@@ -1,7 +1,7 @@
 # ==========================================================================
 # Security — NEVER commit secrets, tokens, or sensitive customer data
 # ==========================================================================
-# EasyDoc / API credentials
+# easydo / API credentials
 *.secret
 *.secrets
 secrets.json
@@ -60,3 +60,6 @@ generated/
 Thumbs.db
 .DS_Store
 desktop.ini
+
+# Local-only design mockups
+mockup/

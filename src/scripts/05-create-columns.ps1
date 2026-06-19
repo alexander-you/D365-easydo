@@ -11,9 +11,9 @@ Connect-Dataverse
 # ========================= 1) Signature Template =========================
 $t = "alex_signaturetemplate"
 Write-Output "== $t =="
-Add-DVColumn $t (New-DVString  -Schema "alex_ExternalTemplateId" -En "EasyDoc Template Id" -He "מזהה תבנית EasyDoc" -MaxLength 100 `
-    -DescEn "Identifier of the corresponding template in EasyDoc. Used by the integration to send documents; managed by administrators." `
-    -DescHe "מזהה התבנית התואמת ב-EasyDoc. משמש את האינטגרציה לשליחת מסמכים; מנוהל על ידי מנהלי מערכת.")
+Add-DVColumn $t (New-DVString  -Schema "alex_ExternalTemplateId" -En "easydo Template Id" -He "מזהה תבנית easydo" -MaxLength 100 `
+    -DescEn "Identifier of the corresponding template in easydo. Used by the integration to send documents; managed by administrators." `
+    -DescHe "מזהה התבנית התואמת ב-easydo. משמש את האינטגרציה לשליחת מסמכים; מנוהל על ידי מנהלי מערכת.")
 Add-DVColumn $t (New-DVString  -Schema "alex_RelatedDynamicsTable" -En "Related Dynamics Table" -He "טבלת Dynamics משויכת" -MaxLength 100 `
     -DescEn "Logical name of the Dynamics table this template is typically used with, e.g. contact." `
     -DescHe "השם הלוגי של טבלת Dynamics שאיתה משתמשים בתבנית בדרך כלל, לדוגמה איש קשר.")
@@ -34,14 +34,14 @@ Add-DVColumn $t (New-DVBool -Schema "alex_SupportsMultipleSigners" -En "Supports
     -DescEn "Indicates whether this template allows more than one recipient to sign." `
     -DescHe "מציין האם תבנית זו מאפשרת ליותר מנמען אחד לחתום.")
 Add-DVColumn $t (New-DVString -Schema "alex_TemplateVersion" -En "Template Version" -He "גרסת תבנית" -MaxLength 50 `
-    -DescEn "Version label of the template as defined in EasyDoc, for change tracking." `
-    -DescHe "תווית גרסה של התבנית כפי שהוגדרה ב-EasyDoc, למעקב אחר שינויים.")
+    -DescEn "Version label of the template as defined in easydo, for change tracking." `
+    -DescHe "תווית גרסה של התבנית כפי שהוגדרה ב-easydo, למעקב אחר שינויים.")
 Add-DVColumn $t (New-DVMemo -Schema "alex_TemplateSummary" -En "Description" -He "תיאור" -MaxLength 2000 `
     -DescEn "Business description of what this template is for and when to use it." `
     -DescHe "תיאור עסקי של מטרת התבנית ומתי להשתמש בה.")
 Add-DVColumn $t (New-DVDateTime -Schema "alex_LastSyncedOn" -En "Last Synced On" -He "סונכרן לאחרונה בתאריך" `
-    -DescEn "Date and time the template details were last refreshed from EasyDoc." `
-    -DescHe "התאריך והשעה שבהם פרטי התבנית רועננו לאחרונה מ-EasyDoc.")
+    -DescEn "Date and time the template details were last refreshed from easydo." `
+    -DescHe "התאריך והשעה שבהם פרטי התבנית רועננו לאחרונה מ-easydo.")
 
 # ========================= 2) Signature Request =========================
 $t = "alex_signaturerequest"
@@ -58,12 +58,12 @@ Add-DVColumn $t (New-DVPicklistGlobal -Schema "alex_Status" -En "Status" -He "ס
 Add-DVColumn $t (New-DVPicklistGlobal -Schema "alex_Language" -En "Language" -He "שפה" -GlobalOptionSetName "alex_language" `
     -DescEn "Language used for this request and the communication sent to the recipient." `
     -DescHe "השפה המשמשת לבקשה זו ולתקשורת הנשלחת לנמען.")
-Add-DVColumn $t (New-DVString -Schema "alex_ExternalFormId" -En "EasyDoc Form Id" -He "מזהה טופס EasyDoc" -MaxLength 100 `
-    -DescEn "Identifier of the form created in EasyDoc for this request. Used by the integration; managed by support." `
-    -DescHe "מזהה הטופס שנוצר ב-EasyDoc עבור בקשה זו. משמש את האינטגרציה; מנוהל על ידי התמיכה.")
-Add-DVColumn $t (New-DVString -Schema "alex_ExternalDocumentId" -En "EasyDoc Document Id" -He "מזהה מסמך EasyDoc" -MaxLength 100 `
-    -DescEn "Identifier of the document in EasyDoc associated with this request. Used by support for troubleshooting." `
-    -DescHe "מזהה המסמך ב-EasyDoc המשויך לבקשה זו. משמש את התמיכה לאבחון תקלות.")
+Add-DVColumn $t (New-DVString -Schema "alex_ExternalFormId" -En "easydo Form Id" -He "מזהה טופס easydo" -MaxLength 100 `
+    -DescEn "Identifier of the form created in easydo for this request. Used by the integration; managed by support." `
+    -DescHe "מזהה הטופס שנוצר ב-easydo עבור בקשה זו. משמש את האינטגרציה; מנוהל על ידי התמיכה.")
+Add-DVColumn $t (New-DVString -Schema "alex_ExternalDocumentId" -En "easydo Document Id" -He "מזהה מסמך easydo" -MaxLength 100 `
+    -DescEn "Identifier of the document in easydo associated with this request. Used by support for troubleshooting." `
+    -DescHe "מזהה המסמך ב-easydo המשויך לבקשה זו. משמש את התמיכה לאבחון תקלות.")
 Add-DVColumn $t (New-DVString -Schema "alex_SigningLink" -En "Signing Link" -He "קישור לחתימה" -MaxLength 500 -Format "Url" `
     -DescEn "Web link the recipient can use to open and sign the document." `
     -DescHe "קישור אינטרנט שבו הנמען יכול להשתמש כדי לפתוח ולחתום על המסמך.")
@@ -83,8 +83,8 @@ Add-DVColumn $t (New-DVDateTime -Schema "alex_CancelledOn" -En "Cancelled On" -H
     -DescEn "Date and time the request was cancelled, if applicable." `
     -DescHe "התאריך והשעה שבהם הבקשה בוטלה, אם רלוונטי.")
 Add-DVColumn $t (New-DVDateTime -Schema "alex_LastStatusCheckOn" -En "Last Status Check On" -He "בדיקת סטטוס אחרונה בתאריך" `
-    -DescEn "Date and time the integration last checked this request's status with EasyDoc. Support field." `
-    -DescHe "התאריך והשעה שבהם האינטגרציה בדקה לאחרונה את סטטוס הבקשה מול EasyDoc. שדה תמיכה.")
+    -DescEn "Date and time the integration last checked this request's status with easydo. Support field." `
+    -DescHe "התאריך והשעה שבהם האינטגרציה בדקה לאחרונה את סטטוס הבקשה מול easydo. שדה תמיכה.")
 Add-DVColumn $t (New-DVInt -Schema "alex_RetryCount" -En "Retry Count" -He "מספר ניסיונות חוזרים" -Min 0 -Max 1000 `
     -DescEn "Number of times the integration retried sending or updating this request after a transient error. Support field." `
     -DescHe "מספר הפעמים שהאינטגרציה ניסתה שוב לשלוח או לעדכן בקשה זו לאחר שגיאה זמנית. שדה תמיכה.")
@@ -98,21 +98,21 @@ Add-DVColumn $t (New-DVMemo -Schema "alex_ErrorMessage" -En "Error Details" -He 
 # ========================= 3) Template Field Mapping =========================
 $t = "alex_templatefieldmapping"
 Write-Output "== $t =="
-Add-DVColumn $t (New-DVString -Schema "alex_ExternalFieldId" -En "EasyDoc Field Id" -He "מזהה שדה EasyDoc" -MaxLength 100 `
-    -DescEn "Identifier of the field within the EasyDoc template that receives the mapped value. Managed by administrators." `
-    -DescHe "מזהה השדה בתבנית EasyDoc שמקבל את הערך הממופה. מנוהל על ידי מנהלי מערכת.")
-Add-DVColumn $t (New-DVString -Schema "alex_ExternalFieldName" -En "EasyDoc Field Name" -He "שם שדה EasyDoc" -MaxLength 200 `
-    -DescEn "Display name of the EasyDoc template field, to make the mapping easy to recognize." `
-    -DescHe "שם התצוגה של שדה תבנית EasyDoc, כדי להקל על זיהוי המיפוי.")
-Add-DVColumn $t (New-DVString -Schema "alex_ExternalFieldType" -En "EasyDoc Field Type" -He "סוג שדה EasyDoc" -MaxLength 100 `
-    -DescEn "Data type expected by the EasyDoc field, such as text, date or signature." `
-    -DescHe "סוג הנתונים שהשדה ב-EasyDoc מצפה לו, כגון טקסט, תאריך או חתימה.")
+Add-DVColumn $t (New-DVString -Schema "alex_ExternalFieldId" -En "easydo Field Id" -He "מזהה שדה easydo" -MaxLength 100 `
+    -DescEn "Identifier of the field within the easydo template that receives the mapped value. Managed by administrators." `
+    -DescHe "מזהה השדה בתבנית easydo שמקבל את הערך הממופה. מנוהל על ידי מנהלי מערכת.")
+Add-DVColumn $t (New-DVString -Schema "alex_ExternalFieldName" -En "easydo Field Name" -He "שם שדה easydo" -MaxLength 200 `
+    -DescEn "Display name of the easydo template field, to make the mapping easy to recognize." `
+    -DescHe "שם התצוגה של שדה תבנית easydo, כדי להקל על זיהוי המיפוי.")
+Add-DVColumn $t (New-DVString -Schema "alex_ExternalFieldType" -En "easydo Field Type" -He "סוג שדה easydo" -MaxLength 100 `
+    -DescEn "Data type expected by the easydo field, such as text, date or signature." `
+    -DescHe "סוג הנתונים שהשדה ב-easydo מצפה לו, כגון טקסט, תאריך או חתימה.")
 Add-DVColumn $t (New-DVString -Schema "alex_DynamicsTable" -En "Dynamics Table" -He "טבלת Dynamics" -MaxLength 100 `
     -DescEn "Logical name of the Dynamics table the source value is read from." `
     -DescHe "השם הלוגי של טבלת Dynamics שממנה נקרא ערך המקור.")
 Add-DVColumn $t (New-DVString -Schema "alex_DynamicsField" -En "Dynamics Field" -He "שדה Dynamics" -MaxLength 100 `
-    -DescEn "Logical name of the Dynamics column whose value is placed into the EasyDoc field." `
-    -DescHe "השם הלוגי של עמודת Dynamics שערכה מוכנס לשדה ב-EasyDoc.")
+    -DescEn "Logical name of the Dynamics column whose value is placed into the easydo field." `
+    -DescHe "השם הלוגי של עמודת Dynamics שערכה מוכנס לשדה ב-easydo.")
 Add-DVColumn $t (New-DVString -Schema "alex_DefaultValue" -En "Default Value" -He "ערך ברירת מחדל" -MaxLength 500 `
     -DescEn "Value used when the source Dynamics field is empty." `
     -DescHe "הערך המשמש כאשר שדה המקור ב-Dynamics ריק.")
@@ -150,9 +150,9 @@ Add-DVColumn $t (New-DVPicklistGlobal -Schema "alex_RecipientStatus" -En "Recipi
 Add-DVColumn $t (New-DVPicklistGlobal -Schema "alex_PreferredLanguage" -En "Preferred Language" -He "שפה מועדפת" -GlobalOptionSetName "alex_language" `
     -DescEn "Language used in the communication sent to this recipient." `
     -DescHe "השפה המשמשת בתקשורת הנשלחת לנמען זה.")
-Add-DVColumn $t (New-DVString -Schema "alex_ExternalProfileId" -En "EasyDoc Profile Id" -He "מזהה פרופיל EasyDoc" -MaxLength 100 `
-    -DescEn "Identifier of the recipient profile in EasyDoc. Used by the integration; support field." `
-    -DescHe "מזהה פרופיל הנמען ב-EasyDoc. משמש את האינטגרציה; שדה תמיכה.")
+Add-DVColumn $t (New-DVString -Schema "alex_ExternalProfileId" -En "easydo Profile Id" -He "מזהה פרופיל easydo" -MaxLength 100 `
+    -DescEn "Identifier of the recipient profile in easydo. Used by the integration; support field." `
+    -DescHe "מזהה פרופיל הנמען ב-easydo. משמש את האינטגרציה; שדה תמיכה.")
 Add-DVColumn $t (New-DVString -Schema "alex_RecipientSigningLink" -En "Signing Link" -He "קישור לחתימה" -MaxLength 500 -Format "Url" `
     -DescEn "Personal web link this recipient uses to open and sign the document." `
     -DescHe "קישור אינטרנט אישי שבו נמען זה משתמש כדי לפתוח ולחתום על המסמך.")
@@ -178,15 +178,15 @@ Add-DVColumn $t (New-DVString -Schema "alex_FileName" -En "File Name" -He "שם 
 Add-DVColumn $t (New-DVString -Schema "alex_MimeType" -En "File Type" -He "סוג קובץ" -MaxLength 100 `
     -DescEn "Technical content type of the file, such as application/pdf." `
     -DescHe "סוג התוכן הטכני של הקובץ, כגון application/pdf.")
-Add-DVColumn $t (New-DVString -Schema "alex_ExternalFileId" -En "EasyDoc File Id" -He "מזהה קובץ EasyDoc" -MaxLength 100 `
-    -DescEn "Identifier of the file in EasyDoc this document was retrieved from. Support field." `
-    -DescHe "מזהה הקובץ ב-EasyDoc שממנו הובא מסמך זה. שדה תמיכה.")
+Add-DVColumn $t (New-DVString -Schema "alex_ExternalFileId" -En "easydo File Id" -He "מזהה קובץ easydo" -MaxLength 100 `
+    -DescEn "Identifier of the file in easydo this document was retrieved from. Support field." `
+    -DescHe "מזהה הקובץ ב-easydo שממנו הובא מסמך זה. שדה תמיכה.")
 Add-DVColumn $t (New-DVBool -Schema "alex_IsSigned" -En "Signed Copy" -He "עותק חתום" `
     -DescEn "Indicates whether this document is the final signed version." `
     -DescHe "מציין האם מסמך זה הוא הגרסה החתומה הסופית.")
 Add-DVColumn $t (New-DVDateTime -Schema "alex_RetrievedOn" -En "Retrieved On" -He "הובא בתאריך" `
-    -DescEn "Date and time this document was retrieved from EasyDoc and stored in Dynamics." `
-    -DescHe "התאריך והשעה שבהם מסמך זה הובא מ-EasyDoc ונשמר ב-Dynamics.")
+    -DescEn "Date and time this document was retrieved from easydo and stored in Dynamics." `
+    -DescHe "התאריך והשעה שבהם מסמך זה הובא מ-easydo ונשמר ב-Dynamics.")
 
 # ========================= 6) Integration Log (elastic) =========================
 $t = "alex_integrationlog"
@@ -201,11 +201,11 @@ Add-DVColumn $t (New-DVString -Schema "alex_OperationName" -En "Operation" -He "
     -DescEn "Name of the specific operation that was performed." `
     -DescHe "שם הפעולה הספציפית שבוצעה.")
 Add-DVColumn $t (New-DVString -Schema "alex_CorrelationId" -En "Correlation Id" -He "מזהה מתאם" -MaxLength 100 `
-    -DescEn "Identifier used to correlate related events across Dynamics and EasyDoc. Support field." `
-    -DescHe "מזהה המשמש לקישור אירועים קשורים בין Dynamics ל-EasyDoc. שדה תמיכה.")
-Add-DVColumn $t (New-DVString -Schema "alex_ExternalReference" -En "EasyDoc Reference" -He "הפניית EasyDoc" -MaxLength 150 `
-    -DescEn "Reference identifier returned by EasyDoc for the operation. Support field." `
-    -DescHe "מזהה הפניה שהוחזר על ידי EasyDoc עבור הפעולה. שדה תמיכה.")
+    -DescEn "Identifier used to correlate related events across Dynamics and easydo. Support field." `
+    -DescHe "מזהה המשמש לקישור אירועים קשורים בין Dynamics ל-easydo. שדה תמיכה.")
+Add-DVColumn $t (New-DVString -Schema "alex_ExternalReference" -En "easydo Reference" -He "הפניית easydo" -MaxLength 150 `
+    -DescEn "Reference identifier returned by easydo for the operation. Support field." `
+    -DescHe "מזהה הפניה שהוחזר על ידי easydo עבור הפעולה. שדה תמיכה.")
 Add-DVColumn $t (New-DVDateTime -Schema "alex_StartedOn" -En "Started On" -He "התחיל בתאריך" `
     -DescEn "Date and time the operation started." `
     -DescHe "התאריך והשעה שבהם הפעולה החלה.")
@@ -228,8 +228,8 @@ Add-DVColumn $t (New-DVMemo -Schema "alex_Summary" -En "Summary" -He "תקציר
 # Elastic choice columns (Direction, Result) with string fallback if unsupported.
 foreach ($pc in @(
     @{ Schema="alex_Direction"; En="Direction"; He="כיוון"; Set="alex_logdirection";
-       DescEn="Whether this event is an outbound call to EasyDoc or an inbound update from EasyDoc.";
-       DescHe="האם אירוע זה הוא קריאה יוצאת ל-EasyDoc או עדכון נכנס מ-EasyDoc." }
+       DescEn="Whether this event is an outbound call to easydo or an inbound update from easydo.";
+       DescHe="האם אירוע זה הוא קריאה יוצאת ל-easydo או עדכון נכנס מ-easydo." }
     @{ Schema="alex_Result"; En="Result"; He="תוצאה"; Set="alex_logresult";
        DescEn="Outcome of the operation: success, warning, failure or informational.";
        DescHe="תוצאת הפעולה: הצלחה, אזהרה, כשל או מידע." }

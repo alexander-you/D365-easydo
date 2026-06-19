@@ -1,74 +1,72 @@
 # D365 easydo — Digital Signature Integration for Dynamics 365 | אינטגרציית חתימה דיגיטלית ל-Dynamics 365
 
-Business-driven digital signature capability that lets a Dynamics 365 user send a
-document for signature from a CRM record, track its status, and receive the signed
-document back into the correct business context — powered by the
-[EasyDoc](https://easydoc.stoplight.io/docs/easydoc) signing service and Microsoft
+Digital signature capability that lets a Dynamics 365 user send a document for
+signature from any business record, track its status, and automatically write the
+signed results back into the originating record — powered by the
+[easydo](https://easydoc.stoplight.io/docs/easydoc) signing service and Microsoft
 Power Platform.
 
-> Status: **MVP in development** — see [docs/release-notes.md](docs/release-notes.md).
+> Status: **MVP** — see [docs/release-notes.md](docs/release-notes.md).
 
-> הפרויקט מאפשר למשתמש עסקי לשלוח מסמך לחתימה דיגיטלית ישירות
-> מתוך רשומת Dynamics 365, לעקוב אחר הסטטוס, ולקבל בחזרה את המסמך החתום לרשומה.
-> ה-MVP מתמקד ברשומת **Contact**, אחסון ב-**Dataverse File**, מעקב ב-**Polling**,
-> ותצוגה מקדימה לפני שליחה — בנוי על Power Platform עם תמיכה מלאה בעברית ובאנגלית.
+> הפרויקט מאפשר למשתמש עסקי לשלוח מסמך לחתימה דיגיטלית ישירות מתוך רשומת
+> Dynamics 365, למלא מראש שדות מהרשומה, לעקוב אחר הסטטוס, ולקבל בחזרה את
+> הערכים החתומים אל הרשומה — באופן אוטומטי. בנוי על Power Platform עם תמיכה
+> מלאה בעברית (RTL) ובאנגלית (LTR).
 
 ---
 
 ## Goal
 
-Turn Dynamics 365 into the central launch and tracking point for the signature
-process, with a simple, guided, secure-by-default and fully bilingual (Hebrew RTL /
-English LTR) experience — built primarily on native Power Platform capabilities.
+Make Dynamics 365 the central launch and tracking point for the signature process,
+with a simple, secure-by-default and fully bilingual (Hebrew RTL / English LTR)
+experience — built on native Power Platform capabilities (no Azure resources).
 
-## MVP scope
+## What it does
 
-| Area | Decision |
+| Area | Approach |
 | --- | --- |
-| Source record | **Contact** |
-| Signed document storage | **Dataverse File** column |
-| Status tracking | **Polling** (scheduled flow) — verified supported by EasyDoc GET status/PDF endpoints |
-| Preview before send | **Yes** — EasyDoc draft document (`draft:true`) |
-| Integration layer | Custom Connector + Power Automate (no Azure Function for MVP) |
-| Signer model | Single signer |
+| Source record | **Any table** — the template declares its primary table; an optional single lookup hop reaches related records |
+| Prefill | Values are resolved from the source record(s) and pushed to easydo before the recipient opens the form |
+| Write-back | When the form is **Completed**, signed field values are written back to the originating Dynamics record automatically |
+| Status tracking | **Polling** (scheduled flow) using easydo GET status/PDF endpoints |
+| Preview before send | **Yes** — easydo draft document (`draft:true`) |
+| Integration layer | Custom Connector + Power Automate + Dataverse plug-ins (no Azure Function) |
+| Field mapping UI | **PCF control** on the signature-template model-driven form |
 | Languages | Hebrew + English |
-
-Out of MVP scope: in-D365 template editor, drag & drop field placement, advanced
-multi-signer, Azure Function / API Management / Blob storage, complex PCF (unless
-preview demands it), legal-evidence flows.
 
 ## High-level architecture
 
 ```text
-Dynamics 365 (Contact form)
-   │  Command Bar: "Send for Signature"
-   ▼
-Custom Page (guided steps: Template → Preview → Fill → Recipients → Send)
-   │
-   ▼
-Power Automate (solution-aware flows)  ──►  Custom Connector  ──►  EasyDoc API
-   │                                                                  (api.easydo.co.il)
-   ▼
-Dataverse (Signature Request / Template / Field Mapping / Recipient / Document / Log)
-   │
-   ▼
-Polling flow updates status → on signed/approved → store signed PDF in Dataverse File
+Dynamics 365 record  ─►  Signature Request (Dataverse)
+        │                       │
+        │   PCF control on the Signature Template form maps
+        │   Dynamics columns ⇄ easydo template fields
+        ▼                       ▼
+Power Automate (solution-aware flows)  ─►  Custom Connector  ─►  easydo API
+        │   - Send flow calls the alex_ResolvePrefill                (api.easydo.co.il)
+        │     Custom API to build prefill_data from the source record
+        ▼
+Dataverse plug-ins
+   - ResolvePrefill (Custom API): resolves prefill values for the send flow
+   - WriteBack (async on Update): on status = Completed, writes signed
+     values back into the originating record (direct or via one lookup hop)
 ```
 
 ## Repository structure
 
 ```text
 /docs          Business, architecture, data, security, deployment & ops documentation
-/src           Power Platform solution, custom connector, PCF, custom pages, scripts
+/src           Custom connector, flows, PCF control, plug-ins, setup scripts
 /deployment    Environment variables, connection references, PAC CLI, import order
 /tests         UAT scenarios and test matrix
 ```
 
 See [docs/](docs/) for detailed documentation, including
 [docs/data-model.md](docs/data-model.md) (tables, ERD, data flow),
-[docs/custom-connector.md](docs/custom-connector.md) (EasyDoc connector actions) and
-[docs/business-user-guide.md](docs/business-user-guide.md) (a plain-language guide
-to every connector action).
+[docs/custom-connector.md](docs/custom-connector.md) (easydo connector actions),
+[docs/technical-architecture.md](docs/technical-architecture.md) (components and
+flow) and [docs/business-user-guide.md](docs/business-user-guide.md) (a plain-language
+guide to every connector action).
 
 ## Solution
 
@@ -86,4 +84,4 @@ to every connector action).
   [docs/security-model.md](docs/security-model.md).
 - Credentials are held only in Power Platform Environment Variables / Connection
   References.
-- The EasyDoc API token is rotated before any production use.
+- The easydo API token is rotated before any production use.

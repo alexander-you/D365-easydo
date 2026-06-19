@@ -16,8 +16,8 @@ $pn = New-DVPrimaryName -Schema "alex_Name" -En "Template Name" -He "שם תבנ
 New-DVTable -Schema "alex_SignatureTemplate" `
     -En "Signature Template" -He "תבנית חתימה" `
     -CollEn "Signature Templates" -CollHe "תבניות חתימה" `
-    -DescEn "Reusable EasyDoc template configuration that defines how a type of document is prepared and sent for signature." `
-    -DescHe "תצורת תבנית EasyDoc לשימוש חוזר המגדירה כיצד מסמך מסוג מסוים מוכן ונשלח לחתימה." `
+    -DescEn "Reusable easydo template configuration that defines how a type of document is prepared and sent for signature." `
+    -DescHe "תצורת תבנית easydo לשימוש חוזר המגדירה כיצד מסמך מסוג מסוים מוכן ונשלח לחתימה." `
     -PrimaryName $pn
 
 # 2) Signature Request ------------------------------------------------------
@@ -33,13 +33,13 @@ New-DVTable -Schema "alex_SignatureRequest" `
 
 # 3) Template Field Mapping -------------------------------------------------
 $pn = New-DVPrimaryName -Schema "alex_Name" -En "Mapping Name" -He "שם מיפוי" `
-        -DescEn "Name identifying this field mapping between Dynamics and an EasyDoc template field." `
-        -DescHe "שם המזהה את מיפוי השדה בין Dynamics לשדה בתבנית EasyDoc."
+        -DescEn "Name identifying this field mapping between Dynamics and an easydo template field." `
+        -DescHe "שם המזהה את מיפוי השדה בין Dynamics לשדה בתבנית easydo."
 New-DVTable -Schema "alex_TemplateFieldMapping" `
     -En "Template Field Mapping" -He "מיפוי שדות תבנית" `
     -CollEn "Template Field Mappings" -CollHe "מיפויי שדות תבנית" `
-    -DescEn "Defines how a Dynamics field value is mapped into a field of an EasyDoc template before sending." `
-    -DescHe "מגדיר כיצד ערך שדה ב-Dynamics ממופה לשדה בתבנית EasyDoc לפני השליחה." `
+    -DescEn "Defines how a Dynamics field value is mapped into a field of an easydo template before sending." `
+    -DescHe "מגדיר כיצד ערך שדה ב-Dynamics ממופה לשדה בתבנית easydo לפני השליחה." `
     -PrimaryName $pn
 
 # 4) Signature Recipient ----------------------------------------------------
@@ -71,8 +71,8 @@ $pn = New-DVPrimaryName -Schema "alex_Name" -En "Log Title" -He "כותרת יו
 New-DVTable -Schema "alex_IntegrationLog" `
     -En "Integration Log" -He "יומן אינטגרציה" `
     -CollEn "Integration Logs" -CollHe "יומני אינטגרציה" `
-    -DescEn "High-volume telemetry record capturing each call and status update exchanged with EasyDoc, used for support and troubleshooting." `
-    -DescHe "רשומת טלמטריה בנפח גבוה התופסת כל קריאה ועדכון סטטוס מול EasyDoc, לשימוש תמיכה ואבחון תקלות." `
+    -DescEn "High-volume telemetry record capturing each call and status update exchanged with easydo, used for support and troubleshooting." `
+    -DescHe "רשומת טלמטריה בנפח גבוה התופסת כל קריאה ועדכון סטטוס מול easydo, לשימוש תמיכה ואבחון תקלות." `
     -PrimaryName $pn -TableType "Elastic"
 
 Write-Output "All tables processed."

@@ -155,7 +155,7 @@ $t = 'alex_signaturetemplate'
 Write-Output "== $t =="
 New-MainForm -Table $t -Meta $m[$t] -NameEn "Information" -NameHe "מידע" -DescEn "Main form for a signature template." -DescHe "טופס ראשי לתבנית חתימה." -Sections @(
     @{ En="Template Details"; He="פרטי תבנית"; Fields=@('alex_name','alex_templatesummary','alex_isactive','alex_language','alex_defaultdeliverymethod') }
-    @{ En="EasyDoc Configuration"; He="תצורת EasyDoc"; Fields=@('alex_externaltemplateid','alex_templateversion','alex_relateddynamicstable','alex_supportspreview','alex_supportsmultiplesigners','alex_lastsyncedon') }
+    @{ En="easydo Configuration"; He="תצורת easydo"; Fields=@('alex_externaltemplateid','alex_templateversion','alex_relateddynamicstable','alex_supportspreview','alex_supportsmultiplesigners','alex_lastsyncedon') }
 )
 New-PublicView -Table $t -Meta $m[$t] -NameEn "Active Signature Templates" -DescEn "All active signature templates available for use." -Columns @('alex_name','alex_isactive','alex_language','alex_defaultdeliverymethod','alex_externaltemplateid') -IsDefault $true
 New-PublicView -Table $t -Meta $m[$t] -NameEn "All Signature Templates" -DescEn "Every signature template regardless of status." -Columns @('alex_name','alex_isactive','alex_templateversion','alex_lastsyncedon')
@@ -177,7 +177,7 @@ $t = 'alex_templatefieldmapping'
 Write-Output "== $t =="
 New-MainForm -Table $t -Meta $m[$t] -NameEn "Information" -NameHe "מידע" -DescEn "Main form for a template field mapping." -DescHe "טופס ראשי למיפוי שדות תבנית." -Sections @(
     @{ En="Mapping"; He="מיפוי"; Fields=@('alex_name','alex_templateid','alex_dynamicstable','alex_dynamicsfield','alex_defaultvalue') }
-    @{ En="EasyDoc Field"; He="שדה EasyDoc"; Fields=@('alex_externalfieldname','alex_externalfieldid','alex_externalfieldtype') }
+    @{ En="easydo Field"; He="שדה easydo"; Fields=@('alex_externalfieldname','alex_externalfieldid','alex_externalfieldtype') }
     @{ En="Behavior"; He="התנהגות"; Fields=@('alex_isrequired','alex_iseditablebeforesend','alex_isvisibletouser') }
 )
 New-PublicView -Table $t -Meta $m[$t] -NameEn "All Field Mappings" -DescEn "All template field mappings." -Columns @('alex_name','alex_templateid','alex_dynamicsfield','alex_externalfieldname','alex_isrequired') -IsDefault $true
@@ -224,7 +224,7 @@ try {
     )
 } catch { Write-Output "  (elastic form not supported: $($_.Exception.Message))" }
 try {
-    New-PublicView -Table $t -Meta $m[$t] -NameEn "Recent Integration Events" -DescEn "Most recent integration events with EasyDoc." -Columns @('alex_name','alex_eventtype','alex_direction','alex_result','alex_startedon') -OrderBy 'alex_startedon' -IsDefault $true
+    New-PublicView -Table $t -Meta $m[$t] -NameEn "Recent Integration Events" -DescEn "Most recent integration events with easydo." -Columns @('alex_name','alex_eventtype','alex_direction','alex_result','alex_startedon') -OrderBy 'alex_startedon' -IsDefault $true
     New-PublicView -Table $t -Meta $m[$t] -NameEn "Integration Failures" -DescEn "Integration events that failed." -Columns @('alex_name','alex_eventtype','alex_result','alex_errorcode','alex_startedon')
 } catch { Write-Output "  (elastic view not supported: $($_.Exception.Message))" }
 

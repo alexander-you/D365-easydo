@@ -1,8 +1,8 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "EasyDoc",
-    "description": "EasyDoc digital-signature connector for Dynamics 365 — create, send, track and download signature forms.",
+    "title": "easydo",
+    "description": "easydo digital-signature connector for Dynamics 365 — create, send, track and download signature forms.",
     "version": "1.0.0",
     "contact": {
       "name": "D365 easydo"
@@ -24,7 +24,7 @@
       "type": "apiKey",
       "in": "header",
       "name": "api_key",
-      "description": "EasyDoc API token. Enter only the token (the connector adds the 'Bearer ' prefix automatically)."
+      "description": "easydo API token. Enter only the token (the connector adds the 'Bearer ' prefix automatically)."
     }
   },
   "security": [
@@ -37,7 +37,7 @@
       "get": {
         "operationId": "GetEntity",
         "summary": "Get entity (test connection) | אחזור ישות (בדיקת חיבור)",
-        "description": "Returns the authenticated EasyDoc entity. Used to validate the connection. | מחזיר את הישות (החברה) המאומתת ב-EasyDoc. משמש לבדיקת תקינות החיבור.",
+        "description": "Returns the authenticated easydo entity. Used to validate the connection. | מחזיר את הישות (החברה) המאומתת ב-easydo. משמש לבדיקת תקינות החיבור.",
         "responses": {
           "200": {
             "description": "OK"
@@ -49,7 +49,7 @@
       "get": {
         "operationId": "GetProfiles",
         "summary": "Get profiles / contacts | אחזור פרופילים / אנשי קשר",
-        "description": "List EasyDoc profiles/contacts for the entity. Returns a DataTables envelope; read the data array. | מחזיר רשימת פרופילים / אנשי קשר ב-EasyDoc. התוצאה במבנה DataTables — קרא את מערך data.",
+        "description": "List easydo profiles/contacts for the entity. Returns a DataTables envelope; read the data array. | מחזיר רשימת פרופילים / אנשי קשר ב-easydo. התוצאה במבנה DataTables — קרא את מערך data.",
         "parameters": [
           {
             "name": "draw",
@@ -89,7 +89,7 @@
     "/entity/me/templates": {
       "get": {
         "operationId": "GetTemplates",
-        "summary": "Get templates from EasyDoc | אחזור תבניות מ-EasyDoc",
+        "summary": "Get templates from easydo | אחזור תבניות מ-easydo",
         "description": "List signature templates. Returns a DataTables envelope; read the data array. | מחזיר את רשימת תבניות החתימה. התוצאה במבנה DataTables — קרא את מערך data.",
         "parameters": [
           {
@@ -139,7 +139,7 @@
             "required": true,
             "type": "string",
             "x-ms-summary": "Template ID | מזהה תבנית",
-            "description": "The EasyDoc template id (for example 68729). | מזהה התבנית ב-EasyDoc (לדוגמה 68729)."
+            "description": "The easydo template id (for example 68729). | מזהה התבנית ב-easydo (לדוגמה 68729)."
           }
         ],
         "responses": {
@@ -161,7 +161,7 @@
             "required": true,
             "type": "string",
             "x-ms-summary": "Template ID | מזהה תבנית",
-            "description": "The EasyDoc template id to send (for example 68729). | מזהה התבנית ב-EasyDoc לשליחה (לדוגמה 68729)."
+            "description": "The easydo template id to send (for example 68729). | מזהה התבנית ב-easydo לשליחה (לדוגמה 68729)."
           },
           {
             "name": "body",
@@ -178,7 +178,7 @@
                 "assignees": {
                   "type": "array",
                   "x-ms-summary": "Recipients | נמענים",
-                  "description": "Recipients who must fill/sign. Use profile.id for an existing EasyDoc profile, or email + name for a temporary recipient. Only one assignee may have recipient set to true. | הנמענים שצריכים למלא/לחתום. השתמש ב-profile.id לפרופיל קיים, או ב-email + name לנמען זמני. רק נמען אחד יכול להיות recipient=true.",
+                  "description": "Recipients who must fill/sign. Use profile.id for an existing easydo profile, or email + name for a temporary recipient. Only one assignee may have recipient set to true. | הנמענים שצריכים למלא/לחתום. השתמש ב-profile.id לפרופיל קיים, או ב-email + name לנמען זמני. רק נמען אחד יכול להיות recipient=true.",
                   "items": {
                     "type": "object",
                     "properties": {
@@ -188,7 +188,7 @@
                           "id": {
                             "type": "integer",
                             "x-ms-summary": "Profile ID | מזהה פרופיל",
-                            "description": "Existing EasyDoc profile id. | מזהה פרופיל קיים ב-EasyDoc."
+                            "description": "Existing easydo profile id. | מזהה פרופיל קיים ב-easydo."
                           }
                         }
                       },
@@ -281,7 +281,7 @@
             "required": true,
             "type": "string",
             "x-ms-summary": "Template ID | מזהה תבנית",
-            "description": "The EasyDoc template id (for example 68729). | מזהה התבנית ב-EasyDoc (לדוגמה 68729)."
+            "description": "The easydo template id (for example 68729). | מזהה התבנית ב-easydo (לדוגמה 68729)."
           },
           {
             "name": "body",
@@ -395,7 +395,7 @@
             "required": true,
             "type": "string",
             "x-ms-summary": "Form ID | מזהה טופס",
-            "description": "The EasyDoc form id returned when the form was created/sent. | מזהה הטופס ב-EasyDoc שהתקבל בעת יצירת/שליחת הטופס."
+            "description": "The easydo form id returned when the form was created/sent. | מזהה הטופס ב-easydo שהתקבל בעת יצירת/שליחת הטופס."
           }
         ],
         "responses": {
@@ -415,7 +415,7 @@
             "required": true,
             "type": "string",
             "x-ms-summary": "Form ID | מזהה טופס",
-            "description": "The EasyDoc form id to delete. | מזהה הטופס ב-EasyDoc למחיקה."
+            "description": "The easydo form id to delete. | מזהה הטופס ב-easydo למחיקה."
           }
         ],
         "responses": {
@@ -437,7 +437,7 @@
             "required": true,
             "type": "string",
             "x-ms-summary": "Form ID | מזהה טופס",
-            "description": "The EasyDoc form id to attach recipients to. | מזהה הטופס ב-EasyDoc לשיוך הנמענים."
+            "description": "The easydo form id to attach recipients to. | מזהה הטופס ב-easydo לשיוך הנמענים."
           },
           {
             "name": "body",
@@ -459,7 +459,7 @@
                           "id": {
                             "type": "integer",
                             "x-ms-summary": "Profile ID | מזהה פרופיל",
-                            "description": "Existing EasyDoc profile id. | מזהה פרופיל קיים ב-EasyDoc."
+                            "description": "Existing easydo profile id. | מזהה פרופיל קיים ב-easydo."
                           }
                         }
                       },
@@ -517,7 +517,7 @@
             "required": true,
             "type": "string",
             "x-ms-summary": "Form ID | מזהה טופס",
-            "description": "The EasyDoc form id to upload the PDF to. | מזהה הטופס ב-EasyDoc שאליו מעלים את ה-PDF."
+            "description": "The easydo form id to upload the PDF to. | מזהה הטופס ב-easydo שאליו מעלים את ה-PDF."
           },
           {
             "name": "body",
@@ -579,7 +579,7 @@
             "required": true,
             "type": "string",
             "x-ms-summary": "Form ID | מזהה טופס",
-            "description": "The EasyDoc form id to send. | מזהה הטופס ב-EasyDoc לשליחה."
+            "description": "The easydo form id to send. | מזהה הטופס ב-easydo לשליחה."
           },
           {
             "name": "body",
@@ -648,7 +648,7 @@
             "required": true,
             "type": "string",
             "x-ms-summary": "Form ID | מזהה טופס",
-            "description": "The EasyDoc form id to download. | מזהה הטופס ב-EasyDoc להורדה."
+            "description": "The easydo form id to download. | מזהה הטופס ב-easydo להורדה."
           }
         ],
         "produces": [
@@ -678,7 +678,7 @@
             "required": true,
             "type": "string",
             "x-ms-summary": "Form ID | מזהה טופס",
-            "description": "The EasyDoc form id to cancel. | מזהה הטופס ב-EasyDoc לביטול."
+            "description": "The easydo form id to cancel. | מזהה הטופס ב-easydo לביטול."
           }
         ],
         "responses": {

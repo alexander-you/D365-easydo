@@ -5,8 +5,8 @@
         "type": "securestring",
         "uiDefinition": {
           "displayName": "API Key - מפתח API (Token)",
-          "description": "Enter only your EasyDoc API token (without 'Bearer'). The connector adds the 'Bearer ' prefix automatically. The token is generated in the EasyDoc portal (Company settings -> API).",
-          "tooltip": "EasyDoc API token (without 'Bearer')",
+          "description": "Enter only your easydo API token (without 'Bearer'). The connector adds the 'Bearer ' prefix automatically. The token is generated in the easydo portal (Company settings -> API).",
+          "tooltip": "easydo API token (without 'Bearer')",
           "constraints": {
             "tabIndex": 2,
             "clearText": false,
@@ -32,6 +32,6 @@
       }
     ],
     "publisher": "AlexanderYurpolsky",
-    "stackOwner": "EasyDoc"
+    "stackOwner": "easydo"
   }
 }

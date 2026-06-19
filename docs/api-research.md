@@ -1,15 +1,15 @@
-# EasyDoc API — Research & Verification | מחקר ואימות ה-API
+# easydo API — Research & Verification | מחקר ואימות ה-API
 
 Source: <https://easydoc.stoplight.io/docs/easydoc>
 Last verified against the live API: **2026-06-18** (production).
 The field **prefill + lock** behaviour (§12) was reverse-engineered from the live
 web app and **verified end-to-end** on 2026-06-18.
 
-This document captures the EasyDoc API behaviour relevant to the Dynamics 365
+This document captures the easydo API behaviour relevant to the Dynamics 365
 digital-signature integration. It is the reference for building the Custom
 Connector and Power Automate flows.
 
-> מסמך זה מתעד את ה-API של EasyDoc לאחר אימות מול הסביבה החיה
+> מסמך זה מתעד את ה-API של easydo לאחר אימות מול הסביבה החיה
 > (production, 17/06/2026). מאומת: אימות באמצעות Bearer token תקף לשנה, שליפת פרטי
 > הישות (`/entity/me`) ורשימת הפרופילים (`/entity/me/profiles`). תהליך השליחה מורכב
 > מ-4 קריאות: יצירת טופס → הגדרת נמענים → העלאת PDF → שליחה. מצב `draft:true` מאפשר
@@ -25,12 +25,12 @@ Connector and Power Automate flows.
 | Sandbox | `https://sandbox.easydoc.co.il/` (replace the `api.easydo.co.il` host) |
 
 - Fill links are served from `stage.easydoc.co.il` (and the production web app).
-- API clients and webhooks are managed in the EasyDoc web app (`app2.easydoc.co.il`
+- API clients and webhooks are managed in the easydo web app (`app2.easydoc.co.il`
   / `stage.easydoc.co.il`) → Settings → **API Settings**.
 
 ## 2. Authentication
 
-EasyDoc uses a `Client ID` + `Secret` to issue a Bearer token.
+easydo uses a `Client ID` + `Secret` to issue a Bearer token.
 
 ```http
 POST https://api.easydo.co.il/api/auth/token
@@ -76,7 +76,7 @@ Disabled for this entity: `Employee-Management`, `Onboarding`, `101-Report`,
 
 ## 3. Profiles
 
-A *profile* is any party in EasyDoc.
+A *profile* is any party in easydo.
 
 | Type | Capability |
 | --- | --- |
@@ -196,7 +196,7 @@ Each assignee has its own `fill_url`; only an assignee in `waiting` status can f
 
 ## 5. Templates
 
-- Templates are created on the EasyDoc website with their fields and default
+- Templates are created on the easydo website with their fields and default
   recipients pre-placed, then applied via the API — fields and recipients are sent
   exactly as configured.
 - Templates can also be applied to changing/random files (fields land in the same
@@ -271,7 +271,7 @@ the MVP uses scheduled polling and does not require a public HTTPS endpoint.
 
 ## 12. Field prefill & lock (verified live 2026-06-18)
 
-> זהו הממצא המרכזי של שלב זה: כיצד למלא מראש ערכים משדות D365 לתוך טופס EasyDoc,
+> זהו הממצא המרכזי של שלב זה: כיצד למלא מראש ערכים משדות D365 לתוך טופס easydo,
 > ובאופן אופציונלי לנעול אותם כך שהנמען לא יוכל לערוך. המנגנון אומת מקצה-לקצה מול
 > ה-API החי: הערכים (שם הלקוח, ת"ז) הוצגו בטופס, ועם `read_only:true` השדה הפך לאין
 > ניתן לעריכה (disabled). תבנית: 68729 “הכר את הלקוח”.

@@ -5,7 +5,7 @@
   data binding: a Direction (prefill / read back / bidirectional) and a
   Recipient Lock flag.
 
-  Design: the EasyDoc template designer expresses WHICH Dynamics field a form
+  Design: the easydo template designer expresses WHICH Dynamics field a form
   field maps to by writing the binding as the field's export header
   (e.g. "contact.fullname"), captured into alex_externalfieldname at sync time.
   WHETHER that field is pushed out, read back, or both — and whether the value
