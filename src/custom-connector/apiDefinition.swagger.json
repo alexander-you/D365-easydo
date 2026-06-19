@@ -57,7 +57,7 @@
             "required": false,
             "type": "integer",
             "default": 1,
-            "x-ms-summary": "Request counter | מונה בקשה",
+            "x-ms-summary": "מונה | Counter",
             "description": "DataTables draw counter — leave the default value. | מונה בקשה של DataTables — השאר את ברירת המחדל."
           },
           {
@@ -66,7 +66,7 @@
             "required": false,
             "type": "integer",
             "default": 0,
-            "x-ms-summary": "Start offset | היסט התחלה",
+            "x-ms-summary": "היסט | Offset",
             "description": "Index of the first record to return (paging). | האינדקס של הרשומה הראשונה להחזרה (דפדוף)."
           },
           {
@@ -75,7 +75,7 @@
             "required": false,
             "type": "integer",
             "default": 25,
-            "x-ms-summary": "Page size | גודל עמוד",
+            "x-ms-summary": "עמוד | Page",
             "description": "Number of records to return per page. | מספר הרשומות להחזרה בכל עמוד."
           }
         ],
@@ -98,7 +98,7 @@
             "required": false,
             "type": "integer",
             "default": 1,
-            "x-ms-summary": "Request counter | מונה בקשה",
+            "x-ms-summary": "מונה | Counter",
             "description": "DataTables draw counter — leave the default value. | מונה בקשה של DataTables — השאר את ברירת המחדל."
           },
           {
@@ -107,7 +107,7 @@
             "required": false,
             "type": "integer",
             "default": 0,
-            "x-ms-summary": "Start offset | היסט התחלה",
+            "x-ms-summary": "היסט | Offset",
             "description": "Index of the first record to return (paging). | האינדקס של הרשומה הראשונה להחזרה (דפדוף)."
           },
           {
@@ -116,7 +116,7 @@
             "required": false,
             "type": "integer",
             "default": 25,
-            "x-ms-summary": "Page size | גודל עמוד",
+            "x-ms-summary": "עמוד | Page",
             "description": "Number of records to return per page. | מספר הרשומות להחזרה בכל עמוד."
           }
         ],
@@ -138,7 +138,7 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "x-ms-summary": "Template | תבנית",
+            "x-ms-summary": "תבנית | Template",
             "description": "The easydo template. Pick from the list, or supply a template id dynamically. | תבנית ה-easydo. בחר מהרשימה, או ספק מזהה תבנית דינמית.",
             "x-ms-dynamic-values": {
               "operationId": "GetTemplates",
@@ -159,49 +159,49 @@
               "properties": {
                 "id": {
                   "type": "integer",
-                  "x-ms-summary": "Template id | מזהה תבנית",
+                  "x-ms-summary": "מזהה | ID",
                   "description": "The template id. | מזהה התבנית."
                 },
                 "name": {
                   "type": "string",
-                  "x-ms-summary": "Template name | שם התבנית",
+                  "x-ms-summary": "שם | Name",
                   "description": "The template name. | שם התבנית."
                 },
                 "status": {
                   "type": "string",
-                  "x-ms-summary": "Status | סטטוס",
+                  "x-ms-summary": "סטטוס | Status",
                   "description": "The template status. | סטטוס התבנית."
                 },
                 "type": {
                   "type": "string",
-                  "x-ms-summary": "Type | סוג",
+                  "x-ms-summary": "סוג | Type",
                   "description": "The template type. | סוג התבנית."
                 },
                 "data_headers": {
                   "type": "array",
-                  "x-ms-summary": "Fields | שדות",
+                  "x-ms-summary": "שדות | Fields",
                   "description": "The template fields. Loop over this to read every field's business header, technical name and type. | שדות התבנית. עברו על המערך כדי לקרוא לכל שדה את הכותרת העסקית, השם הטכני והסוג.",
                   "items": {
                     "type": "object",
                     "properties": {
                       "header": {
                         "type": "string",
-                        "x-ms-summary": "Field header | כותרת השדה",
+                        "x-ms-summary": "כותרת | Header",
                         "description": "The business-facing field label. | הכותרת העסקית של השדה."
                       },
                       "name": {
                         "type": "string",
-                        "x-ms-summary": "Field technical name | שם טכני",
+                        "x-ms-summary": "שם טכני | Name",
                         "description": "The technical field name used when pre-filling. | השם הטכני של השדה לשימוש במילוי מקדים."
                       },
                       "type": {
                         "type": "string",
-                        "x-ms-summary": "Field type | סוג שדה",
+                        "x-ms-summary": "סוג | Type",
                         "description": "The field type (e.g. FreeText, input-text, input-signature, input-checkbox, input-date, input-options). | סוג השדה (למשל FreeText, input-text, input-signature, input-checkbox, input-date, input-options)."
                       },
                       "sort": {
                         "type": "integer",
-                        "x-ms-summary": "Sort order | סדר",
+                        "x-ms-summary": "סדר | Sort",
                         "description": "The field display order. | סדר הצגת השדה."
                       }
                     }
@@ -224,7 +224,7 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "x-ms-summary": "Template | תבנית",
+            "x-ms-summary": "תבנית | Template",
             "description": "The easydo template to send. Pick from the list, or supply a template id dynamically. | תבנית ה-easydo לשליחה. בחר מהרשימה, או ספק מזהה תבנית דינמית.",
             "x-ms-dynamic-values": {
               "operationId": "GetTemplates",
@@ -245,12 +245,12 @@
               "properties": {
                 "name": {
                   "type": "string",
-                  "x-ms-summary": "Form name | שם הטופס",
+                  "x-ms-summary": "שם טופס | Form name",
                   "description": "Optional form name. Defaults to the template name. | שם הטופס (אופציונלי). ברירת המחדל היא שם התבנית."
                 },
                 "assignees": {
                   "type": "array",
-                  "x-ms-summary": "Recipients | נמענים",
+                  "x-ms-summary": "נמענים | Recipients",
                   "description": "Recipients who must fill/sign. Use profile.id for an existing easydo profile, or email + name for a temporary recipient. Only one assignee may have recipient set to true. | הנמענים שצריכים למלא/לחתום. השתמש ב-profile.id לפרופיל קיים, או ב-email + name לנמען זמני. רק נמען אחד יכול להיות recipient=true.",
                   "items": {
                     "type": "object",
@@ -260,7 +260,7 @@
                         "properties": {
                           "id": {
                             "type": "integer",
-                            "x-ms-summary": "Profile | פרופיל נמען",
+                            "x-ms-summary": "פרופיל | Profile",
                             "description": "Existing easydo profile. Pick a recipient from the list. | פרופיל קיים ב-easydo. בחר נמען מהרשימה.",
                             "x-ms-dynamic-values": {
                               "operationId": "GetProfiles",
@@ -276,27 +276,27 @@
                       },
                       "email": {
                         "type": "string",
-                        "x-ms-summary": "Email | דוא\"ל",
+                        "x-ms-summary": "דוא\"ל | Email",
                         "description": "Recipient email (for a temporary recipient). | דוא\"ל הנמען (לנמען זמני)."
                       },
                       "name": {
                         "type": "string",
-                        "x-ms-summary": "Recipient name | שם הנמען",
+                        "x-ms-summary": "שם נמען | Name",
                         "description": "Recipient display name. | שם הנמען לתצוגה."
                       },
                       "sequence": {
                         "type": "integer",
-                        "x-ms-summary": "Signing order | סדר חתימה",
+                        "x-ms-summary": "סדר חתימה | Order",
                         "description": "Signing order (1 = first). | סדר החתימה (1 = ראשון)."
                       },
                       "notify_platform": {
                         "type": "string",
-                        "x-ms-summary": "Notify channel | ערוץ התראה",
+                        "x-ms-summary": "ערוץ | Notify",
                         "description": "How to notify the recipient: email, sms, or null. | אופן ההתראה לנמען: email, sms או null."
                       },
                       "recipient": {
                         "type": "boolean",
-                        "x-ms-summary": "Is signer | האם חותם",
+                        "x-ms-summary": "חותם | Signer",
                         "description": "True for the main signer. Only one recipient may be true. | True עבור החותם הראשי. רק נמען אחד יכול להיות true."
                       }
                     }
@@ -304,7 +304,7 @@
                 },
                 "meta_data": {
                   "type": "object",
-                  "x-ms-summary": "Correlation metadata | מטא-דאטה לשיוך",
+                  "x-ms-summary": "מטא-דאטה | Metadata",
                   "description": "Optional metadata. Use meta_data.client to store custom key/values (e.g. the Dynamics 365 record id and table) for correlation. | מטא-דאטה אופציונלית. השתמש ב-meta_data.client לשמירת מצבים (למשל מזהה הרשומה והטבלה ב-D365) לשיוך.",
                   "properties": {
                     "client": {
@@ -314,14 +314,14 @@
                 },
                 "prefill_data": {
                   "type": "array",
-                  "x-ms-summary": "Prefill values | ערכים למילוי מקדים",
+                  "x-ms-summary": "מילוי מקדים | Prefill",
                   "description": "Optional values to pre-fill into the form's fields before the recipient opens it. Each item targets a field by its technical name. Set read_only to lock the value so the recipient cannot edit it (e.g. data that came from Dynamics 365). | ערכים אופציונליים למילוי מראש בשדות הטופס לפני שהנמען פותח אותו. כל פריט מכוון לשדה לפי שמו הטכני. הגדר read_only כדי לנעול את הערך כך שהנמען לא יוכל לערוך אותו (למשל נתונים שהגיעו מ-Dynamics 365).",
                   "items": {
                     "type": "object",
                     "properties": {
                       "name": {
                         "type": "string",
-                        "x-ms-summary": "Field | שדה",
+                        "x-ms-summary": "שדה | Field",
                         "description": "The template field to pre-fill. The list is loaded dynamically from the selected template (shows the business header; sends the field technical name). | שדה התבנית למילוי מראש. הרשימה נטענת דינמית מהתבנית שנבחרה (מציג את הכותרת העסקית; שולח את השם הטכני).",
                         "x-ms-dynamic-values": {
                           "operationId": "GetTemplate",
@@ -337,12 +337,12 @@
                       },
                       "content_value": {
                         "type": "string",
-                        "x-ms-summary": "Value | ערך",
+                        "x-ms-summary": "ערך | Value",
                         "description": "The value to pre-fill into the field. For a checkbox use 'checked' or 'unchecked'. | הערך למילוי מראש בשדה. עבור תיבת סימון השתמש ב-'checked' או 'unchecked'."
                       },
                       "read_only": {
                         "type": "boolean",
-                        "x-ms-summary": "Lock value | נעילת ערך",
+                        "x-ms-summary": "נעילה | Lock",
                         "description": "True locks the field so the recipient cannot edit the pre-filled value. | True נועל את השדה כך שהנמען לא יכול לערוך את הערך שמולא מראש."
                       }
                     }
@@ -373,7 +373,7 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "x-ms-summary": "Template | תבנית",
+            "x-ms-summary": "תבנית | Template",
             "description": "The easydo template. Pick from the list, or supply a template id dynamically. | תבנית ה-easydo. בחר מהרשימה, או ספק מזהה תבנית דינמית.",
             "x-ms-dynamic-values": {
               "operationId": "GetTemplates",
@@ -394,7 +394,7 @@
               "properties": {
                 "name": {
                   "type": "string",
-                  "x-ms-summary": "Form name | שם הטופס",
+                  "x-ms-summary": "שם טופס | Form name",
                   "description": "Optional form name. Defaults to the template name. | שם הטופס (אופציונלי). ברירת המחדל היא שם התבנית."
                 }
               }
@@ -420,7 +420,7 @@
             "required": false,
             "type": "integer",
             "default": 1,
-            "x-ms-summary": "Request counter | מונה בקשה",
+            "x-ms-summary": "מונה | Counter",
             "description": "DataTables draw counter — leave the default value. | מונה בקשה של DataTables — השאר את ברירת המחדל."
           },
           {
@@ -429,7 +429,7 @@
             "required": false,
             "type": "integer",
             "default": 0,
-            "x-ms-summary": "Start offset | היסט התחלה",
+            "x-ms-summary": "היסט | Offset",
             "description": "Index of the first record to return (paging). | האינדקס של הרשומה הראשונה להחזרה (דפדוף)."
           },
           {
@@ -438,7 +438,7 @@
             "required": false,
             "type": "integer",
             "default": 25,
-            "x-ms-summary": "Page size | גודל עמוד",
+            "x-ms-summary": "עמוד | Page",
             "description": "Number of records to return per page. | מספר הרשומות להחזרה בכל עמוד."
           }
         ],
@@ -462,12 +462,12 @@
               "properties": {
                 "name": {
                   "type": "string",
-                  "x-ms-summary": "Form name | שם הטופס",
+                  "x-ms-summary": "שם טופס | Form name",
                   "description": "Form name. | שם הטופס."
                 },
                 "draft": {
                   "type": "boolean",
-                  "x-ms-summary": "Create as draft | יצירה כטיוטה",
+                  "x-ms-summary": "טיוטה | Draft",
                   "description": "Create as draft (enables preview before send). | יצירה כטיוטה (מאפשר תצוגה לפני שליחה).",
                   "default": false
                 }
@@ -496,7 +496,7 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "x-ms-summary": "Form ID | מזהה טופס",
+            "x-ms-summary": "מזהה טופס | Form ID",
             "description": "The easydo form id returned when the form was created/sent. | מזהה הטופס ב-easydo שהתקבל בעת יצירת/שליחת הטופס."
           }
         ],
@@ -516,7 +516,7 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "x-ms-summary": "Form ID | מזהה טופס",
+            "x-ms-summary": "מזהה טופס | Form ID",
             "description": "The easydo form id to delete. | מזהה הטופס ב-easydo למחיקה."
           }
         ],
@@ -538,7 +538,7 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "x-ms-summary": "Form ID | מזהה טופס",
+            "x-ms-summary": "מזהה טופס | Form ID",
             "description": "The easydo form id to attach recipients to. | מזהה הטופס ב-easydo לשיוך הנמענים."
           },
           {
@@ -550,7 +550,7 @@
               "properties": {
                 "assignees": {
                   "type": "array",
-                  "x-ms-summary": "Recipients | נמענים",
+                  "x-ms-summary": "נמענים | Recipients",
                   "description": "List of recipients. Only one may have recipient=true. | רשימת הנמענים. רק אחד יכול להיות recipient=true.",
                   "items": {
                     "type": "object",
@@ -560,7 +560,7 @@
                         "properties": {
                           "id": {
                             "type": "integer",
-                            "x-ms-summary": "Profile | פרופיל נמען",
+                            "x-ms-summary": "פרופיל | Profile",
                             "description": "Existing easydo profile. Pick a recipient from the list. | פרופיל קיים ב-easydo. בחר נמען מהרשימה.",
                             "x-ms-dynamic-values": {
                               "operationId": "GetProfiles",
@@ -576,27 +576,27 @@
                       },
                       "email": {
                         "type": "string",
-                        "x-ms-summary": "Email | דוא\"ל",
+                        "x-ms-summary": "דוא\"ל | Email",
                         "description": "Recipient email (for a temporary recipient). | דוא\"ל הנמען (לנמען זמני)."
                       },
                       "name": {
                         "type": "string",
-                        "x-ms-summary": "Recipient name | שם הנמען",
+                        "x-ms-summary": "שם נמען | Name",
                         "description": "Recipient display name. | שם הנמען לתצוגה."
                       },
                       "sequence": {
                         "type": "integer",
-                        "x-ms-summary": "Signing order | סדר חתימה",
+                        "x-ms-summary": "סדר חתימה | Order",
                         "description": "Signing order (1 = first). | סדר החתימה (1 = ראשון)."
                       },
                       "notify_platform": {
                         "type": "string",
-                        "x-ms-summary": "Notify channel | ערוץ התראה",
+                        "x-ms-summary": "ערוץ | Notify",
                         "description": "How to notify the recipient: email, sms, or null. | אופן ההתראה לנמען: email, sms או null."
                       },
                       "recipient": {
                         "type": "boolean",
-                        "x-ms-summary": "Is signer | האם חותם",
+                        "x-ms-summary": "חותם | Signer",
                         "description": "True for the main signer. Only one recipient may be true. | True עבור החותם הראשי. רק נמען אחד יכול להיות true."
                       }
                     }
@@ -627,7 +627,7 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "x-ms-summary": "Form ID | מזהה טופס",
+            "x-ms-summary": "מזהה טופס | Form ID",
             "description": "The easydo form id to upload the PDF to. | מזהה הטופס ב-easydo שאליו מעלים את ה-PDF."
           },
           {
@@ -639,23 +639,23 @@
               "properties": {
                 "file": {
                   "type": "object",
-                  "x-ms-summary": "PDF file | קובץ PDF",
+                  "x-ms-summary": "קובץ PDF | PDF",
                   "description": "The PDF file to upload. | קובץ ה-PDF להעלאה.",
                   "properties": {
                     "name": {
                       "type": "string",
-                      "x-ms-summary": "File name | שם הקובץ",
+                      "x-ms-summary": "שם קובץ | File name",
                       "description": "File name including .pdf extension. | שם הקובץ כולל סיומת .pdf."
                     },
                     "data": {
                       "type": "string",
-                      "x-ms-summary": "File content (base64) | תוכן הקובץ (base64)",
+                      "x-ms-summary": "תוכן base64 | Content",
                       "description": "Base64-encoded PDF content. | תוכן ה-PDF מקודד ב-base64."
                     },
                     "mime": {
                       "type": "string",
                       "default": "application/pdf",
-                      "x-ms-summary": "Content type | סוג תוכן",
+                      "x-ms-summary": "סוג תוכן | Type",
                       "description": "MIME type. Keep application/pdf. | סוג ה-MIME. השאר application/pdf."
                     }
                   },
@@ -689,7 +689,7 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "x-ms-summary": "Form ID | מזהה טופס",
+            "x-ms-summary": "מזהה טופס | Form ID",
             "description": "The easydo form id to send. | מזהה הטופס ב-easydo לשליחה."
           },
           {
@@ -701,24 +701,24 @@
               "properties": {
                 "settings": {
                   "type": "object",
-                  "x-ms-summary": "Send settings | הגדרות שליחה",
+                  "x-ms-summary": "הגדרות | Settings",
                   "description": "Optional send settings such as extra notification emails. | הגדרות שליחה אופציונליות, כגון כתובות להתראה נוספות.",
                   "properties": {
                     "notify_emails": {
                       "type": "array",
-                      "x-ms-summary": "Notification emails | כתובות להתראה",
+                      "x-ms-summary": "כתובות התראה | Emails",
                       "description": "Additional people to notify. | אנשים נוספים לעדכון.",
                       "items": {
                         "type": "object",
                         "properties": {
                           "email": {
                             "type": "string",
-                            "x-ms-summary": "Email | דוא\"ל",
+                            "x-ms-summary": "דוא\"ל | Email",
                             "description": "Notification email address. | כתובת דוא\"ל להתראה."
                           },
                           "name": {
                             "type": "string",
-                            "x-ms-summary": "Name | שם",
+                            "x-ms-summary": "שם | Name",
                             "description": "Display name. | שם לתצוגה."
                           }
                         }
@@ -728,7 +728,7 @@
                 },
                 "meta_data": {
                   "type": "object",
-                  "x-ms-summary": "Correlation metadata | מטא-דאטה לשיוך",
+                  "x-ms-summary": "מטא-דאטה | Metadata",
                   "description": "Custom correlation data, e.g. the D365 record id and table name. | נתוני שיוך מותאמים, למשל מזהה הרשומה ושם הטבלה ב-D365.",
                   "properties": {
                     "client": {
@@ -758,7 +758,7 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "x-ms-summary": "Form ID | מזהה טופס",
+            "x-ms-summary": "מזהה טופס | Form ID",
             "description": "The easydo form id to download. | מזהה הטופס ב-easydo להורדה."
           }
         ],
@@ -788,7 +788,7 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "x-ms-summary": "Form ID | מזהה טופס",
+            "x-ms-summary": "מזהה טופס | Form ID",
             "description": "The easydo form id to cancel. | מזהה הטופס ב-easydo לביטול."
           }
         ],
