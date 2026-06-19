@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "easydo",
-    "description": "easydo digital-signature connector for Dynamics 365 — create, send, track and download signature forms.",
+    "description": "Send documents for signature and read results via easydo.\nשליחת מסמכים לחתימה וקבלת תוצאות דרך easydo.",
     "version": "1.0.0",
     "contact": {
       "name": "D365 easydo"
@@ -138,8 +138,17 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "x-ms-summary": "Template ID | מזהה תבנית",
-            "description": "The easydo template id (for example 68729). | מזהה התבנית ב-easydo (לדוגמה 68729)."
+            "x-ms-summary": "Template | תבנית",
+            "description": "The easydo template. Pick from the list, or supply a template id dynamically. | תבנית ה-easydo. בחר מהרשימה, או ספק מזהה תבנית דינמית.",
+            "x-ms-dynamic-values": {
+              "operationId": "GetTemplates",
+              "parameters": {
+                "length": 100
+              },
+              "value-collection": "data",
+              "value-path": "id",
+              "value-title": "name"
+            }
           }
         ],
         "responses": {
@@ -160,8 +169,17 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "x-ms-summary": "Template ID | מזהה תבנית",
-            "description": "The easydo template id to send (for example 68729). | מזהה התבנית ב-easydo לשליחה (לדוגמה 68729)."
+            "x-ms-summary": "Template | תבנית",
+            "description": "The easydo template to send. Pick from the list, or supply a template id dynamically. | תבנית ה-easydo לשליחה. בחר מהרשימה, או ספק מזהה תבנית דינמית.",
+            "x-ms-dynamic-values": {
+              "operationId": "GetTemplates",
+              "parameters": {
+                "length": 100
+              },
+              "value-collection": "data",
+              "value-path": "id",
+              "value-title": "name"
+            }
           },
           {
             "name": "body",
@@ -187,8 +205,17 @@
                         "properties": {
                           "id": {
                             "type": "integer",
-                            "x-ms-summary": "Profile ID | מזהה פרופיל",
-                            "description": "Existing easydo profile id. | מזהה פרופיל קיים ב-easydo."
+                            "x-ms-summary": "Profile | פרופיל נמען",
+                            "description": "Existing easydo profile. Pick a recipient from the list. | פרופיל קיים ב-easydo. בחר נמען מהרשימה.",
+                            "x-ms-dynamic-values": {
+                              "operationId": "GetProfiles",
+                              "parameters": {
+                                "length": 100
+                              },
+                              "value-collection": "data",
+                              "value-path": "id",
+                              "value-title": "full_name"
+                            }
                           }
                         }
                       },
@@ -239,8 +266,19 @@
                     "properties": {
                       "name": {
                         "type": "string",
-                        "x-ms-summary": "Field name | שם השדה",
-                        "description": "The field's technical name (for example custom_field_6a32cedc7ede2), as stored in alex_externalfieldid on the template field mapping. | השם הטכני של השדה (לדוגמה custom_field_6a32cedc7ede2), כפי שמאוחסן ב-alex_externalfieldid במיפוי שדות התבנית."
+                        "x-ms-summary": "Field | שדה",
+                        "description": "The template field to pre-fill. The list is loaded dynamically from the selected template (shows the business header; sends the field technical name). | שדה התבנית למילוי מראש. הרשימה נטענת דינמית מהתבנית שנבחרה (מציג את הכותרת העסקית; שולח את השם הטכני).",
+                        "x-ms-dynamic-values": {
+                          "operationId": "GetTemplate",
+                          "parameters": {
+                            "templateId": {
+                              "parameter": "templateId"
+                            }
+                          },
+                          "value-collection": "data_headers",
+                          "value-path": "name",
+                          "value-title": "header"
+                        }
                       },
                       "content_value": {
                         "type": "string",
@@ -280,8 +318,17 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "x-ms-summary": "Template ID | מזהה תבנית",
-            "description": "The easydo template id (for example 68729). | מזהה התבנית ב-easydo (לדוגמה 68729)."
+            "x-ms-summary": "Template | תבנית",
+            "description": "The easydo template. Pick from the list, or supply a template id dynamically. | תבנית ה-easydo. בחר מהרשימה, או ספק מזהה תבנית דינמית.",
+            "x-ms-dynamic-values": {
+              "operationId": "GetTemplates",
+              "parameters": {
+                "length": 100
+              },
+              "value-collection": "data",
+              "value-path": "id",
+              "value-title": "name"
+            }
           },
           {
             "name": "body",
@@ -458,8 +505,17 @@
                         "properties": {
                           "id": {
                             "type": "integer",
-                            "x-ms-summary": "Profile ID | מזהה פרופיל",
-                            "description": "Existing easydo profile id. | מזהה פרופיל קיים ב-easydo."
+                            "x-ms-summary": "Profile | פרופיל נמען",
+                            "description": "Existing easydo profile. Pick a recipient from the list. | פרופיל קיים ב-easydo. בחר נמען מהרשימה.",
+                            "x-ms-dynamic-values": {
+                              "operationId": "GetProfiles",
+                              "parameters": {
+                                "length": 100
+                              },
+                              "value-collection": "data",
+                              "value-path": "id",
+                              "value-title": "full_name"
+                            }
                           }
                         }
                       },
