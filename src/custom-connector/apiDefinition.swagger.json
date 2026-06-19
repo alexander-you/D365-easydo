@@ -153,7 +153,62 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "x-ms-summary": "Template id | מזהה תבנית",
+                  "description": "The template id. | מזהה התבנית."
+                },
+                "name": {
+                  "type": "string",
+                  "x-ms-summary": "Template name | שם התבנית",
+                  "description": "The template name. | שם התבנית."
+                },
+                "status": {
+                  "type": "string",
+                  "x-ms-summary": "Status | סטטוס",
+                  "description": "The template status. | סטטוס התבנית."
+                },
+                "type": {
+                  "type": "string",
+                  "x-ms-summary": "Type | סוג",
+                  "description": "The template type. | סוג התבנית."
+                },
+                "data_headers": {
+                  "type": "array",
+                  "x-ms-summary": "Fields | שדות",
+                  "description": "The template fields. Loop over this to read every field's business header, technical name and type. | שדות התבנית. עברו על המערך כדי לקרוא לכל שדה את הכותרת העסקית, השם הטכני והסוג.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "header": {
+                        "type": "string",
+                        "x-ms-summary": "Field header | כותרת השדה",
+                        "description": "The business-facing field label. | הכותרת העסקית של השדה."
+                      },
+                      "name": {
+                        "type": "string",
+                        "x-ms-summary": "Field technical name | שם טכני",
+                        "description": "The technical field name used when pre-filling. | השם הטכני של השדה לשימוש במילוי מקדים."
+                      },
+                      "type": {
+                        "type": "string",
+                        "x-ms-summary": "Field type | סוג שדה",
+                        "description": "The field type (e.g. FreeText, input-text, input-signature, input-checkbox, input-date, input-options). | סוג השדה (למשל FreeText, input-text, input-signature, input-checkbox, input-date, input-options)."
+                      },
+                      "sort": {
+                        "type": "integer",
+                        "x-ms-summary": "Sort order | סדר",
+                        "description": "The field display order. | סדר הצגת השדה."
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
