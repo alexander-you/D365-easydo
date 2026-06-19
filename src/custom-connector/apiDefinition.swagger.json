@@ -130,8 +130,8 @@
     "/entity/me/templates/{templateId}": {
       "get": {
         "operationId": "GetTemplate",
-        "summary": "Get template detail and fields | אחזור פרטי תבנית ושדות",
-        "description": "Get one template including its fields (payload.data and data_headers). Each field exposes a stable id, name, export.header, type and required. | מחזיר תבנית אחת כולל השדות שלה (מזהה, שם, כותרת, סוג וחובה).",
+        "summary": "Get template detail, fields and roles | אחזור פרטי תבנית, שדות ובעלי תפקידים",
+        "description": "Get one template including its fields (data_headers) and its signer roles (payload.roles). Each field exposes a business header, technical name and type. Each role exposes its name (e.g. 'עובד', 'קצין רכב') and signing sequence, so you can map a recipient to each role by its sequence. | מחזיר תבנית אחת כולל השדות שלה (data_headers) ובעלי התפקידים שלה (payload.roles). כל שדה חושף כותרת עסקית, שם טכני וסוג. כל תפקיד חושף את שמו (למשל 'עובד', 'קצין רכב') ואת סדר החתימה, כך שתוכל למפות נמען לכל תפקיד לפי ה-sequence.",
         "parameters": [
           {
             "name": "templateId",
@@ -203,6 +203,101 @@
                         "type": "integer",
                         "x-ms-summary": "סדר | Sort",
                         "description": "The field display order. | סדר הצגת השדה."
+                      }
+                    }
+                  }
+                },
+                "payload": {
+                  "type": "object",
+                  "x-ms-summary": "מטען | Payload",
+                  "description": "The template payload, including its signer roles. | מטען התבנית, כולל בעלי התפקידים.",
+                  "properties": {
+                    "roles": {
+                      "type": "object",
+                      "x-ms-summary": "בעלי תפקידים | Roles",
+                      "description": "The signer roles defined on the template, keyed by signing order (1, 2, 3...). Map a recipient to each role using its sequence. | בעלי התפקידים המוגדרים בתבנית, ממופתחים לפי סדר החתימה (1, 2, 3...). מפו נמען לכל תפקיד לפי ה-sequence.",
+                      "properties": {
+                        "1": {
+                          "type": "object",
+                          "x-ms-summary": "תפקיד 1 | Role 1",
+                          "description": "The first signer role. | התפקיד הראשון.",
+                          "properties": {
+                            "placeholder": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string",
+                                  "x-ms-summary": "שם תפקיד 1 | Role 1 name",
+                                  "description": "The role display name (e.g. 'עובד'). | שם התפקיד לתצוגה (למשל 'עובד')."
+                                }
+                              }
+                            },
+                            "sequence": {
+                              "type": "integer",
+                              "x-ms-summary": "סדר 1 | Sequence 1",
+                              "description": "The signing order of this role. | סדר החתימה של תפקיד זה."
+                            },
+                            "recipient": {
+                              "type": "boolean",
+                              "x-ms-summary": "חותם 1 | Signer 1",
+                              "description": "True if this role is the main signer. | True אם זהו החותם הראשי."
+                            }
+                          }
+                        },
+                        "2": {
+                          "type": "object",
+                          "x-ms-summary": "תפקיד 2 | Role 2",
+                          "description": "The second signer role. | התפקיד השני.",
+                          "properties": {
+                            "placeholder": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string",
+                                  "x-ms-summary": "שם תפקיד 2 | Role 2 name",
+                                  "description": "The role display name (e.g. 'קצין רכב'). | שם התפקיד לתצוגה (למשל 'קצין רכב')."
+                                }
+                              }
+                            },
+                            "sequence": {
+                              "type": "integer",
+                              "x-ms-summary": "סדר 2 | Sequence 2",
+                              "description": "The signing order of this role. | סדר החתימה של תפקיד זה."
+                            },
+                            "recipient": {
+                              "type": "boolean",
+                              "x-ms-summary": "חותם 2 | Signer 2",
+                              "description": "True if this role is the main signer. | True אם זהו החותם הראשי."
+                            }
+                          }
+                        },
+                        "3": {
+                          "type": "object",
+                          "x-ms-summary": "תפקיד 3 | Role 3",
+                          "description": "The third signer role. | התפקיד השלישי.",
+                          "properties": {
+                            "placeholder": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string",
+                                  "x-ms-summary": "שם תפקיד 3 | Role 3 name",
+                                  "description": "The role display name. | שם התפקיד לתצוגה."
+                                }
+                              }
+                            },
+                            "sequence": {
+                              "type": "integer",
+                              "x-ms-summary": "סדר 3 | Sequence 3",
+                              "description": "The signing order of this role. | סדר החתימה של תפקיד זה."
+                            },
+                            "recipient": {
+                              "type": "boolean",
+                              "x-ms-summary": "חותם 3 | Signer 3",
+                              "description": "True if this role is the main signer. | True אם זהו החותם הראשי."
+                            }
+                          }
+                        }
                       }
                     }
                   }
