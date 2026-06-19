@@ -387,7 +387,18 @@
                       "notify_platform": {
                         "type": "string",
                         "x-ms-summary": "ערוץ | Notify",
-                        "description": "How to notify the recipient: email, sms, or null. | אופן ההתראה לנמען: email, sms או null."
+                        "description": "How to notify the recipient. Pick a channel from the list. | אופן ההתראה לנמען. בחר ערוץ מהרשימה.",
+                        "default": "any",
+                        "enum": [
+                          "any",
+                          "email",
+                          "sms"
+                        ],
+                        "x-ms-enum-display-name": [
+                          "כל הערוצים | Any",
+                          "דוא\"ל | Email",
+                          "SMS"
+                        ]
                       },
                       "recipient": {
                         "type": "boolean",
@@ -687,7 +698,18 @@
                       "notify_platform": {
                         "type": "string",
                         "x-ms-summary": "ערוץ | Notify",
-                        "description": "How to notify the recipient: email, sms, or null. | אופן ההתראה לנמען: email, sms או null."
+                        "description": "How to notify the recipient. Pick a channel from the list. | אופן ההתראה לנמען. בחר ערוץ מהרשימה.",
+                        "default": "any",
+                        "enum": [
+                          "any",
+                          "email",
+                          "sms"
+                        ],
+                        "x-ms-enum-display-name": [
+                          "כל הערוצים | Any",
+                          "דוא\"ל | Email",
+                          "SMS"
+                        ]
                       },
                       "recipient": {
                         "type": "boolean",
