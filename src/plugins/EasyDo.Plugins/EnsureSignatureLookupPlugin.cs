@@ -74,8 +74,17 @@ namespace EasyDo.Plugins
             }
 
             // Validate the referenced table exists before touching metadata.
-            if (!EntityExists(svc, trace, table))
+            var meta = RetrieveEntityMeta(svc, trace, table);
+            if (meta == null)
                 throw new InvalidPluginExecutionException("Table '" + table + "' was not found.");
+
+            // Guard: the signed PDF is returned as a note (annotation) on the source
+            // record, so the table MUST have notes/attachments enabled - otherwise the
+            // signed document could never be written back. Refuse to enable it.
+            if (meta.HasNotes != true)
+                throw new InvalidPluginExecutionException(
+                    "Table '" + table + "' does not have notes/attachments (timeline) enabled, " +
+                    "so the signed document could not be returned to the record. Enable 'Attachments (including notes and files)' on the table first.");
 
             var rel = new OneToManyRelationshipMetadata
             {
@@ -159,22 +168,22 @@ namespace EasyDo.Plugins
             }
         }
 
-        private static bool EntityExists(IOrganizationService svc, ITracingService trace, string logical)
+        private static EntityMetadata RetrieveEntityMeta(IOrganizationService svc, ITracingService trace, string logical)
         {
             try
             {
-                svc.Execute(new RetrieveEntityRequest
+                var resp = (RetrieveEntityResponse)svc.Execute(new RetrieveEntityRequest
                 {
                     LogicalName = logical,
                     EntityFilters = EntityFilters.Entity,
                     RetrieveAsIfPublished = true
                 });
-                return true;
+                return resp.EntityMetadata;
             }
             catch (Exception ex)
             {
-                trace.Trace("EnsureSignatureLookup: entity check for {0} failed: {1}", logical, ex.Message);
-                return false;
+                trace.Trace("EnsureSignatureLookup: entity metadata for {0} failed: {1}", logical, ex.Message);
+                return null;
             }
         }
 

@@ -482,6 +482,10 @@
       font-size:11px; font-weight:700; padding:1px 8px; border-radius:980px;
       background:var(--hairline); color:var(--text-2);
     }
+    .pane-hint {
+      flex:0 0 auto; margin:-4px 0 12px; font-size:11.5px; line-height:1.5;
+      color:var(--text-3);
+    }
     .tlist { display:flex; flex-direction:column; gap:8px; flex:1 1 auto; overflow:auto; min-height:0; padding-bottom:4px; }
     .titem {
       display:flex; align-items:center; gap:10px; padding:11px 12px;
@@ -637,6 +641,7 @@
         </div>
         <div class="pane">
           <h3>הוספת טבלה</h3>
+          <div class="pane-hint">מוצגות רק טבלאות עם ניהול מסמכים (ציר זמן) מופעל — תנאי להחזרת המסמך החתום לרשומה.</div>
           <div class="search-box">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
             <input id="tableSearch" type="text" placeholder="חיפוש טבלה…" autocomplete="off">
@@ -1019,7 +1024,7 @@
 
       function ensureMeta() {
         if (state.metaTables) return Promise.resolve(state.metaTables);
-        var url = clientUrl() + "/api/data/v9.2/EntityDefinitions?$select=LogicalName,DisplayName,IsValidForAdvancedFind&$filter=IsValidForAdvancedFind eq true";
+        var url = clientUrl() + "/api/data/v9.2/EntityDefinitions?$select=LogicalName,DisplayName,IsValidForAdvancedFind,HasNotes&$filter=IsValidForAdvancedFind eq true and HasNotes eq true";
         return fetch(url, {
           headers: { Accept: "application/json", "OData-MaxVersion": "4.0", "OData-Version": "4.0" },
           credentials: "include"
