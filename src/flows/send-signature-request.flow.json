@@ -52,6 +52,11 @@
               "subscriptionRequest/filteringattributes": "alex_status"
             },
             "authentication": "@parameters('$authentication')"
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "runs": 1
+            }
           }
         }
       },
@@ -96,8 +101,65 @@
               },
               "type": "Scope",
               "actions": {
-                "Get_the_signature_template": {
+                "Get_the_current_request_state": {
                   "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "b2f0c1e2-0020-4a10-9c01-000000000020"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "GetItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "alex_signaturerequests",
+                      "recordId": "@triggerOutputs()?['body/alex_signaturerequestid']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Stop_if_already_sent": {
+                  "runAfter": {
+                    "Get_the_current_request_state": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "b2f0c1e2-0021-4a10-9c01-000000000021"
+                  },
+                  "type": "If",
+                  "expression": {
+                    "not": {
+                      "equals": [
+                        "@coalesce(outputs('Get_the_current_request_state')?['body/alex_externalformid'], '')",
+                        ""
+                      ]
+                    }
+                  },
+                  "actions": {
+                    "Stop_run_already_sent": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "b2f0c1e2-0022-4a10-9c01-000000000022"
+                      },
+                      "type": "Terminate",
+                      "inputs": {
+                        "runStatus": "Succeeded"
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {}
+                  }
+                },
+                "Get_the_signature_template": {
+                  "runAfter": {
+                    "Stop_if_already_sent": [
+                      "Succeeded"
+                    ]
+                  },
                   "metadata": {
                     "operationMetadataId": "b2f0c1e2-0004-4a10-9c01-000000000004"
                   },
