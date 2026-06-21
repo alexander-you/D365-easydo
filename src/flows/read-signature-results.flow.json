@@ -103,9 +103,24 @@
                     "authentication": "@parameters('$authentication')"
                   }
                 },
-                "Record_the_status_check": {
+                "Find_the_view_events": {
                   "runAfter": {
                     "Get_the_form": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "c3a0d1e2-0005-4a10-9c01-00000000000e"
+                  },
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@coalesce(first(body('Get_the_form')?['assignees'])?['log'], json('[]'))",
+                    "where": "@equals(item()?['action'], 'view')"
+                  }
+                },
+                "Record_the_status_check": {
+                  "runAfter": {
+                    "Find_the_view_events": [
                       "Succeeded"
                     ]
                   },
@@ -122,7 +137,8 @@
                     "parameters": {
                       "entityName": "alex_signaturerequests",
                       "recordId": "@items('Process_each_open_request')?['alex_signaturerequestid']",
-                      "item/alex_laststatuscheckon": "@utcNow()"
+                      "item/alex_laststatuscheckon": "@utcNow()",
+                      "item/alex_lastviewedon": "@if(empty(body('Find_the_view_events')), null, last(body('Find_the_view_events'))?['created_at'])"
                     },
                     "authentication": "@parameters('$authentication')"
                   }
@@ -254,17 +270,14 @@
                       "inputs": {
                         "host": {
                           "connectionName": "shared_commondataserviceforapps",
-                          "operationId": "CreateRecord",
+                          "operationId": "PerformUnboundAction",
                           "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                         },
                         "parameters": {
-                          "entityName": "annotations",
-                          "item/subject": "@concat('Signed document | מסמך חתום - ', items('Process_each_open_request')?['alex_name'])",
-                          "item/filename": "@concat(items('Process_each_open_request')?['alex_name'], '-signed.pdf')",
-                          "item/mimetype": "application/pdf",
-                          "item/isdocument": true,
-                          "item/documentbody": "@base64(body('Download_the_signed_PDF'))",
-                          "item/objectid_alex_signaturerequest@odata.bind": "@concat('/alex_signaturerequests(', items('Process_each_open_request')?['alex_signaturerequestid'], ')')"
+                          "actionName": "alex_AttachSignedPdf",
+                          "item/SignatureRequestId": "@items('Process_each_open_request')?['alex_signaturerequestid']",
+                          "item/FileName": "@concat(items('Process_each_open_request')?['alex_name'], '-signed.pdf')",
+                          "item/FileContent": "@base64(body('Download_the_signed_PDF'))"
                         },
                         "authentication": "@parameters('$authentication')"
                       }

@@ -83,6 +83,8 @@ function Set-PluginType {
 }
 $writeBackTypeId = Set-PluginType -TypeName "EasyDo.Plugins.WriteBackPlugin"      -Friendly "EasyDo Write-Back"
 $prefillTypeId   = Set-PluginType -TypeName "EasyDo.Plugins.ResolvePrefillPlugin" -Friendly "EasyDo Resolve Prefill"
+$anchorTypeId    = Set-PluginType -TypeName "EasyDo.Plugins.PopulateAnchorPlugin" -Friendly "EasyDo Populate Anchor"
+$wizardTypeId    = Set-PluginType -TypeName "EasyDo.Plugins.WizardIntakePlugin"   -Friendly "EasyDo Wizard Intake"
 
 # ---- 3. SDK step: WriteBack on Update of alex_signaturerequest ----------
 $updateMsgId = (Invoke-DV GET "sdkmessages?`$select=sdkmessageid&`$filter=name eq 'Update'").value[0].sdkmessageid
@@ -166,5 +168,138 @@ function Set-ApiResponseProp {
 # Type 10 = String
 Set-ApiRequestParam -UniqueName "SignatureRequestId" -Name "SignatureRequestId" -Type 10 -Optional $false
 Set-ApiResponseProp -UniqueName "PrefillData"        -Name "PrefillData"        -Type 10
+
+# ---- 5. SDK steps: PopulateAnchor on Create + Update of alex_signaturerequest ----
+# Pre-operation, synchronous: fills alex_primaryrecordid from the launch context
+# (alex_relatedtablename + alex_relatedrecordid, or the related contact) so the
+# anchor is set automatically without the maker having to populate it.
+function Set-AnchorStep {
+    param([string]$MessageName, [string]$FilteringAttributes)
+    $msgId = (Invoke-DV GET "sdkmessages?`$select=sdkmessageid&`$filter=name eq '$MessageName'").value[0].sdkmessageid
+    $flt = (Invoke-DV GET ("sdkmessagefilters?`$select=sdkmessagefilterid&`$filter=" +
+        "_sdkmessageid_value eq $msgId and primaryobjecttypecode eq 'alex_signaturerequest'")).value
+    $name = "EasyDo PopulateAnchor: alex_signaturerequest $MessageName"
+    $body = @{
+        name                = $name
+        "sdkmessageid@odata.bind" = "/sdkmessages($msgId)"
+        "plugintypeid@odata.bind" = "/plugintypes($anchorTypeId)"
+        stage               = 20    # pre-operation
+        mode                = 0     # synchronous
+        rank                = 1
+        supporteddeployment = 0     # server only
+        description         = "Auto-fills alex_primaryrecordid from the request's launch context."
+    }
+    if ($FilteringAttributes) { $body["filteringattributes"] = $FilteringAttributes }
+    if ($flt -and $flt.Count -gt 0) { $body["sdkmessagefilterid@odata.bind"] = "/sdkmessagefilters($($flt[0].sdkmessagefilterid))" }
+    $ex = (Invoke-DV GET "sdkmessageprocessingsteps?`$select=sdkmessageprocessingstepid&`$filter=name eq '$([uri]::EscapeDataString($name))'").value
+    if ($ex -and $ex.Count -gt 0) {
+        $id = $ex[0].sdkmessageprocessingstepid
+        $patch = $body.Clone(); $patch.Remove("sdkmessageid@odata.bind"); $patch.Remove("plugintypeid@odata.bind")
+        Invoke-DV PATCH "sdkmessageprocessingsteps($id)" -Body $patch | Out-Null
+        Write-Output "  anchor step exists $MessageName ($id), updated"
+    } else {
+        $r = Invoke-DV POST "sdkmessageprocessingsteps" -Body $body -ExtraHeaders $solHeader -ReturnHeaders
+        $id = ($r.Headers["OData-EntityId"] -replace '.*\(([0-9a-fA-F-]+)\).*', '$1')
+        Write-Output "  + anchor step $MessageName ($id)"
+    }
+}
+Set-AnchorStep -MessageName "Create"
+Set-AnchorStep -MessageName "Update" -FilteringAttributes "alex_relatedrecordid,alex_relatedtablename,alex_relatedcontactid,alex_templateid"
+
+# ---- 6. SDK steps: WizardIntake on Create of alex_signaturerequest ----
+# The send wizard (PCF on a custom page) writes its full JSON into
+# alex_wizardpayload on a new request. This plug-in turns that JSON into a real
+# request without the page having to address columns/choices by display name:
+#   PreValidation (stage 10): resolve template + related fields onto the Target
+#                             BEFORE PopulateAnchor (stage 20) reads them.
+#   PostOperation (stage 40): create recipient rows and flip status to
+#                             Ready to Send (fires the send flow).
+function Set-WizardStep {
+    param([int]$Stage, [string]$NameSuffix)
+    $msgId = (Invoke-DV GET "sdkmessages?`$select=sdkmessageid&`$filter=name eq 'Create'").value[0].sdkmessageid
+    $flt = (Invoke-DV GET ("sdkmessagefilters?`$select=sdkmessagefilterid&`$filter=" +
+        "_sdkmessageid_value eq $msgId and primaryobjecttypecode eq 'alex_signaturerequest'")).value
+    $name = "EasyDo WizardIntake: alex_signaturerequest Create ($NameSuffix)"
+    $body = @{
+        name                = $name
+        "sdkmessageid@odata.bind" = "/sdkmessages($msgId)"
+        "plugintypeid@odata.bind" = "/plugintypes($wizardTypeId)"
+        stage               = $Stage
+        mode                = 0     # synchronous
+        rank                = 1
+        supporteddeployment = 0     # server only
+        description         = "Parses alex_wizardpayload (send wizard JSON) into a full signature request."
+    }
+    if ($flt -and $flt.Count -gt 0) { $body["sdkmessagefilterid@odata.bind"] = "/sdkmessagefilters($($flt[0].sdkmessagefilterid))" }
+    $ex = (Invoke-DV GET "sdkmessageprocessingsteps?`$select=sdkmessageprocessingstepid&`$filter=name eq '$([uri]::EscapeDataString($name))'").value
+    if ($ex -and $ex.Count -gt 0) {
+        $id = $ex[0].sdkmessageprocessingstepid
+        $patch = $body.Clone(); $patch.Remove("sdkmessageid@odata.bind"); $patch.Remove("plugintypeid@odata.bind")
+        Invoke-DV PATCH "sdkmessageprocessingsteps($id)" -Body $patch | Out-Null
+        Write-Output "  wizard step exists $NameSuffix ($id), updated"
+    } else {
+        $r = Invoke-DV POST "sdkmessageprocessingsteps" -Body $body -ExtraHeaders $solHeader -ReturnHeaders
+        $id = ($r.Headers["OData-EntityId"] -replace '.*\(([0-9a-fA-F-]+)\).*', '$1')
+        Write-Output "  + wizard step $NameSuffix ($id)"
+    }
+}
+Set-WizardStep -Stage 10 -NameSuffix "PreValidation"
+Set-WizardStep -Stage 40 -NameSuffix "PostOperation"
+
+# ---- 7. Custom API: alex_AttachSignedPdf --------------------------------
+# Creates the signed-PDF note on the request's PRIMARY business record (contact /
+# entitlement / ...), called by the read-back flow instead of attaching to the
+# signature request itself.
+$attachTypeId = Set-PluginType -TypeName "EasyDo.Plugins.AttachSignedPdfPlugin" -Friendly "EasyDo Attach Signed PDF"
+$attachApiName = "alex_AttachSignedPdf"
+$attachApiBody = @{
+    uniquename       = $attachApiName
+    name             = "AttachSignedPdf"
+    displayname      = "Attach Signed PDF"
+    description      = "Attaches the signed PDF as a note on the signature request's primary business record."
+    bindingtype      = 0       # Global
+    isfunction       = $false
+    isprivate        = $false
+    allowedcustomprocessingsteptype = 0
+    "PluginTypeId@odata.bind" = "/plugintypes($attachTypeId)"
+}
+$existingAttachApi = (Invoke-DV GET "customapis?`$select=customapiid&`$filter=uniquename eq '$attachApiName'").value
+if ($existingAttachApi -and $existingAttachApi.Count -gt 0) {
+    $attachApiId = $existingAttachApi[0].customapiid
+    Invoke-DV PATCH "customapis($attachApiId)" -Body @{ "PluginTypeId@odata.bind" = "/plugintypes($attachTypeId)"; description = $attachApiBody.description } | Out-Null
+    Write-Output "Custom API exists ($attachApiId), relinked"
+} else {
+    $r = Invoke-DV POST "customapis" -Body $attachApiBody -ExtraHeaders $solHeader -ReturnHeaders
+    $attachApiId = ($r.Headers["OData-EntityId"] -replace '.*\(([0-9a-fA-F-]+)\).*', '$1')
+    Write-Output "+ Custom API alex_AttachSignedPdf ($attachApiId)"
+}
+function Set-AttachReqParam {
+    param([string]$UniqueName, [string]$Name, [int]$Type, [bool]$Optional)
+    $f = (Invoke-DV GET "customapirequestparameters?`$select=customapirequestparameterid&`$filter=uniquename eq '$UniqueName' and _customapiid_value eq $attachApiId").value
+    if ($f -and $f.Count -gt 0) { Write-Output "  req param exists $UniqueName"; return }
+    $body = @{
+        uniquename = $UniqueName; name = $Name; displayname = $Name
+        type = $Type; isoptional = $Optional
+        "CustomAPIId@odata.bind" = "/customapis($attachApiId)"
+    }
+    Invoke-DV POST "customapirequestparameters" -Body $body -ExtraHeaders $solHeader | Out-Null
+    Write-Output "  + req param $UniqueName"
+}
+function Set-AttachRespProp {
+    param([string]$UniqueName, [string]$Name, [int]$Type)
+    $f = (Invoke-DV GET "customapiresponseproperties?`$select=customapiresponsepropertyid&`$filter=uniquename eq '$UniqueName' and _customapiid_value eq $attachApiId").value
+    if ($f -and $f.Count -gt 0) { Write-Output "  resp prop exists $UniqueName"; return }
+    $body = @{
+        uniquename = $UniqueName; name = $Name; displayname = $Name; type = $Type
+        "CustomAPIId@odata.bind" = "/customapis($attachApiId)"
+    }
+    Invoke-DV POST "customapiresponseproperties" -Body $body -ExtraHeaders $solHeader | Out-Null
+    Write-Output "  + resp prop $UniqueName"
+}
+# Type 10 = String
+Set-AttachReqParam -UniqueName "SignatureRequestId" -Name "SignatureRequestId" -Type 10 -Optional $false
+Set-AttachReqParam -UniqueName "FileName"           -Name "FileName"           -Type 10 -Optional $true
+Set-AttachReqParam -UniqueName "FileContent"        -Name "FileContent"        -Type 10 -Optional $false
+Set-AttachRespProp -UniqueName "AnnotationId"       -Name "AnnotationId"        -Type 10
 
 Write-Output "Done."
