@@ -109,6 +109,8 @@
         .edo-wz-chip-info { min-width: 0; }
         .edo-wz-chip-name { font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .edo-wz-chip-mail { color: var(--edo-sub); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .edo-wz-chip.locked { background: var(--edo-accent-soft); }
+        .edo-wz-ro-badge { flex: 0 0 auto; font-size: 11px; font-weight: 600; color: var(--edo-sub); background: var(--edo-bg); border: 1px solid var(--edo-line); border-radius: 980px; padding: 2px 9px; white-space: nowrap; }
         .edo-wz-pop { position: absolute; inset-inline: 0; top: calc(100% + 4px); z-index: 30; background: var(--edo-bg); border: 1px solid var(--edo-line); border-radius: 10px; box-shadow: var(--edo-shadow); max-height: 232px; overflow-y: auto; display: none; }
         .edo-wz-pop.show { display: block; }
         .edo-wz-pop-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--edo-line); }
@@ -172,8 +174,10 @@
                     templateHeading: "בחירת תבנית", templateHint: "בחרו את המסמך שיישלח לחתימה.",
                     noTemplates: "לא הוגדרו תבניות זמינות לשליחה.",
                     recipientsHeading: "נמענים", recipientsHint: "הוסיפו את האנשים שיקבלו את המסמך לחתימה.",
+                    recipientsHintLocked: "הנמען נקבע אוטומטית מהרשומה. בדקו ואשרו \u2014 לא ניתן לערוך או להוסיף נמענים.",
+                    recipientReadOnly: "לקריאה בלבד",
                     recipientName: "שם", recipientEmail: "דוא\"ל", addRecipient: "הוספת נמען", removeRecipient: "הסרה",
-                    noRecipients: "אין עדיין נמענים. הוסיפו לפחות אחד.",
+                    noRecipients: "אין נמען זמין לשליחה מרשומה זו.",
                     settingsHeading: "הגדרות שליחה", settingsHint: "בחרו כיצד לשלוח את המסמך.",
                     modeSend: "שליחה לחתימה", modeSendDesc: "המסמך נשלח מיד לנמענים בדוא\"ל לחתימה.",
                     modeDraft: "טיוטה / תצוגה מקדימה", modeDraftDesc: "נוצרת טיוטה לתצוגה מקדימה ללא שליחה לנמענים.",
@@ -201,8 +205,10 @@
                     templateHeading: "Choose a template", templateHint: "Select the document to send for signature.",
                     noTemplates: "No templates are configured for sending.",
                     recipientsHeading: "Recipients", recipientsHint: "Add the people who will receive the document to sign.",
+                    recipientsHintLocked: "The recipient is set automatically from the record. Review and approve \u2014 editing or adding recipients is disabled.",
+                    recipientReadOnly: "Read-only",
                     recipientName: "Name", recipientEmail: "Email", addRecipient: "Add recipient", removeRecipient: "Remove",
-                    noRecipients: "No recipients yet. Add at least one.",
+                    noRecipients: "No recipient is available to send from this record.",
                     settingsHeading: "Send settings", settingsHint: "Choose how to send the document.",
                     modeSend: "Send for signature", modeSendDesc: "The document is sent to recipients by email right away.",
                     modeDraft: "Draft / preview", modeDraftDesc: "A draft is created for preview without sending to recipients.",
@@ -623,7 +629,7 @@
 
             Wizard.prototype.stepRecipients = function (t) {
                 var self = this;
-                var wrap = el("div", { "class": "edo-wz-step" }, [this.heading(t.recipientsHeading, this.roleMode ? t.roleHint : t.recipientsHint)]);
+                var wrap = el("div", { "class": "edo-wz-step" }, [this.heading(t.recipientsHeading, this.roleMode ? t.roleHint : t.recipientsHintLocked)]);
                 var list = el("div", { "class": "edo-wz-recips" });
 
                 if (this.roleMode) {
@@ -639,30 +645,22 @@
                     return wrap;
                 }
 
+                // Single-recipient mode: the recipient is resolved automatically from
+                // the source record. It is READ-ONLY - the user only reviews and
+                // approves; values cannot be edited and recipients cannot be
+                // added/removed (the count is not user-defined here).
                 if (this.recipients.length === 0) {
                     list.appendChild(el("div", { "class": "edo-wz-empty", text: t.noRecipients }));
                 }
-                this.recipients.forEach(function (r, idx) {
-                    var nameIn = el("input", { "class": "edo-wz-input", placeholder: t.recipientName, value: r.name });
-                    nameIn.oninput = function () { self.recipients[idx].name = nameIn.value; };
-                    var mailIn = el("input", { "class": "edo-wz-input", placeholder: t.recipientEmail, value: r.email, type: "email" });
-                    mailIn.oninput = function () {
-                        self.recipients[idx].email = mailIn.value;
-                        mailIn.classList.toggle("err", !!self.recipients[idx].email && !isEmail(mailIn.value));
-                    };
-                    var del = el("button", { "class": "edo-wz-icon-btn", text: "\u2715" });
-                    del.title = t.removeRecipient;
-                    del.onclick = function () { self.recipients.splice(idx, 1); self.render(); };
-                    var row = el("div", { "class": "edo-wz-recip-row" }, [
-                        el("div", { "class": "edo-wz-recip-fields" }, [nameIn, mailIn]),
-                        del
+                this.recipients.forEach(function (r) {
+                    var info = el("div", { "class": "edo-wz-chip-info" }, [
+                        el("div", { "class": "edo-wz-chip-name", text: r.name || r.email || "\u2014" })
                     ]);
-                    list.appendChild(row);
+                    if (r.email) info.appendChild(el("div", { "class": "edo-wz-chip-mail", text: r.email }));
+                    var badge = el("div", { "class": "edo-wz-ro-badge", text: t.recipientReadOnly });
+                    list.appendChild(el("div", { "class": "edo-wz-chip locked" }, [info, badge]));
                 });
                 wrap.appendChild(list);
-                var add = el("button", { "class": "edo-wz-add", text: "+ " + t.addRecipient });
-                add.onclick = function () { self.recipients.push({ name: "", email: "", roleName: "", sequence: self.recipients.length + 1 }); self.render(); };
-                wrap.appendChild(add);
                 return wrap;
             };
 
