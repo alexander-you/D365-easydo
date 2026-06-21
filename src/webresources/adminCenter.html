@@ -527,6 +527,38 @@
     .ti-btn-rem:hover { color:var(--red); border-color:var(--red); }
     .ti-btn-rem:disabled { opacity:.5; cursor:default; }
 
+    /* ===== Global send settings (toggles) ===== */
+    .gs-body { flex:1 1 auto; overflow:auto; min-height:0; width:100%; display:flex; flex-direction:column; gap:14px; }
+    .gs-group { display:flex; flex-direction:column; gap:10px; }
+    .gs-group-title { font-size:13px; font-weight:650; color:var(--text-3); margin:2px 0 0; }
+    .gs-row {
+      display:flex; align-items:center; gap:14px; padding:14px 16px;
+      border:1px solid var(--hairline); border-radius:14px; background:var(--surface-solid);
+      transition:opacity .2s ease;
+    }
+    .gs-row.disabled { opacity:.5; }
+    .gs-row .gs-main { flex:1 1 auto; min-width:0; }
+    .gs-row .gs-name { font-size:14.5px; font-weight:600; }
+    .gs-row .gs-desc { font-size:12px; color:var(--text-3); margin-top:3px; line-height:1.45; }
+    .switch {
+      flex:0 0 auto; position:relative; width:46px; height:28px; border-radius:980px;
+      background:var(--hairline-strong); cursor:pointer; transition:background .2s ease;
+      border:none; padding:0;
+    }
+    .switch::after {
+      content:""; position:absolute; top:3px; right:3px; width:22px; height:22px;
+      border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.25);
+      transition:transform .2s ease;
+    }
+    .switch.on { background:var(--green); }
+    .switch.on::after { transform:translateX(-18px); }
+    .switch:disabled { cursor:default; opacity:.6; }
+    .gs-master {
+      display:flex; align-items:center; gap:14px; padding:16px;
+      border:1px solid var(--hairline-strong); border-radius:14px;
+      background:linear-gradient(135deg, color-mix(in srgb, var(--green) 9%, var(--surface-solid)), var(--surface-solid));
+    }
+
     @media (max-width: 520px) {
       h1 { font-size: 25px; }
       .row { padding: 14px; gap: 11px; }
@@ -619,6 +651,23 @@
       </div>
     </div>
 
+    <div class="send-card" id="globalSettingsCard">
+      <div class="sc-ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </div>
+      <div class="sc-main">
+        <div class="sc-title">הגדרות שליחה גלובליות</div>
+        <div class="sc-sub">קבע אילו ערוצי התראה (דוא״ל, SMS, וואטסאפ) מותרים בשליחת מסמכים לחתימה בכל הארגון.</div>
+        <div class="sc-chips" id="settingsChips"></div>
+      </div>
+      <div class="sc-act">
+        <button class="ghost-btn primary" id="manageSettingsBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+          <span>הגדרות</span>
+        </button>
+      </div>
+    </div>
+
     <p class="footnote" id="footnote"></p>
   </div>
 
@@ -648,6 +697,55 @@
           </div>
           <div class="tlist add-list" id="availableList"></div>
         </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="drawer-overlay" id="settingsOverlay"></div>
+  <aside class="drawer" id="settingsDrawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div style="flex:1 1 auto; min-width:0;">
+        <div class="dh-title">הגדרות שליחה גלובליות</div>
+        <div class="dh-sub">ערוצי התראה מותרים בכל הארגון</div>
+      </div>
+      <button class="drawer-close" id="settingsClose" title="סגור">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6 18 18M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <div class="gs-body" id="settingsBody">
+        <div class="gs-master">
+          <div class="gs-main">
+            <div class="gs-name">שליחה רב-ערוצית</div>
+            <div class="gs-desc">כשמופעל, ניתן לשלוח את קישור החתימה בכמה ערוצים במקביל (דוא״ל, SMS, וואטסאפ). כשכבוי, השליחה היא בדוא״ל בלבד.</div>
+          </div>
+          <button class="switch" id="swMultiChannel" role="switch" aria-label="שליחה רב-ערוצית"></button>
+        </div>
+        <div class="gs-group" id="channelGroup">
+          <div class="gs-group-title">ערוצי התראה מותרים</div>
+          <div class="gs-row" id="rowEmail">
+            <div class="gs-main">
+              <div class="gs-name">דוא״ל</div>
+              <div class="gs-desc">ערוץ ברירת המחדל של easydo. שליחת קישור החתימה לכתובת הדוא״ל של הנמען.</div>
+            </div>
+            <button class="switch" id="swEmail" role="switch" aria-label="אפשר דוא״ל"></button>
+          </div>
+          <div class="gs-row" id="rowSms">
+            <div class="gs-main">
+              <div class="gs-name">SMS</div>
+              <div class="gs-desc">שליחת קישור החתימה בהודעת SMS למספר הטלפון של הנמען (נשלף אוטומטית מאיש הקשר).</div>
+            </div>
+            <button class="switch" id="swSms" role="switch" aria-label="אפשר SMS"></button>
+          </div>
+          <div class="gs-row" id="rowWhatsApp">
+            <div class="gs-main">
+              <div class="gs-name">וואטסאפ</div>
+              <div class="gs-desc">שליחת קישור החתימה בהודעת וואטסאפ למספר הטלפון של הנמען (נשלף אוטומטית מאיש הקשר).</div>
+            </div>
+            <button class="switch" id="swWhatsApp" role="switch" aria-label="אפשר וואטסאפ"></button>
+          </div>
+        </div>
+        <div class="pane-hint">easydo מאפשרת ערוץ התראה אחד לכל נמען. כאשר נבחרים כמה ערוצים, קישור החתימה מחולל ללא התראה מ-easydo ומופץ בכל הערוצים שנבחרו דרך שירות הלקוח.</div>
       </div>
     </div>
   </aside>
@@ -977,6 +1075,123 @@
         $("drawer").setAttribute("aria-hidden", "true");
       }
 
+      // ---- Global send settings (singleton) ----
+      var settingsOpen = false;
+      var SETTINGS_DEFAULTS = { multiChannel: false, allowEmail: true, allowSms: false, allowWhatsApp: false };
+
+      function loadSettings() {
+        var q = "?$select=alex_easydosettingsid,alex_multichannelenabled,alex_allowemail,alex_allowsms,alex_allowwhatsapp&$top=1";
+        return xrm.WebApi.retrieveMultipleRecords("alex_easydosettings", q).then(function (res) {
+          if (res.entities.length) {
+            var e = res.entities[0];
+            state.settings = {
+              id: e.alex_easydosettingsid,
+              multiChannel: e.alex_multichannelenabled === true,
+              allowEmail: e.alex_allowemail !== false,
+              allowSms: e.alex_allowsms === true,
+              allowWhatsApp: e.alex_allowwhatsapp === true
+            };
+          } else {
+            state.settings = null; // no row yet; created lazily on first save
+          }
+          renderSettingsSummary();
+          if (settingsOpen) renderSettings();
+        }, function () {
+          state.settings = null;
+          renderSettingsSummary();
+        });
+      }
+
+      function currentSettings() {
+        if (state.settings) return state.settings;
+        var d = {};
+        for (var k in SETTINGS_DEFAULTS) if (SETTINGS_DEFAULTS.hasOwnProperty(k)) d[k] = SETTINGS_DEFAULTS[k];
+        d.id = null;
+        return d;
+      }
+
+      function saveSettings(patch) {
+        var s = currentSettings();
+        for (var k in patch) if (patch.hasOwnProperty(k)) s[k] = patch[k];
+        var body = {
+          alex_multichannelenabled: s.multiChannel,
+          alex_allowemail: s.allowEmail,
+          alex_allowsms: s.allowSms,
+          alex_allowwhatsapp: s.allowWhatsApp
+        };
+        var p;
+        if (s.id) {
+          p = xrm.WebApi.updateRecord("alex_easydosettings", s.id, body);
+        } else {
+          body.alex_name = "Global Send Settings";
+          p = xrm.WebApi.createRecord("alex_easydosettings", body).then(function (r) { s.id = r.id; });
+        }
+        state.settings = s;
+        renderSettings();
+        renderSettingsSummary();
+        return p.then(function () { toast("ההגדרות נשמרו"); }, function () {
+          toast("שמירת ההגדרות נכשלה");
+        });
+      }
+
+      function setSwitch(id, on, disabled) {
+        var el = $(id);
+        if (!el) return;
+        el.classList.toggle("on", !!on);
+        el.setAttribute("aria-checked", on ? "true" : "false");
+        el.disabled = !!disabled;
+      }
+
+      function renderSettings() {
+        var s = currentSettings();
+        setSwitch("swMultiChannel", s.multiChannel, false);
+        // When multi-channel is off only email applies; the other channels are disabled.
+        var locked = !s.multiChannel;
+        setSwitch("swEmail", s.allowEmail, locked);
+        setSwitch("swSms", s.allowSms, locked);
+        setSwitch("swWhatsApp", s.allowWhatsApp, locked);
+        $("rowEmail").classList.toggle("disabled", locked);
+        $("rowSms").classList.toggle("disabled", locked);
+        $("rowWhatsApp").classList.toggle("disabled", locked);
+      }
+
+      function renderSettingsSummary() {
+        var box = $("settingsChips");
+        if (!box) return;
+        box.innerHTML = "";
+        var s = currentSettings();
+        var chips = [];
+        if (!s.multiChannel) {
+          chips.push("דוא״ל בלבד");
+        } else {
+          if (s.allowEmail) chips.push("דוא״ל");
+          if (s.allowSms) chips.push("SMS");
+          if (s.allowWhatsApp) chips.push("וואטסאפ");
+          if (!chips.length) chips.push("לא נבחר ערוץ");
+        }
+        chips.forEach(function (txt) {
+          var c = document.createElement("span");
+          c.className = "tbl-chip";
+          c.innerHTML = SVG_CHECK_SM + '<span></span>';
+          c.querySelector("span").textContent = txt;
+          box.appendChild(c);
+        });
+      }
+
+      function openSettings() {
+        settingsOpen = true;
+        $("settingsOverlay").classList.add("open");
+        $("settingsDrawer").classList.add("open");
+        $("settingsDrawer").setAttribute("aria-hidden", "false");
+        renderSettings();
+      }
+      function closeSettings() {
+        settingsOpen = false;
+        $("settingsOverlay").classList.remove("open");
+        $("settingsDrawer").classList.remove("open");
+        $("settingsDrawer").setAttribute("aria-hidden", "true");
+      }
+
       function renderEnabledList() {
         var box = $("enabledList");
         if (!box) return;
@@ -1259,12 +1474,13 @@
           $("heroSub").textContent = "פתח את מרכז הניהול מתוך אפליקציית easydo כדי לראות נתונים חיים.";
           return;
         }
-        state = { conns: {}, flows: {}, configs: {}, metaTables: null };
+        state = { conns: {}, flows: {}, configs: {}, metaTables: null, settings: null };
         initChecks();
         recompute();
         renderSendSummary();
+        renderSettingsSummary();
         var btn = $("refreshBtn"); btn.classList.add("spinning");
-        Promise.all([loadConnections(), loadFlows(), loadConfigs()]).then(function () {
+        Promise.all([loadConnections(), loadFlows(), loadConfigs(), loadSettings()]).then(function () {
           btn.classList.remove("spinning");
           $("footnote").textContent = "סביבה: " + (envId() || "—");
         }, function () {
@@ -1279,7 +1495,18 @@
       $("drawerClose").addEventListener("click", closeDrawer);
       $("drawerOverlay").addEventListener("click", closeDrawer);
       $("tableSearch").addEventListener("input", renderAvailableList);
-      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && drawerOpen) closeDrawer(); });
+      $("manageSettingsBtn").addEventListener("click", openSettings);
+      $("settingsClose").addEventListener("click", closeSettings);
+      $("settingsOverlay").addEventListener("click", closeSettings);
+      $("swMultiChannel").addEventListener("click", function () { saveSettings({ multiChannel: !currentSettings().multiChannel }); });
+      $("swEmail").addEventListener("click", function () { if (currentSettings().multiChannel) saveSettings({ allowEmail: !currentSettings().allowEmail }); });
+      $("swSms").addEventListener("click", function () { if (currentSettings().multiChannel) saveSettings({ allowSms: !currentSettings().allowSms }); });
+      $("swWhatsApp").addEventListener("click", function () { if (currentSettings().multiChannel) saveSettings({ allowWhatsApp: !currentSettings().allowWhatsApp }); });
+      document.addEventListener("keydown", function (e) {
+        if (e.key !== "Escape") return;
+        if (drawerOpen) closeDrawer();
+        if (settingsOpen) closeSettings();
+      });
 
       // accordion: cards stay in sync — toggling one toggles all
       var heads = document.querySelectorAll(".step-head[data-toggle]");

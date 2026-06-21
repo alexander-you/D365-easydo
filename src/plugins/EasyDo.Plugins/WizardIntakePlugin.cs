@@ -110,6 +110,13 @@ namespace EasyDo.Plugins
             if (!string.IsNullOrEmpty(p.RelatedContactId) && Guid.TryParse(p.RelatedContactId, out var contactId))
                 target["alex_relatedcontactid"] = new EntityReference("contact", contactId);
 
+            // Chosen notification channels (multi-channel send). When the org has not
+            // enabled multi-channel the wizard sends email-only, which matches the
+            // default below.
+            target["alex_channelemail"] = p.ChannelEmail;
+            target["alex_channelsms"] = p.ChannelSms;
+            target["alex_channelwhatsapp"] = p.ChannelWhatsApp;
+
             if (string.IsNullOrEmpty(target.GetAttributeValue<string>("alex_name")))
                 target["alex_name"] = "easydo - " + (p.TemplateExternalId ?? "");
 
@@ -131,6 +138,7 @@ namespace EasyDo.Plugins
                     var rec = new Entity("alex_signaturerecipient");
                     rec["alex_name"] = string.IsNullOrEmpty(r.Name) ? r.Email : r.Name;
                     rec["alex_email"] = r.Email;
+                    if (!string.IsNullOrWhiteSpace(r.Phone)) rec["alex_phone"] = r.Phone;
                     if (r.Sequence > 0) rec["alex_signingorder"] = r.Sequence;
                     if (!string.IsNullOrEmpty(r.RoleName)) rec["alex_externalrecipientname"] = r.RoleName;
                     rec["alex_signaturerequestid"] = requestRef;
@@ -222,6 +230,19 @@ namespace EasyDo.Plugins
                 FieldValues = new List<WizardFieldValue>()
             };
 
+            // Channels block: { email, sms, whatsapp }. Absent => email only.
+            var channelsNode = payloadNode.SelectSingleNode("channels");
+            if (channelsNode != null)
+            {
+                p.ChannelEmail = !string.Equals(Text(channelsNode, "email"), "false", StringComparison.OrdinalIgnoreCase);
+                p.ChannelSms = string.Equals(Text(channelsNode, "sms"), "true", StringComparison.OrdinalIgnoreCase);
+                p.ChannelWhatsApp = string.Equals(Text(channelsNode, "whatsapp"), "true", StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                p.ChannelEmail = true;
+            }
+
             var recipients = payloadNode.SelectNodes("recipients/item");
             if (recipients != null)
             {
@@ -231,7 +252,7 @@ namespace EasyDo.Plugins
                     if (string.IsNullOrWhiteSpace(email)) continue;
                     int seq;
                     int.TryParse(Text(item, "sequence"), out seq);
-                    p.Recipients.Add(new WizardRecipient { Name = Text(item, "name"), Email = email, Sequence = seq, RoleName = Text(item, "roleName") });
+                    p.Recipients.Add(new WizardRecipient { Name = Text(item, "name"), Email = email, Phone = Text(item, "phone"), Sequence = seq, RoleName = Text(item, "roleName") });
                 }
             }
 
@@ -268,6 +289,9 @@ namespace EasyDo.Plugins
             public string LaunchEntityName;
             public string LaunchRecordId;
             public string RelatedContactId;
+            public bool ChannelEmail;
+            public bool ChannelSms;
+            public bool ChannelWhatsApp;
             public List<WizardRecipient> Recipients;
             public List<WizardFieldValue> FieldValues;
         }
@@ -276,6 +300,7 @@ namespace EasyDo.Plugins
         {
             public string Name;
             public string Email;
+            public string Phone;
             public int Sequence;
             public string RoleName;
         }

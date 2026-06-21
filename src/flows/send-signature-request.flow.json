@@ -133,7 +133,7 @@
                     },
                     "parameters": {
                       "entityName": "alex_signaturerecipients",
-                      "$select": "alex_name,alex_email,alex_signingorder,alex_externalprofileid,alex_recipienttype",
+                      "$select": "alex_name,alex_email,alex_phone,alex_signingorder,alex_externalprofileid,alex_recipienttype",
                       "$filter": "@concat('_alex_signaturerequestid_value eq ', triggerOutputs()?['body/alex_signaturerequestid'])",
                       "$orderby": "alex_signingorder asc"
                     },
@@ -154,9 +154,10 @@
                     "from": "@outputs('List_the_recipients')?['body/value']",
                     "select": {
                       "email": "@item()?['alex_email']",
+                      "phone": "@item()?['alex_phone']",
                       "name": "@item()?['alex_name']",
                       "sequence": "@item()?['alex_signingorder']",
-                      "notify_platform": "email",
+                      "notify_platform": "@if(and(coalesce(triggerOutputs()?['body/alex_channelemail'], true), not(or(coalesce(triggerOutputs()?['body/alex_channelsms'], false), coalesce(triggerOutputs()?['body/alex_channelwhatsapp'], false)))), 'email', if(and(coalesce(triggerOutputs()?['body/alex_channelsms'], false), not(or(coalesce(triggerOutputs()?['body/alex_channelemail'], false), coalesce(triggerOutputs()?['body/alex_channelwhatsapp'], false)))), 'sms', if(and(coalesce(triggerOutputs()?['body/alex_channelwhatsapp'], false), not(or(coalesce(triggerOutputs()?['body/alex_channelemail'], false), coalesce(triggerOutputs()?['body/alex_channelsms'], false)))), 'whatsapp', null)))",
                       "recipient": "@equals(item()?['alex_signingorder'], 1)"
                     }
                   }

@@ -126,6 +126,15 @@
         .edo-wz-seg-btn { appearance: none; border: none; background: transparent; color: var(--edo-sub); font: inherit; font-weight: 600; padding: 7px 18px; border-radius: 7px; cursor: pointer; transition: background .12s ease, color .12s ease, box-shadow .12s ease; }
         .edo-wz-seg-btn.on { background: var(--edo-bg); color: var(--edo-accent); box-shadow: var(--edo-shadow); }
 
+        .edo-wz-channels { display: flex; flex-wrap: wrap; gap: 10px; }
+        .edo-wz-chk { display: inline-flex; align-items: center; gap: 9px; border: 1px solid var(--edo-line); border-radius: 10px; padding: 9px 14px; background: var(--edo-bg); cursor: pointer; transition: border-color .12s ease, background .12s ease, box-shadow .12s ease; user-select: none; }
+        .edo-wz-chk:hover { border-color: var(--edo-accent); }
+        .edo-wz-chk.on { border-color: var(--edo-accent); background: rgba(0, 120, 212, .06); box-shadow: var(--edo-shadow); }
+        .edo-wz-chk-box { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--edo-line); position: relative; flex: 0 0 auto; transition: background .12s ease, border-color .12s ease; }
+        .edo-wz-chk.on .edo-wz-chk-box { background: var(--edo-accent); border-color: var(--edo-accent); }
+        .edo-wz-chk.on .edo-wz-chk-box::after { content: ""; position: absolute; left: 5px; top: 1.5px; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+        .edo-wz-chk-label { font-weight: 600; font-size: 13.5px; }
+
         .edo-wz-review { border: 1px solid var(--edo-line); border-radius: var(--edo-radius); overflow: hidden; }
         .edo-wz-rev-row { display: grid; grid-template-columns: 150px 1fr; gap: 12px; padding: 13px 16px; }
         .edo-wz-rev-row:not(:last-child) { border-bottom: 1px solid var(--edo-line); }
@@ -182,8 +191,10 @@
                     modeSend: "שליחה לחתימה", modeSendDesc: "המסמך נשלח מיד לנמענים בדוא\"ל לחתימה.",
                     modeDraft: "טיוטה / תצוגה מקדימה", modeDraftDesc: "נוצרת טיוטה לתצוגה מקדימה ללא שליחה לנמענים.",
                     languageLabel: "שפת המסמך", langHe: "עברית", langEn: "אנגלית",
+                    channelsLabel: "ערוצי שליחה", channelEmail: "דוא\"ל", channelSms: "SMS", channelWhatsApp: "וואטסאפ",
+                    channelsHint: "בחרו באילו ערוצים לשלוח את הקישור לחתימה. ניתן לבחור יותר מערוץ אחד.",
                     reviewHeading: "סקירה ושליחה", reviewHint: "בדקו את הפרטים ולחצו שליחה.",
-                    reviewTemplate: "תבנית", reviewRecipients: "נמענים", reviewMode: "אופן השליחה", reviewContext: "נשלח מתוך",
+                    reviewTemplate: "תבנית", reviewRecipients: "נמענים", reviewMode: "אופן השליחה", reviewChannels: "ערוצי שליחה", reviewContext: "נשלח מתוך",
                     sending: "שולח...", pickTemplate: "בחרו תבנית כדי להמשיך.",
                     needRecipient: "הוסיפו לפחות נמען אחד עם דוא\"ל תקין.", demoBadge: "מצב הדגמה",
                     idLabel: "מזהה: ", sentOk: "הבקשה נוצרה ונשלחה לעיבוד.", sentErr: "אירעה שגיאה ביצירת הבקשה: "
@@ -213,8 +224,10 @@
                     modeSend: "Send for signature", modeSendDesc: "The document is sent to recipients by email right away.",
                     modeDraft: "Draft / preview", modeDraftDesc: "A draft is created for preview without sending to recipients.",
                     languageLabel: "Document language", langHe: "Hebrew", langEn: "English",
+                    channelsLabel: "Send channels", channelEmail: "Email", channelSms: "SMS", channelWhatsApp: "WhatsApp",
+                    channelsHint: "Choose which channels distribute the signing link. You can pick more than one.",
                     reviewHeading: "Review & send", reviewHint: "Check the details and press Send.",
-                    reviewTemplate: "Template", reviewRecipients: "Recipients", reviewMode: "Send mode", reviewContext: "Sent from",
+                    reviewTemplate: "Template", reviewRecipients: "Recipients", reviewMode: "Send mode", reviewChannels: "Send channels", reviewContext: "Sent from",
                     sending: "Sending...", pickTemplate: "Pick a template to continue.",
                     needRecipient: "Add at least one recipient with a valid email.", demoBadge: "Demo mode",
                     idLabel: "ID: ", sentOk: "Request created and queued for processing.", sentErr: "Could not create the request: "
@@ -290,6 +303,11 @@
                 this.fieldsLoadedFor = null;
                 this.fieldsLoading = false;
                 this.launchContact = null;
+                // Global send settings (loaded from alex_easydosettings). Until loaded
+                // the feature is treated as off (email only).
+                this.settings = { multiChannel: false, allowEmail: true, allowSms: false, allowWhatsApp: false };
+                // Per-send chosen notification channels.
+                this.channels = { email: true, sms: false, whatsapp: false };
                 this.ctx = parseContext();
                 this.xrm = getXrm();
             }
@@ -301,14 +319,45 @@
                 // Render immediately with a light skeleton while data loads.
                 this.applyTemplates([]);
                 this.render();
-                // Load the launch contact (for recipient pre-fill) and the templates
-                // together, then build the real recipient rows from both.
-                Promise.all([this.loadLaunchContact(), this.fetchTemplates()]).then(function (res) {
+                // Load the launch contact (for recipient pre-fill), the templates
+                // and the global send settings together, then build the real
+                // recipient rows and channel options from all of them.
+                Promise.all([this.loadLaunchContact(), this.fetchTemplates(), this.loadSettings()]).then(function (res) {
                     self.launchContact = res[0];
+                    self.applySettings(res[2]);
                     self.applyTemplates(res[1], true);
                     self.loadFields();
                     self.render();
                 });
+            };
+
+            // Read the org-wide send settings singleton (which channels are allowed).
+            Wizard.prototype.loadSettings = function () {
+                if (!this.xrm) return Promise.resolve(null);
+                var q = "?$select=alex_multichannelenabled,alex_allowemail,alex_allowsms,alex_allowwhatsapp&$top=1";
+                return this.xrm.WebApi.retrieveMultipleRecords("alex_easydosettings", q).then(
+                    function (res) { return (res && res.entities && res.entities[0]) || null; },
+                    function () { return null; }
+                );
+            };
+
+            // Apply the loaded settings and seed the per-send channel choices so only
+            // allowed channels start selected (email always wins as the default).
+            Wizard.prototype.applySettings = function (row) {
+                if (row) {
+                    this.settings = {
+                        multiChannel: row.alex_multichannelenabled === true,
+                        allowEmail: row.alex_allowemail !== false,
+                        allowSms: row.alex_allowsms === true,
+                        allowWhatsApp: row.alex_allowwhatsapp === true
+                    };
+                }
+                var s = this.settings;
+                this.channels = {
+                    email: s.multiChannel ? s.allowEmail : true,
+                    sms: false,
+                    whatsapp: false
+                };
             };
 
             // Read the launch contact's name + email so a recipient slot can be
@@ -316,9 +365,14 @@
             Wizard.prototype.loadLaunchContact = function () {
                 var self = this;
                 if (!this.xrm || this.ctx.entityName !== "contact" || !this.ctx.recordId) return Promise.resolve(null);
-                return this.xrm.WebApi.retrieveRecord("contact", this.ctx.recordId, "?$select=fullname,emailaddress1").then(
+                return this.xrm.WebApi.retrieveRecord("contact", this.ctx.recordId, "?$select=fullname,emailaddress1,mobilephone,telephone1").then(
                     function (rec) {
-                        return { id: self.ctx.recordId, name: (rec && rec.fullname) || self.ctx.recordName || "", email: (rec && rec.emailaddress1) || "" };
+                        return {
+                            id: self.ctx.recordId,
+                            name: (rec && rec.fullname) || self.ctx.recordName || "",
+                            email: (rec && rec.emailaddress1) || "",
+                            phone: (rec && (rec.mobilephone || rec.telephone1)) || ""
+                        };
                     },
                     function () { return null; }
                 );
@@ -389,6 +443,7 @@
                         var pre = (i === 0 && lc && lc.email) ? lc : null;
                         return {
                             name: pre ? pre.name : "", email: pre ? pre.email : "",
+                            phone: pre ? (pre.phone || "") : "",
                             contactId: pre ? pre.id : "", roleName: r.name, sequence: r.sequence
                         };
                     });
@@ -396,11 +451,11 @@
                 }
                 if (forceReset || this.recipients.length === 0) {
                     if (this.demo) {
-                        this.recipients = [{ name: this.lang === "he" ? "דנה לוי" : "Dana Levi", email: "dana@example.com", contactId: "", roleName: "", sequence: 1 }];
+                        this.recipients = [{ name: this.lang === "he" ? "דנה לוי" : "Dana Levi", email: "dana@example.com", phone: "0540000000", contactId: "", roleName: "", sequence: 1 }];
                     } else if (lc && lc.email) {
-                        this.recipients = [{ name: lc.name, email: lc.email, contactId: lc.id, roleName: "", sequence: 1 }];
+                        this.recipients = [{ name: lc.name, email: lc.email, phone: lc.phone || "", contactId: lc.id, roleName: "", sequence: 1 }];
                     } else {
-                        this.recipients = [{ name: "", email: "", contactId: "", roleName: "", sequence: 1 }];
+                        this.recipients = [{ name: "", email: "", phone: "", contactId: "", roleName: "", sequence: 1 }];
                     }
                 }
             };
@@ -706,7 +761,7 @@
                 qstr = (qstr || "").trim();
                 if (!this.xrm || qstr.length < 2) { pop.innerHTML = ""; pop.classList.remove("show"); return; }
                 var safe = qstr.replace(/'/g, "''");
-                var q = "?$select=contactid,fullname,emailaddress1" +
+                var q = "?$select=contactid,fullname,emailaddress1,mobilephone,telephone1" +
                     "&$filter=(contains(fullname,'" + safe + "') or contains(emailaddress1,'" + safe + "')) and emailaddress1 ne null" +
                     "&$top=6";
                 this.xrm.WebApi.retrieveMultipleRecords("contact", q).then(
@@ -728,6 +783,7 @@
                                 ev.preventDefault();
                                 self.recipients[idx].name = c.fullname || "";
                                 self.recipients[idx].email = c.emailaddress1 || "";
+                                self.recipients[idx].phone = c.mobilephone || c.telephone1 || "";
                                 self.recipients[idx].contactId = c.contactid || "";
                                 self.render();
                             };
@@ -796,6 +852,30 @@
                 seg.appendChild(mkSeg("he", t.langHe));
                 seg.appendChild(mkSeg("en", t.langEn));
                 wrap.appendChild(el("div", { "class": "edo-wz-field" }, [langLabel, seg]));
+
+                // Notification channels. Shown only when the org enabled multi-channel
+                // sending; otherwise the document is sent by email only (easydo default).
+                var s = this.settings;
+                if (s.multiChannel) {
+                    var chLabel = el("div", { "class": "edo-wz-field-label", text: t.channelsLabel });
+                    var chList = el("div", { "class": "edo-wz-channels" });
+                    var mkChannel = function (key, label, allowed) {
+                        if (!allowed) return;
+                        var on = !!self.channels[key];
+                        var box = el("div", { "class": "edo-wz-chk" + (on ? " on" : "") }, [
+                            el("div", { "class": "edo-wz-chk-box" }),
+                            el("div", { "class": "edo-wz-chk-label", text: label })
+                        ]);
+                        box.onclick = function () { self.channels[key] = !self.channels[key]; self.render(); };
+                        chList.appendChild(box);
+                    };
+                    mkChannel("email", t.channelEmail, s.allowEmail);
+                    mkChannel("sms", t.channelSms, s.allowSms);
+                    mkChannel("whatsapp", t.channelWhatsApp, s.allowWhatsApp);
+                    var field = el("div", { "class": "edo-wz-field" }, [chLabel, chList]);
+                    field.appendChild(el("div", { "class": "edo-wz-step-hint", text: t.channelsHint }));
+                    wrap.appendChild(field);
+                }
                 return wrap;
             };
 
@@ -819,6 +899,13 @@
                     addRow(t.reviewRecipients, valid.map(function (r) { return r.name ? (r.name + " <" + r.email + ">") : r.email; }).join(", ") || "-");
                 }
                 addRow(t.reviewMode, this.isDraft ? t.modeDraft : t.modeSend);
+                if (this.settings.multiChannel) {
+                    var picked = [];
+                    if (this.channels.email && this.settings.allowEmail) picked.push(t.channelEmail);
+                    if (this.channels.sms && this.settings.allowSms) picked.push(t.channelSms);
+                    if (this.channels.whatsapp && this.settings.allowWhatsApp) picked.push(t.channelWhatsApp);
+                    addRow(t.reviewChannels, picked.join(", ") || t.channelEmail);
+                }
                 var editedFields = this.editedFields();
                 if (editedFields.length > 0) {
                     addRow(t.reviewFields, editedFields.map(function (f) { return f.label; }).join(", "));
@@ -900,6 +987,7 @@
                         return {
                             name: r.name,
                             email: r.email,
+                            phone: r.phone || "",
                             sequence: self.roleMode && r.sequence ? r.sequence : i + 1,
                             roleName: r.roleName || "",
                             contactId: r.contactId || ""
@@ -910,6 +998,11 @@
                     return { name: f.externalId, value: f.value, label: f.label, readOnly: !!f.readOnly };
                 });
                 var relatedContactId = this.ctx.entityName === "contact" ? this.ctx.recordId : "";
+                // Notification channels: when multi-channel is off the document is sent
+                // by email only (easydo default). Otherwise honour the picked channels.
+                var channels = this.settings.multiChannel
+                    ? { email: !!this.channels.email, sms: !!this.channels.sms, whatsapp: !!this.channels.whatsapp }
+                    : { email: true, sms: false, whatsapp: false };
                 return {
                     templateId: this.demo ? "" : (tpl ? tpl.id : ""),
                     templateExternalId: tpl ? tpl.externalId : "",
@@ -918,6 +1011,7 @@
                     recipients: recipients,
                     fieldValues: fieldValues,
                     notifyEmails: recipients.map(function (r) { return { name: r.name, email: r.email }; }),
+                    channels: channels,
                     launchEntityName: this.ctx.entityName,
                     launchRecordId: this.ctx.recordId,
                     relatedContactId: relatedContactId
