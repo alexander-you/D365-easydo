@@ -69,12 +69,19 @@ namespace EasyDo.Plugins
             var primaryCache = new Dictionary<string, Entity>(StringComparer.OrdinalIgnoreCase);
             var sourceCache = new Dictionary<string, Entity>(StringComparer.OrdinalIgnoreCase);
 
+            // Fields the user edited in the wizard are stored as Prefill override rows
+            // (alex_signaturefieldvalue, direction 626210000). The send flow already
+            // emits those, so we skip the binding for any overridden field to avoid
+            // duplicate prefill_data entries and let the user's edit win.
+            var overridden = LoadOverriddenFieldNames(svc, trace, requestId);
+
             var items = new List<string>();
             foreach (var m in mappings)
             {
                 if (!Direction.AllowsPrefill(m.DirectionValue)) continue;
                 if (string.IsNullOrEmpty(m.Table) || string.IsNullOrEmpty(m.Column)) continue;
                 if (string.IsNullOrEmpty(m.ExternalId)) continue;
+                if (overridden.Contains(m.ExternalId)) continue;
 
                 var srcRef = ResolveSource(svc, trace, m, primary, relatedContact, primaryCache);
                 if (srcRef == null) continue;
@@ -88,6 +95,35 @@ namespace EasyDo.Plugins
 
             ctx.OutputParameters["PrefillData"] = "[" + string.Join(",", items) + "]";
             trace.Trace("ResolvePrefill produced {0} item(s).", items.Count);
+        }
+
+        // External field names that already have a manual Prefill override row for
+        // this request. Those are skipped by the binding resolver so the user's
+        // wizard edit wins and easydo does not get duplicate prefill_data entries.
+        private static HashSet<string> LoadOverriddenFieldNames(IOrganizationService svc, ITracingService trace, Guid requestId)
+        {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                var q = new QueryExpression("alex_signaturefieldvalue")
+                {
+                    ColumnSet = new ColumnSet("alex_fieldname"),
+                    Criteria = new FilterExpression()
+                };
+                q.Criteria.AddCondition("alex_signaturerequestid", ConditionOperator.Equal, requestId);
+                q.Criteria.AddCondition("alex_direction", ConditionOperator.Equal, 626210000);
+                var res = svc.RetrieveMultiple(q);
+                foreach (var e in res.Entities)
+                {
+                    var n = e.GetAttributeValue<string>("alex_fieldname");
+                    if (!string.IsNullOrEmpty(n)) set.Add(n);
+                }
+            }
+            catch (Exception ex)
+            {
+                trace.Trace("LoadOverriddenFieldNames failed: {0}", ex.Message);
+            }
+            return set;
         }
 
         private static EntityReference ResolveSource(

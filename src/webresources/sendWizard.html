@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<!--
+  easydo - Send Wizard (HTML web resource, hosted in a model-driven SIDE PANE)
+
+  Opened by EasyDo.FormSend.launch via Xrm.App.sidePanes.createPane(...).navigate(
+  { pageType:"webresource", webresourceName:"alex_/html/sendWizard.html",
+    data:"entityName=..&recordId=..&recordName=..&uilang=..&paneId=.." }).
+
+  Because the web resource is served from the ORG domain it is SAME-ORIGIN with
+  the app, so it has native Xrm.WebApi (no premium connector, unlike a canvas
+  custom page). It reads the active signature templates itself, runs the 4-step
+  wizard, and on submit creates ONE alex_signaturerequest row with the wizard
+  JSON in alex_wizardpayload. The server-side WizardIntakePlugin turns that JSON
+  into the real request (template lookup, recipients, Ready-to-Send), exactly as
+  before. Fully bilingual EN/HE with RTL.
+-->
+<html lang="he">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>easydo</title>
+    <style>
+        html, body { margin: 0; padding: 0; height: 100%; }
+        .edo-wz-root {
+            --edo-accent: #4f46e5;
+            --edo-accent-soft: #eef0fe;
+            --edo-accent-ring: #c7c9fb;
+            --edo-ink: #1b1b21;
+            --edo-sub: #5b5b66;
+            --edo-faint: #8a8a96;
+            --edo-line: #e6e6ec;
+            --edo-bg: #ffffff;
+            --edo-card: #ffffff;
+            --edo-hover: #f6f6fb;
+            --edo-ok: #1f9d63;
+            --edo-err: #c43b53;
+            --edo-radius: 12px;
+            --edo-shadow: 0 1px 2px rgba(16, 16, 26, .06), 0 8px 28px rgba(16, 16, 26, .10);
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            background: var(--edo-bg);
+            color: var(--edo-ink);
+            font-family: "Segoe UI", "Segoe UI Web (West European)", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            font-size: 14px;
+            line-height: 1.45;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        .edo-wz-root *, .edo-wz-root *::before, .edo-wz-root *::after { box-sizing: border-box; }
+
+        .edo-wz-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 24px 8px; }
+        .edo-wz-head-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .edo-wz-title { font-size: 19px; font-weight: 650; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .edo-wz-demo { font-size: 11px; font-weight: 600; color: var(--edo-accent); background: var(--edo-accent-soft); border: 1px solid var(--edo-accent-ring); border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
+        .edo-wz-close { appearance: none; border: none; background: transparent; color: var(--edo-sub); width: 32px; height: 32px; border-radius: 8px; font-size: 15px; cursor: pointer; flex: 0 0 auto; transition: background .12s ease, color .12s ease; }
+        .edo-wz-close:hover { background: var(--edo-hover); color: var(--edo-ink); }
+        .edo-wz-subtitle { padding: 0 24px 16px; color: var(--edo-sub); font-size: 13px; max-width: 720px; }
+
+        .edo-wz-body { flex: 1 1 auto; display: flex; gap: 0; min-height: 0; border-top: 1px solid var(--edo-line); }
+        .edo-wz-nav { flex: 0 0 232px; padding: 20px 18px; border-inline-end: 1px solid var(--edo-line); background: linear-gradient(180deg, #fbfbfe 0%, #ffffff 60%); overflow-y: auto; }
+        .edo-wz-nav-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 10px; border-radius: 10px; position: relative; }
+        .edo-wz-nav-item.clickable { cursor: pointer; }
+        .edo-wz-nav-item.clickable:hover { background: var(--edo-hover); }
+        .edo-wz-nav-item.active { background: var(--edo-accent-soft); }
+        .edo-wz-nav-item:not(:last-child)::after { content: ""; position: absolute; inset-inline-start: 25px; top: 44px; bottom: -6px; width: 2px; background: var(--edo-line); }
+        .edo-wz-dot { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--edo-line); background: var(--edo-bg); color: var(--edo-faint); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 650; z-index: 1; transition: all .15s ease; }
+        .edo-wz-dot.active { border-color: var(--edo-accent); color: var(--edo-accent); box-shadow: 0 0 0 4px var(--edo-accent-soft); }
+        .edo-wz-dot.done { border-color: var(--edo-ok); background: var(--edo-ok); color: #fff; }
+        .edo-wz-nav-labels { padding-top: 2px; min-width: 0; }
+        .edo-wz-nav-title { font-weight: 600; font-size: 13.5px; }
+        .edo-wz-nav-item.active .edo-wz-nav-title { color: var(--edo-accent); }
+        .edo-wz-nav-hint { color: var(--edo-faint); font-size: 12px; margin-top: 1px; }
+
+        .edo-wz-content { flex: 1 1 auto; padding: 24px 28px; overflow-y: auto; }
+        .edo-wz-step { max-width: 560px; }
+        .edo-wz-step-head { margin-bottom: 18px; }
+        .edo-wz-step-title { font-size: 17px; font-weight: 640; }
+        .edo-wz-step-hint { color: var(--edo-sub); font-size: 13px; margin-top: 4px; }
+        .edo-wz-empty { color: var(--edo-faint); font-size: 13px; padding: 22px; text-align: center; border: 1px dashed var(--edo-line); border-radius: var(--edo-radius); background: #fcfcfe; }
+
+        .edo-wz-cards { display: flex; flex-direction: column; gap: 12px; }
+        .edo-wz-card { display: flex; align-items: flex-start; gap: 13px; padding: 15px 16px; border: 1px solid var(--edo-line); border-radius: var(--edo-radius); background: var(--edo-card); cursor: pointer; transition: border-color .12s ease, box-shadow .12s ease, background .12s ease; }
+        .edo-wz-card:hover { background: var(--edo-hover); }
+        .edo-wz-card.sel { border-color: var(--edo-accent); background: var(--edo-accent-soft); box-shadow: 0 0 0 1px var(--edo-accent) inset; }
+        .edo-wz-radio { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--edo-faint); margin-top: 2px; position: relative; transition: border-color .12s ease; }
+        .edo-wz-card.sel .edo-wz-radio, .edo-wz-radio.on { border-color: var(--edo-accent); }
+        .edo-wz-radio.on::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--edo-accent); }
+        .edo-wz-card-info { min-width: 0; }
+        .edo-wz-card-title { font-weight: 600; font-size: 14px; }
+        .edo-wz-card-sub { color: var(--edo-sub); font-size: 12.5px; margin-top: 3px; }
+
+        .edo-wz-recips { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+        .edo-wz-recip-row { display: flex; align-items: center; gap: 8px; }
+        .edo-wz-recip-fields { flex: 1 1 auto; display: grid; grid-template-columns: 1fr 1.3fr; gap: 8px; min-width: 0; }
+        .edo-wz-input { width: 100%; padding: 9px 12px; border: 1px solid var(--edo-line); border-radius: 8px; font: inherit; color: var(--edo-ink); background: var(--edo-bg); outline: none; transition: border-color .12s ease, box-shadow .12s ease; }
+        .edo-wz-input:focus { border-color: var(--edo-accent); box-shadow: 0 0 0 3px var(--edo-accent-soft); }
+        .edo-wz-input.err { border-color: var(--edo-err); box-shadow: 0 0 0 3px rgba(196, 59, 83, .12); }
+        .edo-wz-icon-btn { flex: 0 0 auto; width: 34px; height: 34px; border: 1px solid var(--edo-line); background: var(--edo-bg); border-radius: 8px; color: var(--edo-sub); cursor: pointer; font-size: 12px; transition: background .12s ease, color .12s ease, border-color .12s ease; }
+        .edo-wz-icon-btn:hover { background: #fdeef1; color: var(--edo-err); border-color: #f3c9d2; }
+        .edo-wz-add { appearance: none; border: 1px dashed var(--edo-accent-ring); background: var(--edo-accent-soft); color: var(--edo-accent); border-radius: 9px; padding: 9px 14px; font: inherit; font-weight: 600; cursor: pointer; transition: background .12s ease; }
+        .edo-wz-add:hover { background: #e6e8fd; }
+
+        .edo-wz-logo { height: 26px; width: auto; flex: 0 0 auto; display: block; }
+        .edo-wz-picker { position: relative; }
+        .edo-wz-chip { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; border: 1px solid var(--edo-accent-ring); border-radius: 9px; background: var(--edo-accent-soft); }
+        .edo-wz-chip-info { min-width: 0; }
+        .edo-wz-chip-name { font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .edo-wz-chip-mail { color: var(--edo-sub); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .edo-wz-pop { position: absolute; inset-inline: 0; top: calc(100% + 4px); z-index: 30; background: var(--edo-bg); border: 1px solid var(--edo-line); border-radius: 10px; box-shadow: var(--edo-shadow); max-height: 232px; overflow-y: auto; display: none; }
+        .edo-wz-pop.show { display: block; }
+        .edo-wz-pop-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--edo-line); }
+        .edo-wz-pop-item:last-child { border-bottom: none; }
+        .edo-wz-pop-item:hover { background: var(--edo-accent-soft); }
+        .edo-wz-pop-name { font-weight: 600; font-size: 13px; }
+        .edo-wz-pop-mail { color: var(--edo-sub); font-size: 12px; }
+        .edo-wz-pop-empty { padding: 10px 12px; color: var(--edo-faint); font-size: 12.5px; }
+
+        .edo-wz-field { margin-top: 22px; }
+        .edo-wz-field-label { font-weight: 600; font-size: 13px; margin-bottom: 8px; }
+        .edo-wz-seg { display: inline-flex; border: 1px solid var(--edo-line); border-radius: 9px; padding: 3px; background: #f5f5fa; gap: 3px; }
+        .edo-wz-seg-btn { appearance: none; border: none; background: transparent; color: var(--edo-sub); font: inherit; font-weight: 600; padding: 7px 18px; border-radius: 7px; cursor: pointer; transition: background .12s ease, color .12s ease, box-shadow .12s ease; }
+        .edo-wz-seg-btn.on { background: var(--edo-bg); color: var(--edo-accent); box-shadow: var(--edo-shadow); }
+
+        .edo-wz-review { border: 1px solid var(--edo-line); border-radius: var(--edo-radius); overflow: hidden; }
+        .edo-wz-rev-row { display: grid; grid-template-columns: 150px 1fr; gap: 12px; padding: 13px 16px; }
+        .edo-wz-rev-row:not(:last-child) { border-bottom: 1px solid var(--edo-line); }
+        .edo-wz-rev-label { color: var(--edo-sub); font-size: 13px; }
+        .edo-wz-rev-value { font-weight: 550; font-size: 13.5px; word-break: break-word; }
+
+        .edo-wz-footer { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 24px; border-top: 1px solid var(--edo-line); background: #fcfcfe; }
+        .edo-wz-foot-start { display: flex; align-items: center; gap: 14px; min-width: 0; }
+        .edo-wz-foot-nav { display: flex; align-items: center; gap: 10px; }
+        .edo-wz-err { color: var(--edo-err); font-size: 12.5px; font-weight: 550; }
+
+        .edo-wz-btn { appearance: none; border: 1px solid var(--edo-line); background: var(--edo-bg); color: var(--edo-ink); font: inherit; font-weight: 600; padding: 9px 20px; border-radius: 8px; cursor: pointer; transition: background .12s ease, border-color .12s ease, box-shadow .12s ease, opacity .12s ease; }
+        .edo-wz-btn:hover { background: var(--edo-hover); }
+        .edo-wz-btn.ghost { border-color: transparent; background: transparent; color: var(--edo-sub); }
+        .edo-wz-btn.ghost:hover { background: var(--edo-hover); color: var(--edo-ink); }
+        .edo-wz-btn.primary { background: var(--edo-accent); border-color: var(--edo-accent); color: #fff; box-shadow: 0 1px 2px rgba(79, 70, 229, .25); }
+        .edo-wz-btn.primary:hover { background: #4338ca; border-color: #4338ca; }
+        .edo-wz-btn.disabled { opacity: .45; pointer-events: none; }
+
+        .edo-wz-toast { position: absolute; inset-inline: 24px; bottom: 74px; padding: 11px 14px; border-radius: 10px; font-size: 13px; font-weight: 550; box-shadow: var(--edo-shadow); display: none; }
+        .edo-wz-toast.ok { background: #e9f8ef; color: #176c45; border: 1px solid #bce6cf; }
+        .edo-wz-toast.bad { background: #fdeef1; color: #97233a; border: 1px solid #f3c9d2; }
+        .edo-wz-toast.show { display: block; }
+    </style>
+</head>
+<body>
+    <div id="edo-root" class="edo-wz-root" dir="rtl"></div>
+    <script>
+        "use strict";
+        (function () {
+            var DICT = {
+                he: {
+                    title: "שליחת מסמך לחתימה",
+                    subtitle: "בחרו תבנית, הגדירו נמענים ושלחו את המסמך לחתימה. השליחה מתבצעת ברקע ועשויה להימשך עד מספר דקות.",
+                    steps: ["תבנית", "נמענים", "הגדרות", "סקירה ושליחה"],
+                    stepHints: ["בחירת המסמך", "מי יקבל לחתימה", "אופן השליחה", "אישור ושליחה"],
+                    sTitle: { template: "תבנית", recipients: "נמענים", data: "נתונים", settings: "הגדרות", review: "סקירה ושליחה" },
+                    sHint: { template: "בחירת המסמך", recipients: "מי יקבל לחתימה", data: "אימות ועריכה", settings: "אופן השליחה", review: "אישור ושליחה" },
+                    dataHeading: "אימות נתונים", dataHint: "השדות נשלפו מהרשומה. ניתן לערוך אותם לפני השליחה.", dataHintReadOnly: "השדות נשלפו מהרשומה ויוצגו במסמך.",
+                    dataEmpty: "אין שדות זמינים לעריכה בתבנית זו.", dataLoading: "טוען שדות...", fieldLocked: "לקריאה בלבד",
+                    roleHint: "התבנית כוללת מספר בעלי תפקידים. בחרו איש קשר לכל תפקיד והפרטים יושלמו אוטומטית.",
+                    reviewFields: "שדות שעודכנו",
+                    searchContact: "חיפוש איש קשר...", changeContact: "שינוי", noContactMatch: "לא נמצאו אנשי קשר תואמים",
+                    pickContact: "בחרו איש קשר",
+                    next: "הבא", back: "הקודם", send: "שליחה", cancel: "ביטול", close: "סגירה",
+                    templateHeading: "בחירת תבנית", templateHint: "בחרו את המסמך שיישלח לחתימה.",
+                    noTemplates: "לא הוגדרו תבניות זמינות לשליחה.",
+                    recipientsHeading: "נמענים", recipientsHint: "הוסיפו את האנשים שיקבלו את המסמך לחתימה.",
+                    recipientName: "שם", recipientEmail: "דוא\"ל", addRecipient: "הוספת נמען", removeRecipient: "הסרה",
+                    noRecipients: "אין עדיין נמענים. הוסיפו לפחות אחד.",
+                    settingsHeading: "הגדרות שליחה", settingsHint: "בחרו כיצד לשלוח את המסמך.",
+                    modeSend: "שליחה לחתימה", modeSendDesc: "המסמך נשלח מיד לנמענים בדוא\"ל לחתימה.",
+                    modeDraft: "טיוטה / תצוגה מקדימה", modeDraftDesc: "נוצרת טיוטה לתצוגה מקדימה ללא שליחה לנמענים.",
+                    languageLabel: "שפת המסמך", langHe: "עברית", langEn: "אנגלית",
+                    reviewHeading: "סקירה ושליחה", reviewHint: "בדקו את הפרטים ולחצו שליחה.",
+                    reviewTemplate: "תבנית", reviewRecipients: "נמענים", reviewMode: "אופן השליחה", reviewContext: "נשלח מתוך",
+                    sending: "שולח...", pickTemplate: "בחרו תבנית כדי להמשיך.",
+                    needRecipient: "הוסיפו לפחות נמען אחד עם דוא\"ל תקין.", demoBadge: "מצב הדגמה",
+                    idLabel: "מזהה: ", sentOk: "הבקשה נוצרה ונשלחה לעיבוד.", sentErr: "אירעה שגיאה ביצירת הבקשה: "
+                },
+                en: {
+                    title: "Send for signature",
+                    subtitle: "Pick a template, set the recipients and send the document for signature. Sending runs in the background and may take up to a few minutes.",
+                    steps: ["Template", "Recipients", "Settings", "Review & send"],
+                    stepHints: ["Choose the document", "Who signs it", "How it is sent", "Confirm & send"],
+                    sTitle: { template: "Template", recipients: "Recipients", data: "Data", settings: "Settings", review: "Review & send" },
+                    sHint: { template: "Choose the document", recipients: "Who signs it", data: "Review & edit", settings: "How it is sent", review: "Confirm & send" },
+                    dataHeading: "Review data", dataHint: "These fields were pulled from the record. You can edit them before sending.", dataHintReadOnly: "These fields were pulled from the record and will appear in the document.",
+                    dataEmpty: "No editable fields are available for this template.", dataLoading: "Loading fields...", fieldLocked: "Read-only",
+                    roleHint: "This template has multiple signer roles. Pick a contact for each role and the details fill in automatically.",
+                    reviewFields: "Updated fields",
+                    searchContact: "Search contact...", changeContact: "Change", noContactMatch: "No matching contacts",
+                    pickContact: "Pick a contact",
+                    next: "Next", back: "Back", send: "Send", cancel: "Cancel", close: "Close",
+                    templateHeading: "Choose a template", templateHint: "Select the document to send for signature.",
+                    noTemplates: "No templates are configured for sending.",
+                    recipientsHeading: "Recipients", recipientsHint: "Add the people who will receive the document to sign.",
+                    recipientName: "Name", recipientEmail: "Email", addRecipient: "Add recipient", removeRecipient: "Remove",
+                    noRecipients: "No recipients yet. Add at least one.",
+                    settingsHeading: "Send settings", settingsHint: "Choose how to send the document.",
+                    modeSend: "Send for signature", modeSendDesc: "The document is sent to recipients by email right away.",
+                    modeDraft: "Draft / preview", modeDraftDesc: "A draft is created for preview without sending to recipients.",
+                    languageLabel: "Document language", langHe: "Hebrew", langEn: "English",
+                    reviewHeading: "Review & send", reviewHint: "Check the details and press Send.",
+                    reviewTemplate: "Template", reviewRecipients: "Recipients", reviewMode: "Send mode", reviewContext: "Sent from",
+                    sending: "Sending...", pickTemplate: "Pick a template to continue.",
+                    needRecipient: "Add at least one recipient with a valid email.", demoBadge: "Demo mode",
+                    idLabel: "ID: ", sentOk: "Request created and queued for processing.", sentErr: "Could not create the request: "
+                }
+            };
+
+            function isEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((v || "").trim()); }
+
+            function parseRoles(raw) {
+                if (!raw) return [];
+                try {
+                    var arr = JSON.parse(raw);
+                    if (!arr || !arr.length) return [];
+                    return arr.map(function (r) {
+                        return { name: (r && r.name) || "", sequence: (r && r.sequence) || 0, recipient: !!(r && r.recipient) };
+                    }).sort(function (a, b) { return a.sequence - b.sequence; });
+                } catch (e) { return []; }
+            }
+
+            // A template uses role slots only when it exposes 2+ named roles.
+            function namedRoles(tpl) {
+                if (!tpl || !tpl.roles) return [];
+                var named = tpl.roles.filter(function (r) { return r.name && r.sequence > 0; });
+                return named.length >= 2 ? named : [];
+            }
+
+            function el(tag, attrs, children) {
+                var n = document.createElement(tag);
+                if (attrs) {
+                    if (attrs["class"]) n.className = attrs["class"];
+                    if (attrs.text !== undefined) n.textContent = attrs.text;
+                    if (attrs.type) n.type = attrs.type;
+                    if (attrs.placeholder) n.placeholder = attrs.placeholder;
+                    if (attrs.value !== undefined) n.value = attrs.value;
+                }
+                if (children) children.forEach(function (c) { n.appendChild(c); });
+                return n;
+            }
+
+            function getXrm() {
+                try { if (window.Xrm && window.Xrm.WebApi) return window.Xrm; } catch (e) { }
+                try { if (window.parent && window.parent.Xrm && window.parent.Xrm.WebApi) return window.parent.Xrm; } catch (e) { }
+                return null;
+            }
+
+            function parseContext() {
+                var ctx = { entityName: "", recordId: "", recordName: "", uilang: "", paneId: "" };
+                try {
+                    var raw = new URLSearchParams(window.location.search).get("data") || "";
+                    var parts = new URLSearchParams(raw);
+                    ctx.entityName = parts.get("entityName") || "";
+                    ctx.recordId = (parts.get("recordId") || "").replace(/[{}]/g, "");
+                    ctx.recordName = parts.get("recordName") || "";
+                    ctx.uilang = parts.get("uilang") || "";
+                    ctx.paneId = parts.get("paneId") || "";
+                } catch (e) { }
+                return ctx;
+            }
+
+            function Wizard(root) {
+                this.root = root;
+                this.lang = "he";
+                this.step = 0;
+                this.stepKeys = ["template", "recipients", "settings", "review"];
+                this.templates = [];
+                this.selectedTemplateId = "";
+                this.recipients = [];
+                this.isDraft = false;
+                this.docLang = "he";
+                this.demo = false;
+                this.submitted = false;
+                this.fields = [];
+                this.fieldsLoadedFor = null;
+                this.fieldsLoading = false;
+                this.launchContact = null;
+                this.ctx = parseContext();
+                this.xrm = getXrm();
+            }
+
+            Wizard.prototype.start = function () {
+                var self = this;
+                this.lang = this.ctx.uilang === "he" || this.ctx.uilang === "en" ? this.ctx.uilang : this.detectLang();
+                this.docLang = this.lang;
+                // Render immediately with a light skeleton while data loads.
+                this.applyTemplates([]);
+                this.render();
+                // Load the launch contact (for recipient pre-fill) and the templates
+                // together, then build the real recipient rows from both.
+                Promise.all([this.loadLaunchContact(), this.fetchTemplates()]).then(function (res) {
+                    self.launchContact = res[0];
+                    self.applyTemplates(res[1], true);
+                    self.loadFields();
+                    self.render();
+                });
+            };
+
+            // Read the launch contact's name + email so a recipient slot can be
+            // pre-filled automatically (the user should not retype what we know).
+            Wizard.prototype.loadLaunchContact = function () {
+                var self = this;
+                if (!this.xrm || this.ctx.entityName !== "contact" || !this.ctx.recordId) return Promise.resolve(null);
+                return this.xrm.WebApi.retrieveRecord("contact", this.ctx.recordId, "?$select=fullname,emailaddress1").then(
+                    function (rec) {
+                        return { id: self.ctx.recordId, name: (rec && rec.fullname) || self.ctx.recordName || "", email: (rec && rec.emailaddress1) || "" };
+                    },
+                    function () { return null; }
+                );
+            };
+
+            Wizard.prototype.detectLang = function () {
+                try {
+                    var lcid = this.xrm && this.xrm.Utility
+                        ? this.xrm.Utility.getGlobalContext().userSettings.languageId : 0;
+                    return lcid === 1037 ? "he" : "en";
+                } catch (e) { return "he"; }
+            };
+
+            Wizard.prototype.fetchTemplates = function () {
+                var self = this;
+                var entityName = this.ctx.entityName;
+                if (!this.xrm || !entityName) { return Promise.resolve([]); }
+                var query = "?$select=alex_signaturetemplateid,alex_name,alex_externaltemplateid,alex_primarytable,alex_allowprefilledit,alex_rolesjson" +
+                    "&$filter=alex_isactive eq true and statecode eq 0 and alex_allowsendfromobject eq true" +
+                    " and alex_primarytable eq '" + entityName + "'" +
+                    "&$orderby=alex_name";
+                return this.xrm.WebApi.retrieveMultipleRecords("alex_signaturetemplate", query).then(
+                    function (result) {
+                        var rows = (result && result.entities) || [];
+                        return rows.map(function (r) {
+                            return {
+                                id: r.alex_signaturetemplateid,
+                                externalId: r.alex_externaltemplateid || "",
+                                name: r.alex_name || "",
+                                primaryTable: r.alex_primarytable || "",
+                                allowPrefillEdit: r.alex_allowprefilledit === true,
+                                roles: parseRoles(r.alex_rolesjson)
+                            };
+                        }).filter(function (t) { return t.id && t.name && t.externalId; });
+                    },
+                    function () { return []; }
+                );
+            };
+
+            Wizard.prototype.applyTemplates = function (list, forceRecips) {
+                this.templates = list || [];
+                this.demo = this.templates.length === 0;
+                if (this.demo) {
+                    this.templates = [
+                        { id: "demo-1", externalId: "68729", name: this.lang === "he" ? "הכר את הלקוח" : "Know your customer", primaryTable: "contact", allowPrefillEdit: false, roles: [] },
+                        { id: "demo-2", externalId: "68793", name: this.lang === "he" ? "חוזה לדוגמה" : "Sample contract", primaryTable: "contact", allowPrefillEdit: false, roles: [] }
+                    ];
+                }
+                if (!this.selectedTemplateId || !this.templates.some(function (t) { return t.id === this.selectedTemplateId; }, this)) {
+                    this.selectedTemplateId = this.templates.length > 0 ? this.templates[0].id : "";
+                }
+                this.syncRecipientsToTemplate(forceRecips || this.recipients.length === 0);
+            };
+
+            // Build the recipient rows to match the selected template's roles.
+            // forceReset rebuilds even when rows already exist (used on template switch).
+            Wizard.prototype.syncRecipientsToTemplate = function (forceReset) {
+                var self = this;
+                var tpl = this.findTemplate();
+                var roles = namedRoles(tpl);
+                this.roleMode = roles.length >= 2;
+                var lc = this.launchContact;
+                if (this.roleMode) {
+                    // One fixed slot per signer role. The first slot is pre-filled
+                    // with the launch contact (the user can change it); the rest are
+                    // picked from contacts.
+                    this.recipients = roles.map(function (r, i) {
+                        var pre = (i === 0 && lc && lc.email) ? lc : null;
+                        return {
+                            name: pre ? pre.name : "", email: pre ? pre.email : "",
+                            contactId: pre ? pre.id : "", roleName: r.name, sequence: r.sequence
+                        };
+                    });
+                    return;
+                }
+                if (forceReset || this.recipients.length === 0) {
+                    if (this.demo) {
+                        this.recipients = [{ name: this.lang === "he" ? "דנה לוי" : "Dana Levi", email: "dana@example.com", contactId: "", roleName: "", sequence: 1 }];
+                    } else if (lc && lc.email) {
+                        this.recipients = [{ name: lc.name, email: lc.email, contactId: lc.id, roleName: "", sequence: 1 }];
+                    } else {
+                        this.recipients = [{ name: "", email: "", contactId: "", roleName: "", sequence: 1 }];
+                    }
+                }
+            };
+
+            // The ordered list of step keys for the current selection. The "data"
+            // step appears only when the template allows prefill editing AND it has
+            // visible editable fields resolved from the record.
+            Wizard.prototype.computeSteps = function () {
+                var tpl = this.findTemplate();
+                var keys = ["template", "recipients"];
+                // Show the data step whenever the template has visible prefill
+                // fields, regardless of allowPrefillEdit (which only controls whether
+                // those fields can be edited here).
+                if (tpl && this.fieldsLoadedFor === this.selectedTemplateId && this.fields.length > 0) {
+                    keys.push("data");
+                }
+                keys.push("settings");
+                keys.push("review");
+                this.stepKeys = keys;
+                if (this.step >= keys.length) this.step = keys.length - 1;
+                return keys;
+            };
+
+            // Load the visible prefill field mappings for the selected template and
+            // resolve their current values from the source record, so the data step
+            // can show editable inputs. Demo templates and templates without prefill
+            // editing are skipped.
+            Wizard.prototype.loadFields = function () {
+                var self = this;
+                var tpl = this.findTemplate();
+                this.fields = [];
+                // Load visible prefill fields for ANY non-demo template; whether they
+                // are editable is decided per field (allowPrefillEdit + iseditable).
+                if (!tpl || this.demo || !this.xrm) {
+                    this.fieldsLoadedFor = this.selectedTemplateId;
+                    return;
+                }
+                this.fieldsLoading = true;
+                this.fieldsLoadedFor = null;
+                var loadingFor = this.selectedTemplateId;
+                // direction: Prefill (626210000) or Bidirectional (626210002), visible to user.
+                var q = "?$select=alex_externalfieldid,alex_externalfieldname,alex_dynamicstable,alex_dynamicsfield," +
+                    "alex_lookupfield,alex_iseditablebeforesend,alex_isreadonly,alex_defaultvalue,alex_direction" +
+                    "&$filter=_alex_templateid_value eq " + tpl.id +
+                    " and alex_isvisibletouser eq true" +
+                    " and (alex_direction eq 626210000 or alex_direction eq 626210002)";
+                this.xrm.WebApi.retrieveMultipleRecords("alex_templatefieldmapping", q).then(
+                    function (res) {
+                        var rows = (res && res.entities) || [];
+                        var fields = rows.filter(function (r) { return r.alex_externalfieldid; }).map(function (r) {
+                            return {
+                                externalId: r.alex_externalfieldid,
+                                label: r.alex_externalfieldname || r.alex_externalfieldid,
+                                table: r.alex_dynamicstable || "",
+                                column: r.alex_dynamicsfield || "",
+                                hop: r.alex_lookupfield || "",
+                                editable: r.alex_iseditablebeforesend === true,
+                                readOnly: r.alex_isreadonly === true,
+                                value: r.alex_defaultvalue || ""
+                            };
+                        });
+                        self.resolveFieldValues(fields).then(function () {
+                            if (loadingFor !== self.selectedTemplateId) return;
+                            fields.forEach(function (f) { f.original = f.value; });
+                            self.fields = fields;
+                            self.fieldsLoadedFor = loadingFor;
+                            self.fieldsLoading = false;
+                            self.render();
+                        });
+                    },
+                    function () {
+                        self.fieldsLoadedFor = loadingFor;
+                        self.fieldsLoading = false;
+                        self.render();
+                    }
+                );
+            };
+
+            // Best-effort read of each field's value from the launch record. Direct
+            // columns (on the launch entity) resolve via one retrieve; lookup-hop
+            // fields are left to the server-side resolver and shown empty/editable.
+            Wizard.prototype.resolveFieldValues = function (fields) {
+                var self = this;
+                var entityName = this.ctx.entityName, recordId = this.ctx.recordId;
+                if (!this.xrm || !entityName || !recordId) return Promise.resolve();
+                var cols = {};
+                fields.forEach(function (f) {
+                    if (!f.hop && f.column && (!f.table || f.table === entityName)) cols[f.column] = true;
+                });
+                var list = Object.keys(cols);
+                if (list.length === 0) return Promise.resolve();
+                return this.xrm.WebApi.retrieveRecord(entityName, recordId, "?$select=" + list.join(",")).then(
+                    function (rec) {
+                        fields.forEach(function (f) {
+                            if (f.hop || !f.column) return;
+                            if (f.table && f.table !== entityName) return;
+                            var fmt = rec[f.column + "@OData.Community.Display.V1.FormattedValue"];
+                            var raw = rec[f.column];
+                            var v = (fmt !== undefined && fmt !== null) ? fmt : raw;
+                            if (v !== undefined && v !== null) f.value = String(v);
+                        });
+                    },
+                    function () { return; }
+                );
+            };
+
+            // ----------------------------- rendering -----------------------------
+            Wizard.prototype.render = function () {
+                var t = DICT[this.lang];
+                this.root.setAttribute("dir", this.lang === "he" ? "rtl" : "ltr");
+                document.documentElement.setAttribute("lang", this.lang);
+                this.root.innerHTML = "";
+                this.root.appendChild(this.buildHeader(t));
+                this.root.appendChild(this.buildSubtitle(t));
+                var body = el("div", { "class": "edo-wz-body" });
+                body.appendChild(this.buildNav(t));
+                body.appendChild(this.buildContent(t));
+                this.root.appendChild(body);
+                this.root.appendChild(this.buildFooter(t));
+                if (this._toast) this.root.appendChild(this._toast);
+            };
+
+            Wizard.prototype.buildHeader = function (t) {
+                var title = el("div", { "class": "edo-wz-title", text: t.title });
+                var left = el("div", { "class": "edo-wz-head-left" });
+                var logo = this.buildLogo();
+                if (logo) left.appendChild(logo);
+                left.appendChild(title);
+                if (this.demo) left.appendChild(el("span", { "class": "edo-wz-demo", text: t.demoBadge }));
+                // No close button here: the side pane already provides one, so a
+                // second X inside the frame would be redundant.
+                return el("div", { "class": "edo-wz-header" }, [left]);
+            };
+
+            // The easydo logo (an image web resource). Resolved against the client
+            // URL so it works regardless of org/path. Returns null if unavailable.
+            Wizard.prototype.buildLogo = function () {
+                var base = "";
+                try {
+                    var X = this.xrm || getXrm();
+                    if (X && X.Utility && X.Utility.getGlobalContext) {
+                        base = X.Utility.getGlobalContext().getClientUrl() || "";
+                    }
+                } catch (e) { base = ""; }
+                var img = el("img", { "class": "edo-wz-logo" });
+                img.src = base + "/WebResources/alex_/images/easydoLogo.svg";
+                img.alt = "easydo";
+                img.onerror = function () { img.style.display = "none"; };
+                return img;
+            };
+
+            Wizard.prototype.buildSubtitle = function (t) {
+                return el("div", { "class": "edo-wz-subtitle", text: t.subtitle });
+            };
+
+            Wizard.prototype.buildNav = function (t) {
+                var self = this;
+                var keys = this.computeSteps();
+                var nav = el("div", { "class": "edo-wz-nav" });
+                for (var i = 0; i < keys.length; i++) {
+                    var key = keys[i];
+                    var done = i < this.step;
+                    var active = i === this.step;
+                    var dot = el("div", { "class": "edo-wz-dot" + (done ? " done" : "") + (active ? " active" : "") });
+                    dot.appendChild(el("span", { text: done ? "\u2713" : String(i + 1) }));
+                    var labels = el("div", { "class": "edo-wz-nav-labels" }, [
+                        el("div", { "class": "edo-wz-nav-title", text: t.sTitle[key] }),
+                        el("div", { "class": "edo-wz-nav-hint", text: t.sHint[key] })
+                    ]);
+                    var item = el("div", { "class": "edo-wz-nav-item" + (active ? " active" : "") }, [dot, labels]);
+                    if (done) {
+                        (function (idx) { item.onclick = function () { self.step = idx; self.render(); }; })(i);
+                        item.classList.add("clickable");
+                    }
+                    nav.appendChild(item);
+                }
+                return nav;
+            };
+
+            Wizard.prototype.buildContent = function (t) {
+                var content = el("div", { "class": "edo-wz-content" });
+                var key = this.stepKeys[this.step] || "template";
+                if (key === "template") content.appendChild(this.stepTemplate(t));
+                else if (key === "recipients") content.appendChild(this.stepRecipients(t));
+                else if (key === "data") content.appendChild(this.stepData(t));
+                else if (key === "settings") content.appendChild(this.stepSettings(t));
+                else if (key === "review") content.appendChild(this.stepReview(t));
+                return content;
+            };
+
+            Wizard.prototype.heading = function (title, hint) {
+                return el("div", { "class": "edo-wz-step-head" }, [
+                    el("div", { "class": "edo-wz-step-title", text: title }),
+                    el("div", { "class": "edo-wz-step-hint", text: hint })
+                ]);
+            };
+
+            Wizard.prototype.stepTemplate = function (t) {
+                var self = this;
+                var wrap = el("div", { "class": "edo-wz-step" }, [this.heading(t.templateHeading, t.templateHint)]);
+                if (this.templates.length === 0) {
+                    wrap.appendChild(el("div", { "class": "edo-wz-empty", text: t.noTemplates }));
+                    return wrap;
+                }
+                var list = el("div", { "class": "edo-wz-cards" });
+                this.templates.forEach(function (tpl) {
+                    var selected = tpl.id === self.selectedTemplateId;
+                    var radio = el("div", { "class": "edo-wz-radio" + (selected ? " on" : "") });
+                    var info = el("div", { "class": "edo-wz-card-info" }, [
+                        el("div", { "class": "edo-wz-card-title", text: tpl.name }),
+                        el("div", { "class": "edo-wz-card-sub", text: t.idLabel + tpl.externalId })
+                    ]);
+                    var card = el("div", { "class": "edo-wz-card" + (selected ? " sel" : "") }, [radio, info]);
+                    card.onclick = function () {
+                        if (self.selectedTemplateId === tpl.id) return;
+                        self.selectedTemplateId = tpl.id;
+                        self.syncRecipientsToTemplate(true);
+                        self.loadFields();
+                        self.render();
+                    };
+                    list.appendChild(card);
+                });
+                wrap.appendChild(list);
+                return wrap;
+            };
+
+            Wizard.prototype.stepRecipients = function (t) {
+                var self = this;
+                var wrap = el("div", { "class": "edo-wz-step" }, [this.heading(t.recipientsHeading, this.roleMode ? t.roleHint : t.recipientsHint)]);
+                var list = el("div", { "class": "edo-wz-recips" });
+
+                if (this.roleMode) {
+                    // One fixed slot per signer role. The user only picks WHO fills
+                    // each role (a contact); name + email fill in automatically.
+                    this.recipients.forEach(function (r, idx) {
+                        var roleLabel = el("div", { "class": "edo-wz-field-label", text: r.roleName });
+                        var picker = el("div", { "class": "edo-wz-picker" });
+                        self.renderRecipientPicker(picker, idx, t);
+                        list.appendChild(el("div", { "class": "edo-wz-field" }, [roleLabel, picker]));
+                    });
+                    wrap.appendChild(list);
+                    return wrap;
+                }
+
+                if (this.recipients.length === 0) {
+                    list.appendChild(el("div", { "class": "edo-wz-empty", text: t.noRecipients }));
+                }
+                this.recipients.forEach(function (r, idx) {
+                    var nameIn = el("input", { "class": "edo-wz-input", placeholder: t.recipientName, value: r.name });
+                    nameIn.oninput = function () { self.recipients[idx].name = nameIn.value; };
+                    var mailIn = el("input", { "class": "edo-wz-input", placeholder: t.recipientEmail, value: r.email, type: "email" });
+                    mailIn.oninput = function () {
+                        self.recipients[idx].email = mailIn.value;
+                        mailIn.classList.toggle("err", !!self.recipients[idx].email && !isEmail(mailIn.value));
+                    };
+                    var del = el("button", { "class": "edo-wz-icon-btn", text: "\u2715" });
+                    del.title = t.removeRecipient;
+                    del.onclick = function () { self.recipients.splice(idx, 1); self.render(); };
+                    var row = el("div", { "class": "edo-wz-recip-row" }, [
+                        el("div", { "class": "edo-wz-recip-fields" }, [nameIn, mailIn]),
+                        del
+                    ]);
+                    list.appendChild(row);
+                });
+                wrap.appendChild(list);
+                var add = el("button", { "class": "edo-wz-add", text: "+ " + t.addRecipient });
+                add.onclick = function () { self.recipients.push({ name: "", email: "", roleName: "", sequence: self.recipients.length + 1 }); self.render(); };
+                wrap.appendChild(add);
+                return wrap;
+            };
+
+            // Renders the per-role contact picker into `container`. When a contact
+            // is chosen its name + email are filled automatically, so the user only
+            // chooses WHO fills the role. The search popup updates on its own without
+            // re-rendering the whole wizard, which keeps the input focused.
+            Wizard.prototype.renderRecipientPicker = function (container, idx, t) {
+                var self = this;
+                var r = this.recipients[idx];
+                container.innerHTML = "";
+                if (r.email || r.name) {
+                    var info = el("div", { "class": "edo-wz-chip-info" }, [
+                        el("div", { "class": "edo-wz-chip-name", text: r.name || r.email })
+                    ]);
+                    if (r.email) info.appendChild(el("div", { "class": "edo-wz-chip-mail", text: r.email }));
+                    var change = el("button", { "class": "edo-wz-icon-btn", text: "\u2715" });
+                    change.title = t.changeContact; change.setAttribute("aria-label", t.changeContact);
+                    change.onclick = function () {
+                        self.recipients[idx].name = ""; self.recipients[idx].email = ""; self.recipients[idx].contactId = "";
+                        self.render();
+                    };
+                    container.appendChild(el("div", { "class": "edo-wz-chip" }, [info, change]));
+                    return;
+                }
+                var input = el("input", { "class": "edo-wz-input", placeholder: t.searchContact });
+                var pop = el("div", { "class": "edo-wz-pop" });
+                var timer = null;
+                input.oninput = function () {
+                    if (timer) window.clearTimeout(timer);
+                    var q = input.value;
+                    timer = window.setTimeout(function () { self.searchContacts(q, pop, idx, t); }, 220);
+                };
+                input.onblur = function () { window.setTimeout(function () { pop.classList.remove("show"); }, 160); };
+                input.onfocus = function () { if (pop.childNodes.length) pop.classList.add("show"); };
+                container.appendChild(input);
+                container.appendChild(pop);
+            };
+
+            // Live contact lookup for the role pickers (name or email match).
+            Wizard.prototype.searchContacts = function (qstr, pop, idx, t) {
+                var self = this;
+                qstr = (qstr || "").trim();
+                if (!this.xrm || qstr.length < 2) { pop.innerHTML = ""; pop.classList.remove("show"); return; }
+                var safe = qstr.replace(/'/g, "''");
+                var q = "?$select=contactid,fullname,emailaddress1" +
+                    "&$filter=(contains(fullname,'" + safe + "') or contains(emailaddress1,'" + safe + "')) and emailaddress1 ne null" +
+                    "&$top=6";
+                this.xrm.WebApi.retrieveMultipleRecords("contact", q).then(
+                    function (res) {
+                        var rows = (res && res.entities) || [];
+                        pop.innerHTML = "";
+                        if (rows.length === 0) {
+                            pop.appendChild(el("div", { "class": "edo-wz-pop-empty", text: t.noContactMatch }));
+                            pop.classList.add("show");
+                            return;
+                        }
+                        rows.forEach(function (c) {
+                            var item = el("div", { "class": "edo-wz-pop-item" }, [
+                                el("div", { "class": "edo-wz-pop-name", text: c.fullname || c.emailaddress1 }),
+                                el("div", { "class": "edo-wz-pop-mail", text: c.emailaddress1 || "" })
+                            ]);
+                            // mousedown (not click) so selection fires before input blur.
+                            item.onmousedown = function (ev) {
+                                ev.preventDefault();
+                                self.recipients[idx].name = c.fullname || "";
+                                self.recipients[idx].email = c.emailaddress1 || "";
+                                self.recipients[idx].contactId = c.contactid || "";
+                                self.render();
+                            };
+                            pop.appendChild(item);
+                        });
+                        pop.classList.add("show");
+                    },
+                    function () { pop.innerHTML = ""; pop.classList.remove("show"); }
+                );
+            };
+
+            Wizard.prototype.stepData = function (t) {
+                var self = this;
+                var tplH = this.findTemplate();
+                var anyEditable = !!(tplH && tplH.allowPrefillEdit) && (this.fields || []).some(function (f) { return f.editable && !f.readOnly; });
+                var hint = anyEditable ? t.dataHint : t.dataHintReadOnly;
+                var wrap = el("div", { "class": "edo-wz-step" }, [this.heading(t.dataHeading, hint)]);
+                if (this.fieldsLoading) {
+                    wrap.appendChild(el("div", { "class": "edo-wz-empty", text: t.dataLoading }));
+                    return wrap;
+                }
+                if (!this.fields || this.fields.length === 0) {
+                    wrap.appendChild(el("div", { "class": "edo-wz-empty", text: t.dataEmpty }));
+                    return wrap;
+                }
+                var tpl = this.findTemplate();
+                var allowEdit = !!(tpl && tpl.allowPrefillEdit);
+                this.fields.forEach(function (f, idx) {
+                    var editable = allowEdit && f.editable && !f.readOnly;
+                    var labelText = f.label + (editable ? "" : "  · " + t.fieldLocked);
+                    var label = el("div", { "class": "edo-wz-field-label", text: labelText });
+                    var input = el("input", { "class": "edo-wz-input", value: f.value });
+                    if (!editable) { input.readOnly = true; input.style.background = "#f5f5fa"; input.style.color = "var(--edo-sub)"; }
+                    else { input.oninput = function () { self.fields[idx].value = input.value; }; }
+                    wrap.appendChild(el("div", { "class": "edo-wz-field" }, [label, input]));
+                });
+                return wrap;
+            };
+
+            Wizard.prototype.stepSettings = function (t) {
+                var self = this;
+                var wrap = el("div", { "class": "edo-wz-step" }, [this.heading(t.settingsHeading, t.settingsHint)]);
+                var modeCards = el("div", { "class": "edo-wz-cards" });
+                var mkMode = function (draft, title, desc) {
+                    var sel = self.isDraft === draft;
+                    var radio = el("div", { "class": "edo-wz-radio" + (sel ? " on" : "") });
+                    var info = el("div", { "class": "edo-wz-card-info" }, [
+                        el("div", { "class": "edo-wz-card-title", text: title }),
+                        el("div", { "class": "edo-wz-card-sub", text: desc })
+                    ]);
+                    var card = el("div", { "class": "edo-wz-card" + (sel ? " sel" : "") }, [radio, info]);
+                    card.onclick = function () { self.isDraft = draft; self.render(); };
+                    return card;
+                };
+                modeCards.appendChild(mkMode(false, t.modeSend, t.modeSendDesc));
+                modeCards.appendChild(mkMode(true, t.modeDraft, t.modeDraftDesc));
+                wrap.appendChild(modeCards);
+
+                var langLabel = el("div", { "class": "edo-wz-field-label", text: t.languageLabel });
+                var seg = el("div", { "class": "edo-wz-seg" });
+                var mkSeg = function (l, label) {
+                    var b = el("button", { "class": "edo-wz-seg-btn" + (self.docLang === l ? " on" : ""), text: label });
+                    b.onclick = function () { self.docLang = l; self.render(); };
+                    return b;
+                };
+                seg.appendChild(mkSeg("he", t.langHe));
+                seg.appendChild(mkSeg("en", t.langEn));
+                wrap.appendChild(el("div", { "class": "edo-wz-field" }, [langLabel, seg]));
+                return wrap;
+            };
+
+            Wizard.prototype.stepReview = function (t) {
+                var wrap = el("div", { "class": "edo-wz-step" }, [this.heading(t.reviewHeading, t.reviewHint)]);
+                var tpl = this.findTemplate();
+                var valid = this.recipients.filter(function (r) { return isEmail(r.email); });
+                var rows = [];
+                var addRow = function (label, value) {
+                    rows.push(el("div", { "class": "edo-wz-rev-row" }, [
+                        el("div", { "class": "edo-wz-rev-label", text: label }),
+                        el("div", { "class": "edo-wz-rev-value", text: value })
+                    ]));
+                };
+                addRow(t.reviewTemplate, tpl ? tpl.name : "-");
+                if (this.roleMode) {
+                    this.recipients.forEach(function (r) {
+                        addRow(r.roleName, isEmail(r.email) ? (r.name ? (r.name + " <" + r.email + ">") : r.email) : "-");
+                    });
+                } else {
+                    addRow(t.reviewRecipients, valid.map(function (r) { return r.name ? (r.name + " <" + r.email + ">") : r.email; }).join(", ") || "-");
+                }
+                addRow(t.reviewMode, this.isDraft ? t.modeDraft : t.modeSend);
+                var editedFields = this.editedFields();
+                if (editedFields.length > 0) {
+                    addRow(t.reviewFields, editedFields.map(function (f) { return f.label; }).join(", "));
+                }
+                if (this.ctx.recordName || this.ctx.entityName) {
+                    addRow(t.reviewContext, this.ctx.recordName || this.ctx.entityName);
+                }
+                wrap.appendChild(el("div", { "class": "edo-wz-review" }, rows));
+                return wrap;
+            };
+
+            Wizard.prototype.buildFooter = function (t) {
+                var self = this;
+                var cancel = el("button", { "class": "edo-wz-btn ghost", text: t.cancel });
+                cancel.onclick = function () { self.closePane(); };
+                var nav = el("div", { "class": "edo-wz-foot-nav" });
+                if (this.step > 0) {
+                    var back = el("button", { "class": "edo-wz-btn", text: t.back });
+                    back.onclick = function () { self.step--; self.render(); };
+                    nav.appendChild(back);
+                }
+                var err = this.stepError(t);
+                if (this.step < this.stepKeys.length - 1) {
+                    var next = el("button", { "class": "edo-wz-btn primary", text: t.next });
+                    next.onclick = function () { if (!self.stepError(t)) { self.step++; self.render(); } };
+                    if (err) next.classList.add("disabled");
+                    nav.appendChild(next);
+                } else {
+                    var send = el("button", { "class": "edo-wz-btn primary", text: this.submitted ? t.sending : t.send });
+                    send.onclick = function () { if (!self.stepError(t) && !self.submitted) self.submit(); };
+                    if (err || this.submitted) send.classList.add("disabled");
+                    nav.appendChild(send);
+                }
+                var errEl = err ? el("div", { "class": "edo-wz-err", text: err }) : el("div");
+                return el("div", { "class": "edo-wz-footer" }, [
+                    el("div", { "class": "edo-wz-foot-start" }, [cancel, errEl]),
+                    nav
+                ]);
+            };
+
+            Wizard.prototype.stepError = function (t) {
+                var key = this.stepKeys[this.step] || "template";
+                if (key === "template") { if (!this.selectedTemplateId) return t.pickTemplate; }
+                if (key === "recipients" || key === "review") {
+                    if (key === "review" && !this.selectedTemplateId) return t.pickTemplate;
+                    if (this.roleMode) {
+                        var allFilled = this.recipients.every(function (r) { return isEmail(r.email); });
+                        if (!allFilled) return t.needRecipient;
+                    } else if (this.recipients.filter(function (r) { return isEmail(r.email); }).length === 0) {
+                        return t.needRecipient;
+                    }
+                }
+                return "";
+            };
+
+            // Fields the user actually changed from their resolved/original value.
+            Wizard.prototype.editedFields = function () {
+                if (!this.fields) return [];
+                var tpl = this.findTemplate();
+                if (!tpl || !tpl.allowPrefillEdit) return [];
+                return this.fields.filter(function (f) {
+                    return f.editable && !f.readOnly && String(f.value) !== String(f.original === undefined ? f.value : f.original);
+                });
+            };
+
+            Wizard.prototype.findTemplate = function () {
+                var id = this.selectedTemplateId;
+                return this.templates.filter(function (x) { return x.id === id; })[0];
+            };
+
+            // ----------------------------- submit / close -----------------------------
+            Wizard.prototype.buildPayload = function () {
+                var self = this;
+                var tpl = this.findTemplate();
+                // In role mode keep the role's sequence; otherwise number sequentially.
+                var recipients = this.recipients
+                    .filter(function (r) { return isEmail(r.email); })
+                    .map(function (r, i) {
+                        return {
+                            name: r.name,
+                            email: r.email,
+                            sequence: self.roleMode && r.sequence ? r.sequence : i + 1,
+                            roleName: r.roleName || "",
+                            contactId: r.contactId || ""
+                        };
+                    });
+                // Edited prefill values become Prefill overrides on the request.
+                var fieldValues = this.editedFields().map(function (f) {
+                    return { name: f.externalId, value: f.value, label: f.label, readOnly: !!f.readOnly };
+                });
+                var relatedContactId = this.ctx.entityName === "contact" ? this.ctx.recordId : "";
+                return {
+                    templateId: this.demo ? "" : (tpl ? tpl.id : ""),
+                    templateExternalId: tpl ? tpl.externalId : "",
+                    isDraft: this.isDraft,
+                    language: this.docLang,
+                    recipients: recipients,
+                    fieldValues: fieldValues,
+                    notifyEmails: recipients.map(function (r) { return { name: r.name, email: r.email }; }),
+                    launchEntityName: this.ctx.entityName,
+                    launchRecordId: this.ctx.recordId,
+                    relatedContactId: relatedContactId
+                };
+            };
+
+            Wizard.prototype.submit = function () {
+                var self = this;
+                var t = DICT[this.lang];
+                this.submitted = true;
+                this.render();
+                if (!this.xrm) {
+                    this.submitted = false;
+                    this.toast(false, t.sentErr + "Xrm");
+                    this.render();
+                    return;
+                }
+                var output = JSON.stringify({ action: "submit", nonce: Date.now(), payload: this.buildPayload() });
+                this.xrm.WebApi.createRecord("alex_signaturerequest", { alex_wizardpayload: output }).then(
+                    function () {
+                        self.toast(true, t.sentOk);
+                        window.setTimeout(function () { self.closePane(); }, 1100);
+                    },
+                    function (err) {
+                        self.submitted = false;
+                        self.toast(false, t.sentErr + (err && err.message ? err.message : ""));
+                        self.render();
+                    }
+                );
+            };
+
+            Wizard.prototype.toast = function (ok, msg) {
+                this._toast = el("div", { "class": "edo-wz-toast " + (ok ? "ok" : "bad") + " show", text: msg });
+                if (this.root && !this.submitted) this.render();
+                else if (this.root) this.root.appendChild(this._toast);
+            };
+
+            Wizard.prototype.closePane = function () {
+                try {
+                    var X = this.xrm || getXrm();
+                    if (X && X.App && X.App.sidePanes) {
+                        var pane = this.ctx.paneId ? X.App.sidePanes.getPane(this.ctx.paneId) : X.App.sidePanes.getSelectedPane();
+                        if (pane) { pane.close(); return; }
+                    }
+                } catch (e) { }
+            };
+
+            function boot() {
+                var root = document.getElementById("edo-root");
+                var wz = new Wizard(root);
+                window.__edoWizard = wz;
+                wz.start();
+            }
+
+            if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", boot);
+            } else {
+                boot();
+            }
+        })();
+    </script>
+</body>
+</html>
