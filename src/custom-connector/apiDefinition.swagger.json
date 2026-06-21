@@ -502,6 +502,42 @@
                   "type": "string",
                   "x-ms-summary": "שם טופס | Form name",
                   "description": "Optional form name. Defaults to the template name. | שם הטופס (אופציונלי). ברירת המחדל היא שם התבנית."
+                },
+                "prefill_data": {
+                  "type": "array",
+                  "x-ms-summary": "מילוי מקדים | Prefill",
+                  "description": "Optional values to pre-fill into the draft form's fields so the preview shows real data. Each item targets a field by its technical name. Set read_only to lock the value. | ערכים אופציונליים למילוי מראש בשדות טיוטת הטופס כך שהתצוגה המקדימה תציג נתונים אמיתיים. כל פריט מכוון לשדה לפי שמו הטכני. הגדר read_only כדי לנעול את הערך.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "x-ms-summary": "שדה | Field",
+                        "description": "The template field to pre-fill (technical name). | שדה התבנית למילוי מראש (שם טכני).",
+                        "x-ms-dynamic-values": {
+                          "operationId": "GetTemplate",
+                          "parameters": {
+                            "templateId": {
+                              "parameter": "templateId"
+                            }
+                          },
+                          "value-collection": "data_headers",
+                          "value-path": "name",
+                          "value-title": "header"
+                        }
+                      },
+                      "content_value": {
+                        "type": "string",
+                        "x-ms-summary": "ערך | Value",
+                        "description": "The value to pre-fill into the field. For a checkbox use 'checked' or 'unchecked'. | הערך למילוי מראש בשדה. עבור תיבת סימון השתמש ב-'checked' או 'unchecked'."
+                      },
+                      "read_only": {
+                        "type": "boolean",
+                        "x-ms-summary": "נעילה | Lock",
+                        "description": "True locks the field so the recipient cannot edit the pre-filled value. | True נועל את השדה כך שהנמען לא יכול לערוך את הערך שמולא מראש."
+                      }
+                    }
+                  }
                 }
               }
             }

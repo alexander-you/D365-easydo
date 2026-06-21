@@ -241,8 +241,74 @@
                     ]
                   },
                   "actions": {
-                    "Create_a_draft_form_from_the_template": {
+                    "List_the_preview_prefill_values": {
                       "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "c3a0d1e2-0030-4a10-9c01-000000000030"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps",
+                          "operationId": "ListRecords",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "alex_signaturefieldvalues",
+                          "$select": "alex_fieldname,alex_value,alex_isreadonly",
+                          "$filter": "@concat('_alex_signaturerequestid_value eq ', triggerOutputs()?['body/alex_signaturerequestid'], ' and alex_direction eq 626210000')"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Build_the_preview_prefill_data": {
+                      "runAfter": {
+                        "List_the_preview_prefill_values": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "c3a0d1e2-0031-4a10-9c01-000000000031"
+                      },
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@outputs('List_the_preview_prefill_values')?['body/value']",
+                        "select": {
+                          "name": "@item()?['alex_fieldname']",
+                          "content_value": "@item()?['alex_value']",
+                          "read_only": "@coalesce(item()?['alex_isreadonly'], false)"
+                        }
+                      }
+                    },
+                    "Resolve_preview_field_bindings": {
+                      "runAfter": {
+                        "Build_the_preview_prefill_data": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "c3a0d1e2-0032-4a10-9c01-000000000032"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps",
+                          "operationId": "PerformUnboundAction",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "actionName": "alex_ResolvePrefill",
+                          "item/SignatureRequestId": "@triggerOutputs()?['body/alex_signaturerequestid']"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Create_a_draft_form_from_the_template": {
+                      "runAfter": {
+                        "Resolve_preview_field_bindings": [
+                          "Succeeded"
+                        ]
+                      },
                       "metadata": {
                         "operationMetadataId": "b2f0c1e2-0009-4a10-9c01-000000000009"
                       },
@@ -255,7 +321,8 @@
                         },
                         "parameters": {
                           "templateId": "@string(outputs('Get_the_signature_template')?['body/alex_externaltemplateid'])",
-                          "body/name": "@triggerOutputs()?['body/alex_name']"
+                          "body/name": "@triggerOutputs()?['body/alex_name']",
+                          "body/prefill_data": "@union(body('Build_the_preview_prefill_data'), json(coalesce(outputs('Resolve_preview_field_bindings')?['body/PrefillData'], '[]')))"
                         },
                         "authentication": "@parameters('$authentication')"
                       }
