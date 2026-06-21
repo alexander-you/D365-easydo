@@ -941,7 +941,8 @@
 
                 // Channels. The PRIMARY easydo channel (org-wide) is always used and
                 // shown locked; ADDITIONAL channels (when enabled and complete) are
-                // optional per-send toggles distributed via the declared CIJ / Flow.
+                // optional per-send toggles. The end user only picks what the admin
+                // allowed — no distribution internals are shown here.
                 var s = this.settings;
                 var chLabels = { email: t.channelEmail, sms: t.channelSms, whatsapp: t.channelWhatsApp };
                 var chLabel = el("div", { "class": "edo-wz-field-label", text: t.channelsLabel });
@@ -964,18 +965,9 @@
                         ]);
                         box.onclick = function () { self.channels[key] = !self.channels[key]; self.render(); };
                         chList.appendChild(box);
-                        // Show the read-only distribution declaration when selected so the
-                        // sender knows how the link reaches the recipient and must verify it.
-                        if (on) {
-                            chList.appendChild(el("div", { "class": "edo-wz-decl" }, [
-                                el("div", { "class": "edo-wz-decl-text", text: self.channelDeclaration(key, t) }),
-                                el("div", { "class": "edo-wz-decl-warn", text: t.declVerify })
-                            ]));
-                        }
                     });
                 }
                 var field = el("div", { "class": "edo-wz-field" }, [chLabel, chList]);
-                field.appendChild(el("div", { "class": "edo-wz-step-hint", text: t.channelsHint }));
                 wrap.appendChild(field);
                 return wrap;
             };
@@ -1002,20 +994,18 @@
                 }
                 addRow(t.reviewMode, this.isDraft ? t.modeDraft : t.modeSend);
                 // Channels: the primary easydo channel plus any selected additional ones.
+                // Distribution internals are intentionally omitted from the end-user view.
                 var chLabels = { email: t.channelEmail, sms: t.channelSms, whatsapp: t.channelWhatsApp };
                 var picked = [chLabels[this.settings.primaryChannel] + " (" + t.channelPrimary + ")"];
-                var declRows = [];
                 if (this.settings.multiChannel) {
                     CHANNELS.forEach(function (ch) {
                         if (ch === self.settings.primaryChannel) return;
                         if (self.channels[ch] && self.settings.allow[ch] && self.channelComplete(ch)) {
                             picked.push(chLabels[ch]);
-                            declRows.push(chLabels[ch] + " \u2014 " + self.channelDeclaration(ch, t));
                         }
                     });
                 }
                 addRow(t.reviewChannels, picked.join(", "));
-                if (declRows.length) addRow(t.reviewDistribution, declRows.join("  |  "));
                 var editedFields = this.editedFields();
                 if (editedFields.length > 0) {
                     addRow(t.reviewFields, editedFields.map(function (f) { return f.label; }).join(", "));
