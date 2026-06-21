@@ -1,13 +1,13 @@
 {
   "properties": {
     "connectionReferences": {
-      "shared_alex-5feasydoc-5f5849d39a0feaf28d": {
+      "shared_alex-5feasydo-5f5849d39a0feaf28d": {
         "runtimeSource": "embedded",
         "connection": {
-          "connectionReferenceLogicalName": "alex_EasyDoc"
+          "connectionReferenceLogicalName": "alex_easydo"
         },
         "api": {
-          "name": "shared_alex-5feasydoc-5f5849d39a0feaf28d"
+          "name": "shared_alex-5feasydo-5f5849d39a0feaf28d"
         }
       },
       "shared_commondataserviceforapps": {
@@ -249,9 +249,9 @@
                       "type": "OpenApiConnection",
                       "inputs": {
                         "host": {
-                          "connectionName": "shared_alex-5feasydoc-5f5849d39a0feaf28d",
+                          "connectionName": "shared_alex-5feasydo-5f5849d39a0feaf28d",
                           "operationId": "CreateFormFromTemplate",
-                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydoc-5f5849d39a0feaf28d"
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f5849d39a0feaf28d"
                         },
                         "parameters": {
                           "templateId": "@string(outputs('Get_the_signature_template')?['body/alex_externaltemplateid'])",
@@ -260,14 +260,80 @@
                         "authentication": "@parameters('$authentication')"
                       }
                     },
-                    "Mark_request_as_preview_ready": {
+                    "Build_the_preview_assignees": {
                       "runAfter": {
                         "Create_a_draft_form_from_the_template": [
                           "Succeeded"
                         ]
                       },
                       "metadata": {
-                        "operationMetadataId": "b2f0c1e2-000d-4a10-9c01-00000000000d"
+                        "operationMetadataId": "c3a0d1e2-0023-4a10-9c01-000000000023"
+                      },
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@outputs('List_the_recipients')?['body/value']",
+                        "select": {
+                          "email": "@item()?['alex_email']",
+                          "name": "@item()?['alex_name']",
+                          "sequence": "@item()?['alex_signingorder']",
+                          "recipient": "@equals(item()?['alex_signingorder'], 1)",
+                          "notify_platform": "any"
+                        }
+                      }
+                    },
+                    "Set_the_preview_recipients": {
+                      "runAfter": {
+                        "Build_the_preview_assignees": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "c3a0d1e2-0024-4a10-9c01-000000000024"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_alex-5feasydo-5f5849d39a0feaf28d",
+                          "operationId": "SetAssignees",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f5849d39a0feaf28d"
+                        },
+                        "parameters": {
+                          "formId": "@string(outputs('Create_a_draft_form_from_the_template')?['body/id'])",
+                          "body/assignees": "@body('Build_the_preview_assignees')"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Get_the_preview_form": {
+                      "runAfter": {
+                        "Set_the_preview_recipients": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "c3a0d1e2-0025-4a10-9c01-000000000025"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_alex-5feasydo-5f5849d39a0feaf28d",
+                          "operationId": "GetFormStatus",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f5849d39a0feaf28d"
+                        },
+                        "parameters": {
+                          "formId": "@string(outputs('Create_a_draft_form_from_the_template')?['body/id'])"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Store_the_preview_link": {
+                      "runAfter": {
+                        "Get_the_preview_form": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "c3a0d1e2-0026-4a10-9c01-000000000026"
                       },
                       "type": "OpenApiConnection",
                       "inputs": {
@@ -279,8 +345,10 @@
                         "parameters": {
                           "entityName": "alex_signaturerequests",
                           "recordId": "@triggerOutputs()?['body/alex_signaturerequestid']",
-                          "item/alex_externalformid": "@string(outputs('Create_a_draft_form_from_the_template')?['body/id'])",
-                          "item/alex_ispreviewgenerated": true
+                          "item/alex_previewurl": "@first(outputs('Get_the_preview_form')?['body/assignees'])?['fill_url']",
+                          "item/alex_previewformid": "@string(outputs('Create_a_draft_form_from_the_template')?['body/id'])",
+                          "item/alex_ispreviewgenerated": true,
+                          "item/alex_status": 626210000
                         },
                         "authentication": "@parameters('$authentication')"
                       }
@@ -377,9 +445,9 @@
                         "type": "OpenApiConnection",
                         "inputs": {
                           "host": {
-                            "connectionName": "shared_alex-5feasydoc-5f5849d39a0feaf28d",
+                            "connectionName": "shared_alex-5feasydo-5f5849d39a0feaf28d",
                             "operationId": "SendTemplate",
-                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydoc-5f5849d39a0feaf28d"
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f5849d39a0feaf28d"
                           },
                           "parameters": {
                             "templateId": "@string(outputs('Get_the_signature_template')?['body/alex_externaltemplateid'])",

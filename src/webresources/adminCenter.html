@@ -762,6 +762,14 @@
             <button class="gs-seg-btn" id="primWhatsApp" data-ch="whatsapp">WhatsApp</button>
           </div>
         </div>
+        <!-- Preview before send (optional). When on, the wizard renders the document for review before sending. -->
+        <div class="gs-master">
+          <div class="gs-main">
+            <div class="gs-name">תצוגה מקדימה לפני שליחה</div>
+            <div class="gs-desc">כאשר מופעל, אשף השליחה מאפשר למשתמש לצפות במסמך החתימה המעובד (עם הנתונים שמולאו) לפני שליחתו בפועל לחתימה.</div>
+          </div>
+          <button class="switch" id="swAllowPreview" role="switch" aria-label="תצוגה מקדימה לפני שליחה"></button>
+        </div>
         <!-- Additional channels (declarative, distributed via CIJ / Flow) -->
         <div class="gs-master">
           <div class="gs-main">
@@ -1207,7 +1215,7 @@
       function numOrNull(v) { return (v === 0 || v) ? v : null; }
       function freshSettings() {
         return {
-          id: null, primaryChannel: "email", multiChannel: false,
+          id: null, primaryChannel: "email", multiChannel: false, allowPreview: false,
           allow: { email: false, sms: false, whatsapp: false },
           method: { email: null, sms: null, whatsapp: null },
           journey: { email: "", sms: "", whatsapp: "" },
@@ -1225,7 +1233,7 @@
       }
 
       function loadSettings() {
-        var q = "?$select=alex_easydosettingsid,alex_easydochannel,alex_multichannelenabled," +
+        var q = "?$select=alex_easydosettingsid,alex_easydochannel,alex_multichannelenabled,alex_allowpreview," +
           "alex_allowemail,alex_allowsms,alex_allowwhatsapp," +
           "alex_emailmethod,alex_emailjourneyname,_alex_emailflowid_value," +
           "alex_smsmethod,alex_smsjourneyname,_alex_smsflowid_value," +
@@ -1241,6 +1249,7 @@
               id: e.alex_easydosettingsid,
               primaryChannel: pc || "email",
               multiChannel: e.alex_multichannelenabled === true,
+              allowPreview: e.alex_allowpreview === true,
               allow: {
                 email: e.alex_allowemail === true,
                 sms: e.alex_allowsms === true,
@@ -1290,6 +1299,7 @@
         var body = {
           alex_easydochannel: CH_OPT[s.primaryChannel],
           alex_multichannelenabled: s.multiChannel,
+          alex_allowpreview: s.allowPreview === true,
           alex_allowemail: s.allow.email,
           alex_allowsms: s.allow.sms,
           alex_allowwhatsapp: s.allow.whatsapp,
@@ -1338,6 +1348,15 @@
         s.primaryChannel = ch;
         s.allow[ch] = false;
         pending[ch] = false;
+        state.settings = s;
+        saveSettings();
+      }
+
+      // Optional document preview before send. When on, the wizard renders the
+      // signed document for review before the real send is performed.
+      function toggleAllowPreview() {
+        var s = currentSettings();
+        s.allowPreview = !s.allowPreview;
         state.settings = s;
         saveSettings();
       }
@@ -1418,6 +1437,7 @@
       function renderSettings() {
         var s = currentSettings();
         renderPrimary();
+        setSwitch("swAllowPreview", s.allowPreview, false);
         setSwitch("swMultiChannel", s.multiChannel, false);
         // Additional channels are disabled until the master toggle is on.
         var locked = !s.multiChannel;
@@ -1816,6 +1836,7 @@
         var btn = e.target.closest ? e.target.closest(".gs-seg-btn") : null;
         if (btn && btn.getAttribute("data-ch")) setPrimary(btn.getAttribute("data-ch"));
       });
+      $("swAllowPreview").addEventListener("click", toggleAllowPreview);
       $("swMultiChannel").addEventListener("click", toggleMultiChannel);
       $("swEmail").addEventListener("click", function () { toggleChannel("email"); });
       $("swSms").addEventListener("click", function () { toggleChannel("sms"); });

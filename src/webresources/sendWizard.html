@@ -159,6 +159,16 @@
         .edo-wz-btn.primary:hover { background: #4338ca; border-color: #4338ca; }
         .edo-wz-btn.disabled { opacity: .45; pointer-events: none; }
 
+        /* Document preview overlay */
+        .edo-wz-preview { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; padding: 18px 24px 0; }
+        .edo-wz-preview-frame { flex: 1 1 auto; min-height: 0; border: 1px solid var(--edo-line); border-radius: 10px; overflow: hidden; background: #f5f5fa; }
+        .edo-wz-preview-frame object, .edo-wz-preview-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+        .edo-wz-preview-busy { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; color: var(--edo-sub); text-align: center; }
+        .edo-wz-preview-busy .edo-wz-spin { width: 34px; height: 34px; border: 3px solid var(--edo-line); border-top-color: var(--edo-accent); border-radius: 50%; animation: edo-wz-spin 0.8s linear infinite; }
+        @keyframes edo-wz-spin { to { transform: rotate(360deg); } }
+        .edo-wz-preview-busy-title { font-weight: 600; color: var(--edo-ink); font-size: 14px; }
+        .edo-wz-preview-open { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 24px; }
+
         .edo-wz-toast { position: absolute; inset-inline: 24px; bottom: 74px; padding: 11px 14px; border-radius: 10px; font-size: 13px; font-weight: 550; box-shadow: var(--edo-shadow); display: none; }
         .edo-wz-toast.ok { background: #e9f8ef; color: #176c45; border: 1px solid #bce6cf; }
         .edo-wz-toast.bad { background: #fdeef1; color: #97233a; border: 1px solid #f3c9d2; }
@@ -194,7 +204,11 @@
                     noRecipients: "אין נמען זמין לשליחה מרשומה זו.",
                     settingsHeading: "הגדרות שליחה", settingsHint: "בחרו כיצד לשלוח את המסמך.",
                     modeSend: "שליחה לחתימה", modeSendDesc: "המסמך נשלח מיד לנמענים בדוא\"ל לחתימה.",
-                    modeDraft: "טיוטה / תצוגה מקדימה", modeDraftDesc: "נוצרת טיוטה לתצוגה מקדימה ללא שליחה לנמענים.",
+                    modeDraft: "תצוגה מקדימה לפני שליחה", modeDraftDesc: "המסמך מעובד עם הנתונים ומוצג לבדיקה. השליחה לנמענים מתבצעת רק לאחר אישורך.",
+                    previewBuilding: "מכין תצוגה מקדימה של המסמך...", previewBuildingHint: "זה עשוי להימשך מספר שניות.",
+                    previewHeading: "תצוגה מקדימה של המסמך", previewHint: "המסמך נפתח בכרטיסייה חדשה לבדיקה. לאחר אישור הוא יישלח לחתימה.",
+                    previewOpen: "פתיחת המסמך", previewOpenHint: "אם המסמך לא נפתח אוטומטית, לחצו על הכפתור.",
+                    previewApprove: "אישור ושליחה", previewBack: "חזרה לעריכה", previewErr: "הכנת התצוגה המקדימה נכשלה: ", previewUnavailable: "לא ניתן להציג תצוגה מקדימה של המסמך.",
                     channelsLabel: "ערוצי שליחה", channelEmail: "דוא\"ל", channelSms: "SMS", channelWhatsApp: "WhatsApp",
                     channelPrimary: "ערוץ easydo ראשי",
                     channelsHint: "easydo שולחת את ההתראה בערוץ הראשי. ערוצים נוספים מפיצים את קישור החתימה דרך שירות הלקוח לפי הגדרת ההפצה של הארגון.",
@@ -229,7 +243,11 @@
                     noRecipients: "No recipient is available to send from this record.",
                     settingsHeading: "Send settings", settingsHint: "Choose how to send the document.",
                     modeSend: "Send for signature", modeSendDesc: "The document is sent to recipients by email right away.",
-                    modeDraft: "Draft / preview", modeDraftDesc: "A draft is created for preview without sending to recipients.",
+                    modeDraft: "Preview before send", modeDraftDesc: "The document is rendered with the data and shown for review. It is sent to recipients only after you approve.",
+                    previewBuilding: "Preparing the document preview...", previewBuildingHint: "This can take a few seconds.",
+                    previewHeading: "Document preview", previewHint: "The document opens in a new tab for review. Once approved it will be sent for signature.",
+                    previewOpen: "Open the document", previewOpenHint: "If the document didn't open automatically, click the button.",
+                    previewApprove: "Approve & send", previewBack: "Back to editing", previewErr: "Preparing the preview failed: ", previewUnavailable: "The document preview cannot be displayed.",
                     channelsLabel: "Send channels", channelEmail: "Email", channelSms: "SMS", channelWhatsApp: "WhatsApp",
                     channelPrimary: "Primary easydo channel",
                     channelsHint: "easydo notifies on the primary channel. Additional channels distribute the signing link through your organization's configured method.",
@@ -310,6 +328,11 @@
                 this.selectedTemplateId = "";
                 this.recipients = [];
                 this.isDraft = false;
+                this.previewState = null; // null | "building" | "ready" | "error"
+                this.previewRequestId = null;
+                this.previewUrl = null;
+                this.previewOpened = false;
+                this.previewError = "";
                 this.demo = false;
                 this.submitted = false;
                 this.fields = [];
@@ -319,7 +342,7 @@
                 // Global send settings (loaded from alex_easydosettings). Until loaded
                 // the feature is treated as off (primary channel = email).
                 this.settings = {
-                    primaryChannel: "email", multiChannel: false,
+                    primaryChannel: "email", multiChannel: false, allowPreview: false,
                     allow: { email: false, sms: false, whatsapp: false },
                     method: { email: null, sms: null, whatsapp: null },
                     journey: { email: "", sms: "", whatsapp: "" },
@@ -353,7 +376,7 @@
             // plus the additional channels and their distribution declarations.
             Wizard.prototype.loadSettings = function () {
                 if (!this.xrm) return Promise.resolve(null);
-                var q = "?$select=alex_easydochannel,alex_multichannelenabled,alex_allowemail,alex_allowsms,alex_allowwhatsapp," +
+                var q = "?$select=alex_easydochannel,alex_multichannelenabled,alex_allowpreview,alex_allowemail,alex_allowsms,alex_allowwhatsapp," +
                     "alex_emailmethod,alex_emailjourneyname,_alex_emailflowid_value," +
                     "alex_smsmethod,alex_smsjourneyname,_alex_smsflowid_value," +
                     "alex_whatsappmethod,alex_whatsappjourneyname,_alex_whatsappflowid_value&$top=1";
@@ -374,6 +397,7 @@
                     this.settings = {
                         primaryChannel: pc || "email",
                         multiChannel: row.alex_multichannelenabled === true,
+                        allowPreview: row.alex_allowpreview === true,
                         allow: {
                             email: row.alex_allowemail === true,
                             sms: row.alex_allowsms === true,
@@ -660,6 +684,12 @@
                 this.root.innerHTML = "";
                 this.root.appendChild(this.buildHeader(t));
                 this.root.appendChild(this.buildSubtitle(t));
+                // Document preview takes over the body once requested.
+                if (this.previewState) {
+                    this.root.appendChild(this.buildPreview(t));
+                    if (this._toast) this.root.appendChild(this._toast);
+                    return;
+                }
                 var body = el("div", { "class": "edo-wz-body" });
                 body.appendChild(this.buildNav(t));
                 body.appendChild(this.buildContent(t));
@@ -936,7 +966,10 @@
                     return card;
                 };
                 modeCards.appendChild(mkMode(false, t.modeSend, t.modeSendDesc));
-                modeCards.appendChild(mkMode(true, t.modeDraft, t.modeDraftDesc));
+                // The preview option is only offered when the org enabled it.
+                if (this.settings && this.settings.allowPreview) {
+                    modeCards.appendChild(mkMode(true, t.modeDraft, t.modeDraftDesc));
+                }
                 wrap.appendChild(modeCards);
 
                 // Channels. The PRIMARY easydo channel (org-wide) is always used and
@@ -1159,6 +1192,166 @@
                 }
                 var output = JSON.stringify({ action: "submit", nonce: Date.now(), payload: this.buildPayload() });
                 this.xrm.WebApi.createRecord("alex_signaturerequest", { alex_wizardpayload: output }).then(
+                    function (res) {
+                        // Preview mode: keep the pane open, wait for the rendered PDF,
+                        // then show it for approval before the real send.
+                        if (self.isDraft) {
+                            self.previewRequestId = res && res.id ? res.id.replace(/[{}]/g, "") : null;
+                            self.previewState = "building";
+                            self.previewUrl = null;
+                            self.previewOpened = false;
+                            self.previewError = "";
+                            self.submitted = false;
+                            self.render();
+                            self.pollPreview(0);
+                            return;
+                        }
+                        self.toast(true, t.sentOk);
+                        window.setTimeout(function () { self.closePane(); }, 1100);
+                    },
+                    function (err) {
+                        self.submitted = false;
+                        self.toast(false, t.sentErr + (err && err.message ? err.message : ""));
+                        self.render();
+                    }
+                );
+            };
+
+            // Poll the just-created request until the Send flow's preview branch has
+            // generated the draft form (alex_ispreviewgenerated) and stored the easydo
+            // viewer link (alex_previewurl) for review.
+            Wizard.prototype.pollPreview = function (attempt) {
+                var self = this;
+                var t = DICT[this.lang];
+                if (!this.previewRequestId || this.previewState !== "building") return;
+                if (attempt > 40) { // ~2 minutes at 3s
+                    this.previewState = "error";
+                    this.previewError = t.previewUnavailable;
+                    this.render();
+                    return;
+                }
+                var sel = "?$select=alex_ispreviewgenerated,alex_previewurl,alex_status";
+                this.xrm.WebApi.retrieveRecord("alex_signaturerequest", this.previewRequestId, sel).then(
+                    function (rec) {
+                        if (self.previewState !== "building") return;
+                        // Failed status (626210008) aborts the wait.
+                        if (rec && rec.alex_status === 626210008) {
+                            self.previewState = "error";
+                            self.previewError = t.previewUnavailable;
+                            self.render();
+                            return;
+                        }
+                        if (rec && rec.alex_ispreviewgenerated === true && rec.alex_previewurl) {
+                            self.previewUrl = rec.alex_previewurl;
+                            self.previewState = "ready";
+                            self.render();
+                            return;
+                        }
+                        window.setTimeout(function () { self.pollPreview(attempt + 1); }, 3000);
+                    },
+                    function () {
+                        window.setTimeout(function () { self.pollPreview(attempt + 1); }, 3000);
+                    }
+                );
+            };
+
+            // Build the preview screen: a busy spinner while rendering, then a card
+            // that opens the easydo viewer in a new tab (easydo blocks iframe framing),
+            // plus Approve/Back actions.
+            Wizard.prototype.buildPreview = function (t) {
+                var self = this;
+                var wrap = el("div", { "class": "edo-wz-preview" });
+                if (this.previewState === "building") {
+                    var busy = el("div", { "class": "edo-wz-preview-busy" }, [
+                        el("div", { "class": "edo-wz-spin" }),
+                        el("div", { "class": "edo-wz-preview-busy-title", text: t.previewBuilding }),
+                        el("div", { text: t.previewBuildingHint })
+                    ]);
+                    wrap.appendChild(busy);
+                    return wrap;
+                }
+                if (this.previewState === "error") {
+                    wrap.appendChild(el("div", { "class": "edo-wz-preview-busy" }, [
+                        el("div", { "class": "edo-wz-err", text: this.previewError || t.previewUnavailable })
+                    ]));
+                    wrap.appendChild(this.buildPreviewFooter(t, false));
+                    return wrap;
+                }
+                // ready
+                wrap.appendChild(el("div", { "class": "edo-wz-step-head" }, [
+                    el("div", { "class": "edo-wz-step-title", text: t.previewHeading }),
+                    el("div", { "class": "edo-wz-step-hint", text: t.previewHint })
+                ]));
+                var frame = el("div", { "class": "edo-wz-preview-frame" });
+                if (this.previewUrl) {
+                    // Auto-open the viewer in a new tab once.
+                    if (!this.previewOpened) {
+                        this.previewOpened = true;
+                        try { window.open(this.previewUrl, "_blank", "noopener"); } catch (e) { }
+                    }
+                    var openBtn = el("button", { "class": "edo-wz-btn primary", text: t.previewOpen });
+                    openBtn.onclick = function () { try { window.open(self.previewUrl, "_blank", "noopener"); } catch (e) { } };
+                    frame.appendChild(el("div", { "class": "edo-wz-preview-open" }, [
+                        openBtn,
+                        el("div", { "class": "edo-wz-step-hint", text: t.previewOpenHint })
+                    ]));
+                } else {
+                    frame.appendChild(el("div", { "class": "edo-wz-preview-busy" }, [
+                        el("div", { "class": "edo-wz-err", text: t.previewUnavailable })
+                    ]));
+                }
+                wrap.appendChild(frame);
+                wrap.appendChild(this.buildPreviewFooter(t, true));
+                return wrap;
+            };
+
+            Wizard.prototype.buildPreviewFooter = function (t, ready) {
+                var self = this;
+                var back = el("button", { "class": "edo-wz-btn ghost", text: t.previewBack });
+                back.onclick = function () { self.cancelPreview(); };
+                var nav = el("div", { "class": "edo-wz-foot-nav" }, [back]);
+                if (ready) {
+                    var approve = el("button", { "class": "edo-wz-btn primary", text: this.submitted ? t.sending : t.previewApprove });
+                    if (this.submitted) approve.classList.add("disabled");
+                    approve.onclick = function () { self.approvePreview(); };
+                    nav.appendChild(approve);
+                }
+                return el("div", { "class": "edo-wz-footer" }, [
+                    el("div", { "class": "edo-wz-foot-start" }, []),
+                    nav
+                ]);
+            };
+
+            // Abandon the preview and return to the wizard. The draft request stays
+            // in Draft status (not sent); a fresh submit creates a new request.
+            Wizard.prototype.cancelPreview = function () {
+                this.previewState = null;
+                this.previewUrl = null;
+                this.previewOpened = false;
+                this.previewError = "";
+                var stale = this.previewRequestId;
+                this.previewRequestId = null;
+                this.submitted = false;
+                this.step = this.computeSteps().length - 1; // back to review
+                this.render();
+                // Best-effort: cancel the orphaned draft so it doesn't linger.
+                if (stale && this.xrm) {
+                    this.xrm.WebApi.updateRecord("alex_signaturerequest", stale, { alex_status: 626210009 }).then(function () { }, function () { });
+                }
+            };
+
+            // Approve the preview: flip the SAME request out of draft mode and arm it
+            // for the real send. The Send flow's send branch fires and notifies.
+            Wizard.prototype.approvePreview = function () {
+                var self = this;
+                var t = DICT[this.lang];
+                if (!this.previewRequestId || !this.xrm) return;
+                this.submitted = true;
+                this.render();
+                this.xrm.WebApi.updateRecord("alex_signaturerequest", this.previewRequestId, {
+                    alex_isdraft: false,
+                    alex_status: 626210001
+                }).then(
                     function () {
                         self.toast(true, t.sentOk);
                         window.setTimeout(function () { self.closePane(); }, 1100);
@@ -1170,6 +1363,7 @@
                     }
                 );
             };
+
 
             Wizard.prototype.toast = function (ok, msg) {
                 this._toast = el("div", { "class": "edo-wz-toast " + (ok ? "ok" : "bad") + " show", text: msg });
