@@ -614,15 +614,6 @@
         { id: "50007ad1-876a-f111-ab0c-7ced8d72428a", he: "שליחת בקשת חתימה" }
       ];
 
-      // deployment status (alex_deploymentstatus) -> [label, pill kind]
-      var DEP_STATUS = {
-        1: ["ממתין", "warn"],
-        2: ["בפריסה", "warn"],
-        3: ["מותקן", "ok"],
-        4: ["הוסר", "muted"],
-        5: ["נכשל", "bad"]
-      };
-
       // ---- Xrm + helpers ----
       function getXrm() {
         if (typeof Xrm !== "undefined" && Xrm.WebApi) return Xrm;
@@ -854,7 +845,7 @@
       }
 
       function loadConfigs() {
-        var q = "?$select=alex_easydoentityconfigid,alex_entitylogicalname,alex_entitydisplayname,alex_sendenabled,alex_deploymentstatus";
+        var q = "?$select=alex_easydoentityconfigid,alex_entitylogicalname,alex_entitydisplayname,alex_sendenabled,alex_enableonform";
         return xrm.WebApi.retrieveMultipleRecords("alex_easydoentityconfig", q).then(function (res) {
           state.configs = {};
           res.entities.forEach(function (e) {
@@ -865,7 +856,7 @@
               logical: ln,
               display: e.alex_entitydisplayname || ln,
               enabled: e.alex_sendenabled === true,
-              status: e.alex_deploymentstatus || null
+              onForm: e.alex_enableonform === true
             };
           });
           renderSendSummary();
@@ -924,13 +915,15 @@
           return;
         }
         list.forEach(function (cfg) {
-          var st = DEP_STATUS[cfg.status] || ["ממתין", "warn"];
+          var active = cfg.onForm;
+          var stLabel = active ? "פעיל בטופס" : "מוגדר (לא בטופס)";
+          var stKind = active ? "ok" : "warn";
           var row = document.createElement("div");
           row.className = "titem col";
           row.innerHTML =
             '<div class="ti-main"><div class="ti-name"></div><div class="ti-logical"></div></div>' +
             '<div class="ti-foot">' +
-              '<span class="pill ' + st[1] + ' sm"><span class="pdot"></span>' + st[0] + '</span>' +
+              '<span class="pill ' + stKind + ' sm"><span class="pdot"></span>' + stLabel + '</span>' +
               '<div class="ti-act"></div>' +
             '</div>';
           row.querySelector(".ti-name").textContent = cfg.display;
