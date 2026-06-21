@@ -4,6 +4,74 @@
 
 All notable changes to this project are documented here.
 
+## [Unreleased] — signed PDF on the primary record, smart last-viewed & per-table lookups (2026-06-21)
+
+### Added
+
+- **Signed PDF lands on the business record (not the request).** New Custom API
+  **`alex_AttachSignedPdf`** (`AttachSignedPdfPlugin`) takes the request id, file
+  name and base64 PDF, resolves the request's **primary** record
+  (`alex_primaryrecordid` + the template's `alex_primarytable`, with a contact
+  fallback) and creates **one** annotation on **that** record's Timeline. The
+  read-back flow now calls it via `PerformUnboundAction` instead of attaching a note
+  to the signature request itself.
+- **Smart "last viewed".** New datetime column **`alex_lastviewedon`** on
+  `alex_signaturerequest` (`src/scripts/23-add-lastviewedon-column.ps1`). The
+  read-back flow filters the easydo assignee **engagement log** for `action = view`
+  and stores only the **most recent** view time — a single meaningful timestamp,
+  not a visit counter. Added to the request main form.
+- **Per-table dedicated lookups.** Each supported primary table gets a native lookup
+  on `alex_signaturerequest` (`alex_related<table>id`, e.g.
+  `alex_RelatedEntitlementId`), provisioned **on the fly** by
+  `src/scripts/22-create-related-record-lookups.ps1` (one per distinct
+  `alex_primarytable`; contact already covered by `alex_relatedcontactid`).
+  `PopulateAnchorPlugin` fills the matching lookup alongside the anchor. The
+  entitlement lookup was added to the request main form.
+
+### Decisions
+
+- The signed PDF is attached to the **primary business record only** — no duplicate
+  note on the signature request.
+- Lookup-column existence is checked via **`RetrieveEntityRequest`** (entity
+  metadata), cached per process — `RetrieveAttributeRequest` failed silently inside
+  the plug-in sandbox (anchor set but lookup left empty).
+
+### Verified
+
+- Entitlement-anchored request → `alex_relatedentitlementid` populated (live E2E,
+  test record deleted afterwards). Items A/B deploy on the next 5-minute read-back
+  cycle for a completing request.
+
+## [Unreleased] — send wizard, entity config & template control flags (2026-06-20)
+
+### Added
+
+- **Send wizard** as an HTML **web resource** hosted in a model-driven **side pane**
+  (`src/webresources/sendWizard.html` + launcher `formSend.js`). Same-origin, so it
+  uses native `Xrm.WebApi` (no premium connector). Steps: template → data
+  (prefill/validate) → recipients → review.
+- **Wizard intake plug-in** (`WizardIntakePlugin`): parses the wizard JSON
+  (`alex_wizardpayload`) into a full signature request — resolving template + related
+  fields (pre-validation) and creating recipient rows + flipping status to
+  *Ready to Send* (post-operation).
+- **Template control flags** surfaced in the field-mapping **PCF** config strip
+  (v0.4.0): `alex_allowsendfromobject` (hide a template from the wizard) and
+  `alex_allowprefilledit` (enable the data step), plus `alex_rolesjson` for named
+  signer roles. Backing columns by `src/scripts/14-add-template-send-wizard-columns.ps1`
+  and backfill `15-backfill-template-roles-and-sendflag.ps1`.
+- **Entity-config table** `alex_easydoentityconfig` (`16`/`20` scripts) and a
+  global form button to launch the wizard (`19-deploy-global-formbutton.ps1`),
+  plus `21-add-wizard-payload-column.ps1`.
+
+### Decisions
+
+- Wizard UI is a **side-pane web resource**, not a canvas custom page or full-page
+  PCF: canvas custom pages cannot read/write Dataverse at runtime in this env, and
+  a custom full-page PCF (`pagetype=control`) is unsupported. Same-origin web
+  resource → native `Xrm.WebApi`.
+- ResolvePrefill / write-back fall back to the **related contact** as the anchor when
+  the template's primary table is `contact` and no explicit anchor is present.
+
 ## [Unreleased] — field prefill, lock & per-request values (2026-06-18)
 
 ### Discovered & verified (live, production)
