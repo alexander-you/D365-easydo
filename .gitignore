@@ -63,3 +63,7 @@ desktop.ini
 
 # Local-only design mockups
 mockup/
+
+# Local test/demo documents (binary, not source)
+demodoc.doc
+*.demo.doc

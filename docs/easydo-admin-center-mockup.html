@@ -1,0 +1,1161 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>easydo Administration Center Mockup</title>
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("clawpilotTheme");
+      const theme =
+        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --cp-bg: #f7f4ef;
+      --cp-bg-elevated: #fcfbf8;
+      --cp-surface: #ffffff;
+      --cp-surface-soft: #f5f5f5;
+      --cp-border: #dedede;
+      --cp-border-strong: #919191;
+      --cp-text: #242424;
+      --cp-text-muted: #5c5c5c;
+      --cp-text-soft: #6f6f6f;
+      --cp-accent: #b11f4b;
+      --cp-accent-hover: #9a1a41;
+      --cp-accent-soft: rgba(177, 31, 75, 0.08);
+      --cp-accent-fg: #ffffff;
+      --cp-success: #16a34a;
+      --cp-danger: #dc2626;
+      --cp-warning: #f59e0b;
+      --cp-link: #0078d4;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+      --cp-overlay: rgba(255, 255, 255, 0.8);
+      --cp-panel: rgba(255, 255, 255, 0.86);
+      --cp-panel-strong: rgba(255, 255, 255, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.55);
+      --cp-highlight: rgba(177, 31, 75, 0.12);
+    }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --cp-bg: #3d3b3a;
+      --cp-bg-elevated: #343231;
+      --cp-surface: #292929;
+      --cp-surface-soft: #2e2e2e;
+      --cp-border: #474747;
+      --cp-border-strong: #5f5f5f;
+      --cp-text: #dedede;
+      --cp-text-muted: #919191;
+      --cp-text-soft: #b0b0b0;
+      --cp-accent: #fd8ea1;
+      --cp-accent-hover: #fb7b91;
+      --cp-accent-soft: rgba(253, 142, 161, 0.14);
+      --cp-accent-fg: #1a1a1a;
+      --cp-success: #4ade80;
+      --cp-danger: #f87171;
+      --cp-warning: #fbbf24;
+      --cp-link: #4da6ff;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+      --cp-overlay: rgba(41, 41, 41, 0.88);
+      --cp-panel: rgba(41, 41, 41, 0.72);
+      --cp-panel-strong: rgba(41, 41, 41, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.04);
+      --cp-highlight: rgba(253, 142, 161, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--cp-bg);
+      color: var(--cp-text);
+      font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 248px minmax(0, 1fr);
+      background:
+        linear-gradient(135deg, var(--cp-sheen), transparent 42%),
+        var(--cp-bg);
+    }
+
+    .side-nav {
+      border-left: 1px solid var(--cp-border);
+      background: var(--cp-panel-strong);
+      padding: 18px 14px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 0.625rem;
+      background: var(--cp-accent);
+      color: var(--cp-accent-fg);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .brand-subtitle {
+      font-size: 12px;
+      color: var(--cp-text-muted);
+    }
+
+    .nav-group-title {
+      color: var(--cp-text-soft);
+      font-size: 12px;
+      font-weight: 700;
+      margin: 18px 8px 8px;
+    }
+
+    .nav-item {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: var(--cp-text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-radius: 0.625rem;
+      padding: 10px;
+      cursor: pointer;
+      text-align: start;
+    }
+
+    .nav-item:hover,
+    .nav-item.active {
+      background: var(--cp-accent-soft);
+    }
+
+    .nav-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 0.625rem;
+      border: 1px solid var(--cp-border);
+      display: grid;
+      place-items: center;
+      color: var(--cp-accent);
+      background: var(--cp-surface);
+      font-size: 13px;
+    }
+
+    .page {
+      min-width: 0;
+      padding: 24px;
+    }
+
+    .command-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--cp-text-muted);
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 1px solid var(--cp-border);
+      background: var(--cp-surface);
+      color: var(--cp-text);
+      border-radius: 0.625rem;
+      padding: 8px 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      min-height: 36px;
+    }
+
+    .btn:hover {
+      border-color: var(--cp-border-strong);
+      background: var(--cp-surface-soft);
+    }
+
+    .btn.primary {
+      border-color: var(--cp-accent);
+      background: var(--cp-accent);
+      color: var(--cp-accent-fg);
+    }
+
+    .btn.primary:hover {
+      background: var(--cp-accent-hover);
+    }
+
+    .hero {
+      background: var(--cp-panel-strong);
+      border: 1px solid var(--cp-border);
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 0 2px var(--cp-border), 0 1px 2px var(--cp-border);
+      margin-bottom: 18px;
+    }
+
+    .hero-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .eyebrow {
+      color: var(--cp-accent);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 28px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .hero-copy {
+      max-width: 760px;
+      color: var(--cp-text-muted);
+      margin-top: 8px;
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      border: 1px solid var(--cp-border);
+      padding: 7px 10px;
+      background: var(--cp-surface);
+      color: var(--cp-text);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--cp-success);
+      flex: 0 0 auto;
+    }
+
+    .dot.warn {
+      background: var(--cp-warning);
+    }
+
+    .dot.bad {
+      background: var(--cp-danger);
+    }
+
+    .metric-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .metric {
+      border: 1px solid var(--cp-border);
+      background: var(--cp-surface);
+      border-radius: 0.625rem;
+      padding: 12px;
+      min-height: 82px;
+    }
+
+    .metric-value {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .metric-label {
+      margin-top: 4px;
+      color: var(--cp-text-muted);
+      font-size: 12px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--cp-border);
+      margin: 18px 0;
+      overflow: auto;
+    }
+
+    .tab {
+      border: 0;
+      background: transparent;
+      color: var(--cp-text-muted);
+      padding: 12px 14px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+    }
+
+    .tab.active {
+      color: var(--cp-accent);
+      border-bottom-color: var(--cp-accent);
+      font-weight: 700;
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+      animation: fadeIn 180ms ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(300px, 0.6fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel,
+    .card {
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-border);
+      border-radius: 16px;
+      box-shadow: 0 0 2px var(--cp-border), 0 1px 2px var(--cp-border);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px;
+      border-bottom: 1px solid var(--cp-border);
+    }
+
+    .panel-title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .panel-subtitle {
+      color: var(--cp-text-muted);
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .setup-list {
+      display: grid;
+      gap: 10px;
+      padding: 16px;
+    }
+
+    .setup-card {
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      border: 1px solid var(--cp-border);
+      border-radius: 0.625rem;
+      padding: 12px;
+      background: var(--cp-bg-elevated);
+    }
+
+    .step-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 0.625rem;
+      display: grid;
+      place-items: center;
+      background: var(--cp-accent-soft);
+      color: var(--cp-accent);
+      font-weight: 700;
+    }
+
+    .setup-card h3 {
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+
+    .setup-card p {
+      color: var(--cp-text-muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .quick-grid {
+      padding: 16px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .quick-link {
+      border: 1px solid var(--cp-border);
+      border-radius: 0.625rem;
+      padding: 12px;
+      background: var(--cp-bg-elevated);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .quick-link strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 3px;
+    }
+
+    .quick-link span {
+      color: var(--cp-text-muted);
+      font-size: 12px;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 16px;
+      border-bottom: 1px solid var(--cp-border);
+    }
+
+    .search {
+      min-width: 240px;
+      border: 1px solid var(--cp-border);
+      border-radius: 0.625rem;
+      padding: 9px 12px;
+      background: var(--cp-surface);
+      color: var(--cp-text);
+    }
+
+    .select {
+      border: 1px solid var(--cp-border);
+      border-radius: 0.625rem;
+      padding: 9px 12px;
+      background: var(--cp-surface);
+      color: var(--cp-text);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--cp-border);
+      text-align: start;
+      vertical-align: middle;
+    }
+
+    th {
+      color: var(--cp-text-muted);
+      font-weight: 700;
+      background: var(--cp-surface-soft);
+      white-space: nowrap;
+    }
+
+    tr:hover td {
+      background: var(--cp-accent-soft);
+    }
+
+    .name-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .name-cell strong {
+      font-size: 14px;
+    }
+
+    .name-cell span {
+      color: var(--cp-text-muted);
+      font-size: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 5px 9px;
+      border: 1px solid var(--cp-border);
+      background: var(--cp-surface);
+      color: var(--cp-text);
+      white-space: nowrap;
+    }
+
+    .badge.good {
+      color: var(--cp-success);
+      border-color: var(--cp-success);
+    }
+
+    .badge.warn {
+      color: var(--cp-warning);
+      border-color: var(--cp-warning);
+    }
+
+    .badge.bad {
+      color: var(--cp-danger);
+      border-color: var(--cp-danger);
+    }
+
+    .progress {
+      height: 8px;
+      border-radius: 999px;
+      background: var(--cp-surface-soft);
+      overflow: hidden;
+      border: 1px solid var(--cp-border);
+      width: 120px;
+    }
+
+    .progress > span {
+      display: block;
+      height: 100%;
+      background: var(--cp-accent);
+    }
+
+    .split-cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .card {
+      padding: 16px;
+    }
+
+    .card h3 {
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      color: var(--cp-text-muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .timeline {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .event {
+      display: grid;
+      grid-template-columns: 14px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+    }
+
+    .event-marker {
+      width: 10px;
+      height: 10px;
+      margin-top: 4px;
+      border-radius: 999px;
+      background: var(--cp-accent);
+    }
+
+    .event strong {
+      display: block;
+      font-size: 13px;
+    }
+
+    .event span {
+      color: var(--cp-text-muted);
+      font-size: 12px;
+    }
+
+    .drawer {
+      position: fixed;
+      inset: 0 0 0 auto;
+      width: min(440px, 94vw);
+      transform: translateX(110%);
+      visibility: hidden;
+      pointer-events: none;
+      transition: transform 180ms ease-out;
+      background: var(--cp-panel-strong);
+      border-right: 1px solid var(--cp-border);
+      box-shadow: var(--cp-shadow);
+      z-index: 20;
+      padding: 18px;
+      overflow: auto;
+    }
+
+    .drawer.open {
+      transform: translateX(0);
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .drawer h2 {
+      font-size: 20px;
+      margin-bottom: 6px;
+    }
+
+    .detail-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .detail-row {
+      border: 1px solid var(--cp-border);
+      background: var(--cp-surface);
+      border-radius: 0.625rem;
+      padding: 12px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .detail-row span {
+      color: var(--cp-text-muted);
+      font-size: 12px;
+    }
+
+    .detail-row strong {
+      font-size: 14px;
+    }
+
+    .mobile-only {
+      display: none;
+    }
+
+    @media (max-width: 1100px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .side-nav {
+        position: static;
+        height: auto;
+        border-left: 0;
+        border-bottom: 1px solid var(--cp-border);
+      }
+
+      .side-nav nav {
+        display: flex;
+        gap: 8px;
+        overflow: auto;
+      }
+
+      .nav-group-title {
+        display: none;
+      }
+
+      .nav-item {
+        white-space: nowrap;
+      }
+
+      .section-grid,
+      .split-cards,
+      .metric-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        padding: 14px;
+      }
+
+      .hero-top,
+      .setup-card,
+      .command-bar {
+        grid-template-columns: 1fr;
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      h1 {
+        font-size: 23px;
+      }
+
+      table {
+        min-width: 720px;
+      }
+
+      .table-wrap {
+        overflow: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="side-nav" aria-label="easydo admin navigation">
+      <div class="brand">
+        <div class="brand-mark">e</div>
+        <div>
+          <div class="brand-title">easydo</div>
+          <div class="brand-subtitle">מרכז ניהול</div>
+        </div>
+      </div>
+      <nav>
+        <div class="nav-group-title">ניהול מאוחד</div>
+        <button class="nav-item active" data-tab="overview"><span class="nav-icon">01</span><span>סקירה והגדרה</span></button>
+        <button class="nav-item" data-tab="templates"><span class="nav-icon">02</span><span>תבניות</span></button>
+        <button class="nav-item" data-tab="entities"><span class="nav-icon">03</span><span>טבלאות מקור</span></button>
+        <button class="nav-item" data-tab="operations"><span class="nav-icon">04</span><span>בקשות ותפעול</span></button>
+        <button class="nav-item" data-tab="health"><span class="nav-icon">05</span><span>בריאות ואבחון</span></button>
+      </nav>
+    </aside>
+
+    <main class="page">
+      <div class="command-bar">
+        <div class="breadcrumbs">
+          <span>easydo</span>
+          <span>/</span>
+          <strong>מרכז ניהול</strong>
+        </div>
+        <div class="actions">
+          <button class="btn" id="themeToggle">החלף ערכת נושא</button>
+          <button class="btn">רענן נתונים</button>
+          <button class="btn primary" data-open-drawer="health">בדוק חיבור</button>
+        </div>
+      </div>
+
+      <section class="hero">
+        <div class="hero-top">
+          <div>
+            <div class="eyebrow">פקד PCF מוצע למודל דריבן</div>
+            <h1>מרכז ניהול easydo</h1>
+            <p class="hero-copy">מקום אחד לניהול החיבור, סנכרון תבניות, הפעלת כפתור שליחה בטבלאות Dynamics, מעקב בקשות חתימה ואבחון כשלים.</p>
+          </div>
+          <div class="status-pill"><span class="dot"></span><span>מחובר ל-easydo production</span></div>
+        </div>
+        <div class="metric-row">
+          <div class="metric"><div class="metric-value">12</div><div class="metric-label">תבניות מסונכרנות</div></div>
+          <div class="metric"><div class="metric-value">9</div><div class="metric-label">תבניות מוכנות לשליחה</div></div>
+          <div class="metric"><div class="metric-value">4</div><div class="metric-label">טבלאות מקור פעילות</div></div>
+          <div class="metric"><div class="metric-value">27</div><div class="metric-label">בקשות פתוחות</div></div>
+          <div class="metric"><div class="metric-value">2</div><div class="metric-label">כשלים דורשים טיפול</div></div>
+        </div>
+      </section>
+
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="overview">סקירה והגדרה</button>
+        <button class="tab" data-tab="templates">תבניות</button>
+        <button class="tab" data-tab="entities">טבלאות מקור</button>
+        <button class="tab" data-tab="operations">בקשות ותפעול</button>
+        <button class="tab" data-tab="health">בריאות ואבחון</button>
+      </div>
+
+      <section class="view active" id="overview">
+        <div class="section-grid">
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">דרישות מוקדמות</div>
+                <div class="panel-subtitle">שלבי הקמה בסגנון מרכז הניהול של שירות הלקוחות</div>
+              </div>
+              <span class="badge warn"><span class="dot warn"></span>שלב 2 דורש טיפול</span>
+            </div>
+            <div class="setup-list">
+              <article class="setup-card">
+                <div class="step-badge">1</div>
+                <div>
+                  <h3>חיבור easydo</h3>
+                  <p>בדיקת connection reference, זיהוי entity, שפה ויכולות חשבון זמינות.</p>
+                </div>
+                <span class="badge good">תקין</span>
+              </article>
+              <article class="setup-card">
+                <div class="step-badge">2</div>
+                <div>
+                  <h3>תבניות ומיפויי שדות</h3>
+                  <p>סנכרון תבניות easydo והשלמת שדות חובה לפני שהן זמינות לשליחה.</p>
+                </div>
+                <button class="btn" data-open-drawer="template">נהל</button>
+              </article>
+              <article class="setup-card">
+                <div class="step-badge">3</div>
+                <div>
+                  <h3>הפעלה בטבלאות Dynamics</h3>
+                  <p>בחירת טבלאות מקור שבהן יופיע כפתור שליחת מסמך easydo.</p>
+                </div>
+                <span class="badge good">תקין</span>
+              </article>
+            </div>
+          </div>
+
+          <aside class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">פעולות מהירות</div>
+                <div class="panel-subtitle">הפעולות שמנהל צריך ביום יום</div>
+              </div>
+            </div>
+            <div class="quick-grid">
+              <div class="quick-link"><div><strong>סנכרון תבניות</strong><span>מרענן תבניות ושדות מ-easydo</span></div><button class="btn">הפעל</button></div>
+              <div class="quick-link"><div><strong>בדיקת בקשות פתוחות</strong><span>מרענן סטטוס ומוריד PDF חתום</span></div><button class="btn">בדוק</button></div>
+              <div class="quick-link"><div><strong>ניהול כפתור שליחה</strong><span>הפעלה לפי טבלת מקור</span></div><button class="btn">נהל</button></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="templates">
+        <div class="split-cards">
+          <div class="card"><h3>פעילות</h3><p>תבניות זמינות לשליחה מתוך רשומות Dynamics.</p></div>
+          <div class="card"><h3>דורשות טיפול</h3><p>שדות חובה לא ממופים, טבלת מקור חסרה או סנכרון ישן.</p></div>
+          <div class="card"><h3>לא פעילות</h3><p>תבניות שהושבתו או אינן מוצגות באשף השליחה.</p></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">תבניות חתימה</div>
+              <div class="panel-subtitle">הציר הניהולי המרכזי של הפתרון</div>
+            </div>
+            <button class="btn primary">סנכרן תבניות</button>
+          </div>
+          <div class="filter-bar">
+            <input class="search" placeholder="חפש לפי שם תבנית או מזהה easydo">
+            <select class="select"><option>כל הסטטוסים</option><option>פעילה</option><option>דורשת טיפול</option></select>
+            <select class="select"><option>כל טבלאות המקור</option><option>contact</option><option>incident</option></select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>תבנית</th>
+                  <th>טבלת מקור</th>
+                  <th>מיפוי</th>
+                  <th>שליחה</th>
+                  <th>סנכרון אחרון</th>
+                  <th>פעולה</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><div class="name-cell"><strong>הכר את הלקוח</strong><span>easydo template 68729</span></div></td>
+                  <td>contact</td>
+                  <td><div class="progress"><span style="width: 92%"></span></div></td>
+                  <td><span class="badge good">זמינה</span></td>
+                  <td>היום 10:12</td>
+                  <td><button class="btn" data-open-drawer="template">נהל מיפוי</button></td>
+                </tr>
+                <tr>
+                  <td><div class="name-cell"><strong>חוזה לדוגמה</strong><span>easydo template 68793</span></div></td>
+                  <td>incident</td>
+                  <td><div class="progress"><span style="width: 64%"></span></div></td>
+                  <td><span class="badge warn">חסרים שדות</span></td>
+                  <td>אתמול 18:44</td>
+                  <td><button class="btn" data-open-drawer="template">טפל</button></td>
+                </tr>
+                <tr>
+                  <td><div class="name-cell"><strong>נספח שירות</strong><span>easydo template 69110</span></div></td>
+                  <td>account</td>
+                  <td><div class="progress"><span style="width: 100%"></span></div></td>
+                  <td><span class="badge good">זמינה</span></td>
+                  <td>20/06/2026</td>
+                  <td><button class="btn">פתח</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="entities">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">טבלאות מקור והפעלת כפתור</div>
+              <div class="panel-subtitle">ניהול `alex_easydoentityconfig` כחוויה עסקית</div>
+            </div>
+            <button class="btn primary">הוסף טבלה</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>טבלה</th>
+                  <th>טופס</th>
+                  <th>רשימה</th>
+                  <th>Subgrid</th>
+                  <th>סטטוס פריסה</th>
+                  <th>נבדק לאחרונה</th>
+                  <th>פעולה</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><div class="name-cell"><strong>איש קשר</strong><span>contact</span></div></td>
+                  <td><span class="badge good">מופעל</span></td>
+                  <td><span class="badge">כבוי</span></td>
+                  <td><span class="badge">כבוי</span></td>
+                  <td><span class="badge good">נפרס</span></td>
+                  <td>לפני 4 דקות</td>
+                  <td><button class="btn">נהל</button></td>
+                </tr>
+                <tr>
+                  <td><div class="name-cell"><strong>אירוע</strong><span>incident</span></div></td>
+                  <td><span class="badge good">מופעל</span></td>
+                  <td><span class="badge good">מופעל</span></td>
+                  <td><span class="badge">כבוי</span></td>
+                  <td><span class="badge warn">ממתין</span></td>
+                  <td>לפני 31 דקות</td>
+                  <td><button class="btn">פרוס</button></td>
+                </tr>
+                <tr>
+                  <td><div class="name-cell"><strong>חשבון</strong><span>account</span></div></td>
+                  <td><span class="badge">כבוי</span></td>
+                  <td><span class="badge">כבוי</span></td>
+                  <td><span class="badge">כבוי</span></td>
+                  <td><span class="badge bad">נכשל</span></td>
+                  <td>אתמול</td>
+                  <td><button class="btn">פתח שגיאה</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="operations">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">בקשות חתימה</div>
+              <div class="panel-subtitle">בקשת חתימה היא הציר התפעולי; נמענים, שדות ומסמכים נפתחים כפרטים</div>
+            </div>
+            <button class="btn">בדוק בקשות פתוחות</button>
+          </div>
+          <div class="filter-bar">
+            <input class="search" placeholder="חפש בקשה, נמען או מזהה easydo">
+            <select class="select"><option>פתוחות</option><option>נכשלו</option><option>הושלמו</option></select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>בקשה</th>
+                  <th>תבנית</th>
+                  <th>סטטוס</th>
+                  <th>נמענים</th>
+                  <th>נשלח</th>
+                  <th>בדיקה אחרונה</th>
+                  <th>פעולה</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><div class="name-cell"><strong>בדיקה 1</strong><span>form 3421196</span></div></td>
+                  <td>הכר את הלקוח</td>
+                  <td><span class="badge good">Completed</span></td>
+                  <td>1/1 חתמו</td>
+                  <td>18/06/2026</td>
+                  <td>לפני 5 דקות</td>
+                  <td><button class="btn" data-open-drawer="request">פרטים</button></td>
+                </tr>
+                <tr>
+                  <td><div class="name-cell"><strong>חוזה לדוגמה - David Levi</strong><span>form 3428810</span></div></td>
+                  <td>חוזה לדוגמה</td>
+                  <td><span class="badge warn">Sent</span></td>
+                  <td>0/1 חתמו</td>
+                  <td>היום</td>
+                  <td>לפני 12 דקות</td>
+                  <td><button class="btn" data-open-drawer="request">רענן</button></td>
+                </tr>
+                <tr>
+                  <td><div class="name-cell"><strong>נספח שירות</strong><span>form 3428902</span></div></td>
+                  <td>נספח שירות</td>
+                  <td><span class="badge bad">Failed</span></td>
+                  <td>לא נשלח</td>
+                  <td>היום</td>
+                  <td>לפני שעה</td>
+                  <td><button class="btn">נסה שוב</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="health">
+        <div class="section-grid">
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">בריאות אינטגרציה</div>
+                <div class="panel-subtitle">תמונת מצב לפי פעולות וזרימות</div>
+              </div>
+            </div>
+            <div class="setup-list">
+              <article class="setup-card"><div class="step-badge">✓</div><div><h3>Get entity</h3><p>החיבור מחזיר entity פעיל ושפת ברירת מחדל.</p></div><span class="badge good">תקין</span></article>
+              <article class="setup-card"><div class="step-badge">!</div><div><h3>Template sync</h3><p>תבנית אחת לא סונכרנה כי נמחקה ב-provider.</p></div><span class="badge warn">אזהרה</span></article>
+              <article class="setup-card"><div class="step-badge">×</div><div><h3>Button deployment</h3><p>פריסת כפתור לטבלת account נכשלה בהרשאות.</p></div><span class="badge bad">נכשל</span></article>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div><div class="panel-title">יומן אחרון</div><div class="panel-subtitle">אירועים מתוך Integration Log</div></div></div>
+            <div class="timeline">
+              <div class="event"><span class="event-marker"></span><div><strong>SendTemplate success</strong><span>form 3428810, 843ms</span></div></div>
+              <div class="event"><span class="event-marker"></span><div><strong>ResolvePrefill warning</strong><span>שדה חובה ללא ערך מקור</span></div></div>
+              <div class="event"><span class="event-marker"></span><div><strong>DownloadDocument success</strong><span>PDF נשמר ב-Timeline</span></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <aside class="drawer" id="drawer" aria-label="details panel">
+    <div class="drawer-header">
+      <div>
+        <h2 id="drawerTitle">פרטי תבנית</h2>
+        <p class="panel-subtitle" id="drawerSubtitle">Panel צדדי כמו חוויית ניהול בתוך PCF</p>
+      </div>
+      <button class="btn" id="closeDrawer">סגור</button>
+    </div>
+    <div class="detail-list" id="drawerContent"></div>
+  </aside>
+
+  <script>
+    const drawerData = {
+      template: {
+        title: "חוזה לדוגמה",
+        subtitle: "תבנית דורשת טיפול לפני שליחה",
+        rows: [
+          ["מזהה easydo", "68793"],
+          ["טבלת מקור", "incident"],
+          ["מיפוי שדות", "9 מתוך 14"],
+          ["שדות חובה חסרים", "2"],
+          ["פעולה מומלצת", "פתח ניהול מיפוי והשלם שדות חובה"]
+        ]
+      },
+      request: {
+        title: "חוזה לדוגמה - David Levi",
+        subtitle: "בקשת חתימה פתוחה",
+        rows: [
+          ["סטטוס", "Sent"],
+          ["easydo form id", "3428810"],
+          ["נמען", "David Levi"],
+          ["קישור חתימה", "נשמר ברשומת הנמען"],
+          ["בדיקה אחרונה", "לפני 12 דקות"]
+        ]
+      },
+      health: {
+        title: "בדיקת חיבור",
+        subtitle: "תוצאה לדוגמה של Get entity",
+        rows: [
+          ["Entity", "חברה לדוגמה"],
+          ["Status", "active"],
+          ["Default language", "he"],
+          ["Features", "Templates, Webhooks, Multi-Recipient"],
+          ["המלצה", "להציג כ-read only במרכז הניהול"]
+        ]
+      }
+    };
+
+    function setActiveTab(tabId) {
+      document.querySelectorAll(".tab, .nav-item").forEach((button) => {
+        button.classList.toggle("active", button.dataset.tab === tabId);
+      });
+      document.querySelectorAll(".view").forEach((view) => {
+        view.classList.toggle("active", view.id === tabId);
+      });
+    }
+
+    function openDrawer(type) {
+      const data = drawerData[type] || drawerData.template;
+      document.getElementById("drawerTitle").textContent = data.title;
+      document.getElementById("drawerSubtitle").textContent = data.subtitle;
+      const content = document.getElementById("drawerContent");
+      content.innerHTML = "";
+      data.rows.forEach(([label, value]) => {
+        const row = document.createElement("div");
+        row.className = "detail-row";
+        row.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
+        content.appendChild(row);
+      });
+      document.getElementById("drawer").classList.add("open");
+    }
+
+    document.querySelectorAll("[data-tab]").forEach((button) => {
+      button.addEventListener("click", () => setActiveTab(button.dataset.tab));
+    });
+
+    document.querySelectorAll("[data-open-drawer]").forEach((button) => {
+      button.addEventListener("click", () => openDrawer(button.dataset.openDrawer));
+    });
+
+    document.getElementById("closeDrawer").addEventListener("click", () => {
+      document.getElementById("drawer").classList.remove("open");
+    });
+
+    document.getElementById("themeToggle").addEventListener("click", () => {
+      const current = document.documentElement.getAttribute("data-theme");
+      document.documentElement.setAttribute("data-theme", current === "dark" ? "light" : "dark");
+    });
+  </script>
+</body>
+</html>
