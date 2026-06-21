@@ -48,6 +48,11 @@ namespace EasyDo.Plugins
         private const int LanguageEnglish = 626210001;
         private const int DirectionPrefill = 626210000;
 
+        // alex_easydochannel global choice (primary easydo channel).
+        private const int ChannelEmailOpt = 626210000;
+        private const int ChannelSmsOpt = 626210001;
+        private const int ChannelWhatsAppOpt = 626210002;
+
         public WizardIntakePlugin(string unsecure, string secure) : base(typeof(WizardIntakePlugin)) { }
 
         protected override void ExecuteDataversePlugin(ILocalPluginContext local)
@@ -110,6 +115,10 @@ namespace EasyDo.Plugins
             if (!string.IsNullOrEmpty(p.RelatedContactId) && Guid.TryParse(p.RelatedContactId, out var contactId))
                 target["alex_relatedcontactid"] = new EntityReference("contact", contactId);
 
+            // Primary easydo channel snapshot (org-wide setting at send time). easydo
+            // sends its native notification on this channel (email / SMS / WhatsApp).
+            target["alex_easydochannel"] = new OptionSetValue(ChannelOpt(p.PrimaryChannel));
+
             // Chosen notification channels (multi-channel send). When the org has not
             // enabled multi-channel the wizard sends email-only, which matches the
             // default below.
@@ -138,16 +147,18 @@ namespace EasyDo.Plugins
             {
                 foreach (var r in p.Recipients)
                 {
-                    if (string.IsNullOrWhiteSpace(r.Email)) continue;
+                    // Keep recipients that carry any contact point: an email (email
+                    // channel) or a phone (SMS / WhatsApp channels).
+                    if (string.IsNullOrWhiteSpace(r.Email) && string.IsNullOrWhiteSpace(r.Phone)) continue;
                     var rec = new Entity("alex_signaturerecipient");
-                    rec["alex_name"] = string.IsNullOrEmpty(r.Name) ? r.Email : r.Name;
-                    rec["alex_email"] = r.Email;
+                    rec["alex_name"] = !string.IsNullOrEmpty(r.Name) ? r.Name : (!string.IsNullOrWhiteSpace(r.Email) ? r.Email : r.Phone);
+                    if (!string.IsNullOrWhiteSpace(r.Email)) rec["alex_email"] = r.Email;
                     if (!string.IsNullOrWhiteSpace(r.Phone)) rec["alex_phone"] = r.Phone;
                     if (r.Sequence > 0) rec["alex_signingorder"] = r.Sequence;
                     if (!string.IsNullOrEmpty(r.RoleName)) rec["alex_externalrecipientname"] = r.RoleName;
                     rec["alex_signaturerequestid"] = requestRef;
                     try { svc.Create(rec); }
-                    catch (Exception ex) { trace.Trace("WizardIntake: recipient '{0}' create failed: {1}", r.Email, ex.Message); }
+                    catch (Exception ex) { trace.Trace("WizardIntake: recipient '{0}' create failed: {1}", r.Email ?? r.Phone, ex.Message); }
                 }
             }
 
@@ -226,6 +237,7 @@ namespace EasyDo.Plugins
             {
                 TemplateExternalId = Text(payloadNode, "templateExternalId"),
                 Language = Text(payloadNode, "language"),
+                PrimaryChannel = Text(payloadNode, "primaryChannel"),
                 LaunchEntityName = Text(payloadNode, "launchEntityName"),
                 LaunchRecordId = Text(payloadNode, "launchRecordId"),
                 RelatedContactId = Text(payloadNode, "relatedContactId"),
@@ -247,17 +259,20 @@ namespace EasyDo.Plugins
                 p.ChannelEmail = true;
             }
 
-            // Distribution declaration snapshot: { sms: {method,journeyName,flowName}, whatsapp: {...} }.
-            // Captured verbatim as a normalized JSON string for governance/audit on the request.
+            // Distribution declaration snapshot, keyed by additional channel:
+            // { email|sms|whatsapp: {method,journeyName,flowName} }. Captured verbatim
+            // as a normalized JSON string for governance/audit on the request.
             var declNode = payloadNode.SelectSingleNode("channelDeclaration");
             if (declNode != null && !IsJsonNull(declNode))
             {
-                var sms = BuildDeclJson(declNode.SelectSingleNode("sms"));
-                var wa = BuildDeclJson(declNode.SelectSingleNode("whatsapp"));
-                if (sms != null || wa != null)
+                var parts = new List<string>();
+                foreach (var key in new[] { "email", "sms", "whatsapp" })
                 {
-                    p.ChannelDeclaration = "{\"sms\":" + (sms ?? "null") + ",\"whatsapp\":" + (wa ?? "null") + "}";
+                    var chJson = BuildDeclJson(declNode.SelectSingleNode(key));
+                    if (chJson != null) parts.Add("\"" + key + "\":" + chJson);
                 }
+                if (parts.Count > 0)
+                    p.ChannelDeclaration = "{" + string.Join(",", parts.ToArray()) + "}";
             }
 
             var recipients = payloadNode.SelectNodes("recipients/item");
@@ -266,10 +281,12 @@ namespace EasyDo.Plugins
                 foreach (XmlNode item in recipients)
                 {
                     var email = Text(item, "email");
-                    if (string.IsNullOrWhiteSpace(email)) continue;
+                    var phone = Text(item, "phone");
+                    // Keep recipients with any contact point (email or phone).
+                    if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(phone)) continue;
                     int seq;
                     int.TryParse(Text(item, "sequence"), out seq);
-                    p.Recipients.Add(new WizardRecipient { Name = Text(item, "name"), Email = email, Phone = Text(item, "phone"), Sequence = seq, RoleName = Text(item, "roleName") });
+                    p.Recipients.Add(new WizardRecipient { Name = Text(item, "name"), Email = email, Phone = phone, Sequence = seq, RoleName = Text(item, "roleName") });
                 }
             }
 
@@ -296,6 +313,14 @@ namespace EasyDo.Plugins
         {
             var n = parent.SelectSingleNode(child);
             return n == null ? null : n.InnerText;
+        }
+
+        // Map the wizard's primary channel string to the alex_easydochannel choice.
+        private static int ChannelOpt(string ch)
+        {
+            if (string.Equals(ch, "sms", StringComparison.OrdinalIgnoreCase)) return ChannelSmsOpt;
+            if (string.Equals(ch, "whatsapp", StringComparison.OrdinalIgnoreCase)) return ChannelWhatsAppOpt;
+            return ChannelEmailOpt;
         }
 
         // True when a JsonReaderWriterFactory node represents a JSON null (type="null").
@@ -348,6 +373,7 @@ namespace EasyDo.Plugins
             public string TemplateExternalId;
             public bool IsDraft;
             public string Language;
+            public string PrimaryChannel;
             public string LaunchEntityName;
             public string LaunchRecordId;
             public string RelatedContactId;

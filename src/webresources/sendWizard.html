@@ -130,6 +130,8 @@
         .edo-wz-chk { display: inline-flex; align-items: center; gap: 9px; border: 1px solid var(--edo-line); border-radius: 10px; padding: 9px 14px; background: var(--edo-bg); cursor: pointer; transition: border-color .12s ease, background .12s ease, box-shadow .12s ease; user-select: none; }
         .edo-wz-chk:hover { border-color: var(--edo-accent); }
         .edo-wz-chk.on { border-color: var(--edo-accent); background: rgba(0, 120, 212, .06); box-shadow: var(--edo-shadow); }
+        .edo-wz-chk.locked { cursor: default; }
+        .edo-wz-chk.locked:hover { border-color: var(--edo-accent); }
         .edo-wz-chk-box { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--edo-line); position: relative; flex: 0 0 auto; transition: background .12s ease, border-color .12s ease; }
         .edo-wz-chk.on .edo-wz-chk-box { background: var(--edo-accent); border-color: var(--edo-accent); }
         .edo-wz-chk.on .edo-wz-chk-box::after { content: ""; position: absolute; left: 5px; top: 1.5px; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
@@ -193,15 +195,15 @@
                     settingsHeading: "הגדרות שליחה", settingsHint: "בחרו כיצד לשלוח את המסמך.",
                     modeSend: "שליחה לחתימה", modeSendDesc: "המסמך נשלח מיד לנמענים בדוא\"ל לחתימה.",
                     modeDraft: "טיוטה / תצוגה מקדימה", modeDraftDesc: "נוצרת טיוטה לתצוגה מקדימה ללא שליחה לנמענים.",
-                    languageLabel: "שפת המסמך", langHe: "עברית", langEn: "אנגלית",
                     channelsLabel: "ערוצי שליחה", channelEmail: "דוא\"ל", channelSms: "SMS", channelWhatsApp: "WhatsApp",
-                    channelsHint: "easydo שולחת התראה בערוץ אחד בלבד. כשנבחר ערוץ נוסף, קישור החתימה מופץ דרך שירות הלקוח לפי הגדרת ההפצה של הארגון.",
+                    channelPrimary: "ערוץ easydo ראשי",
+                    channelsHint: "easydo שולחת את ההתראה בערוץ הראשי. ערוצים נוספים מפיצים את קישור החתימה דרך שירות הלקוח לפי הגדרת ההפצה של הארגון.",
                     declVia: "מופץ דרך", declCij: "מסעות לקוח (CIJ)", declFlow: "זרימת Power Automate",
                     declVerify: "ודאו שערוץ ההפצה פעיל לפני השליחה.",
                     reviewHeading: "סקירה ושליחה", reviewHint: "בדקו את הפרטים ולחצו שליחה.",
                     reviewTemplate: "תבנית", reviewRecipients: "נמענים", reviewMode: "אופן השליחה", reviewChannels: "ערוצי שליחה", reviewDistribution: "הפצה", reviewContext: "נשלח מתוך",
                     sending: "שולח...", pickTemplate: "בחרו תבנית כדי להמשיך.",
-                    needRecipient: "הוסיפו לפחות נמען אחד עם דוא\"ל תקין.", demoBadge: "מצב הדגמה",
+                    needRecipient: "הוסיפו לפחות נמען אחד עם דוא\"ל תקין.", needRecipientPhone: "הוסיפו לפחות נמען אחד עם מספר טלפון תקין.", demoBadge: "מצב הדגמה",
                     idLabel: "מזהה: ", sentOk: "הבקשה נוצרה ונשלחה לעיבוד.", sentErr: "אירעה שגיאה ביצירת הבקשה: "
                 },
                 en: {
@@ -228,20 +230,25 @@
                     settingsHeading: "Send settings", settingsHint: "Choose how to send the document.",
                     modeSend: "Send for signature", modeSendDesc: "The document is sent to recipients by email right away.",
                     modeDraft: "Draft / preview", modeDraftDesc: "A draft is created for preview without sending to recipients.",
-                    languageLabel: "Document language", langHe: "Hebrew", langEn: "English",
                     channelsLabel: "Send channels", channelEmail: "Email", channelSms: "SMS", channelWhatsApp: "WhatsApp",
-                    channelsHint: "easydo notifies on a single channel. When an extra channel is picked, the signing link is distributed by your organization's configured method.",
+                    channelPrimary: "Primary easydo channel",
+                    channelsHint: "easydo notifies on the primary channel. Additional channels distribute the signing link through your organization's configured method.",
                     declVia: "Distributed via", declCij: "Customer Insights - Journeys (CIJ)", declFlow: "Power Automate flow",
                     declVerify: "Make sure the distribution channel is active before sending.",
                     reviewHeading: "Review & send", reviewHint: "Check the details and press Send.",
                     reviewTemplate: "Template", reviewRecipients: "Recipients", reviewMode: "Send mode", reviewChannels: "Send channels", reviewDistribution: "Distribution", reviewContext: "Sent from",
                     sending: "Sending...", pickTemplate: "Pick a template to continue.",
-                    needRecipient: "Add at least one recipient with a valid email.", demoBadge: "Demo mode",
+                    needRecipient: "Add at least one recipient with a valid email.", needRecipientPhone: "Add at least one recipient with a valid phone number.", demoBadge: "Demo mode",
                     idLabel: "ID: ", sentOk: "Request created and queued for processing.", sentErr: "Could not create the request: "
                 }
             };
 
             function isEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((v || "").trim()); }
+            function hasPhone(v) { return ("" + (v || "")).replace(/\D/g, "").length >= 7; }
+
+            // Channels and the picklist values of the alex_easydochannel global choice.
+            var CHANNELS = ["email", "sms", "whatsapp"];
+            var CH_BY_OPT = {}; CH_BY_OPT[626210000] = "email"; CH_BY_OPT[626210001] = "sms"; CH_BY_OPT[626210002] = "whatsapp";
 
             function parseRoles(raw) {
                 if (!raw) return [];
@@ -303,7 +310,6 @@
                 this.selectedTemplateId = "";
                 this.recipients = [];
                 this.isDraft = false;
-                this.docLang = "he";
                 this.demo = false;
                 this.submitted = false;
                 this.fields = [];
@@ -311,13 +317,15 @@
                 this.fieldsLoading = false;
                 this.launchContact = null;
                 // Global send settings (loaded from alex_easydosettings). Until loaded
-                // the feature is treated as off (email only).
+                // the feature is treated as off (primary channel = email).
                 this.settings = {
-                    multiChannel: false, allowEmail: true, allowSms: false, allowWhatsApp: false,
-                    smsMethod: null, smsJourneyName: "", smsFlowName: "",
-                    waMethod: null, waJourneyName: "", waFlowName: ""
+                    primaryChannel: "email", multiChannel: false,
+                    allow: { email: false, sms: false, whatsapp: false },
+                    method: { email: null, sms: null, whatsapp: null },
+                    journey: { email: "", sms: "", whatsapp: "" },
+                    flowName: { email: "", sms: "", whatsapp: "" }
                 };
-                // Per-send chosen notification channels.
+                // Per-send chosen notification channels (the primary is always on).
                 this.channels = { email: true, sms: false, whatsapp: false };
                 this.ctx = parseContext();
                 this.xrm = getXrm();
@@ -326,7 +334,6 @@
             Wizard.prototype.start = function () {
                 var self = this;
                 this.lang = this.ctx.uilang === "he" || this.ctx.uilang === "en" ? this.ctx.uilang : this.detectLang();
-                this.docLang = this.lang;
                 // Render immediately with a light skeleton while data loads.
                 this.applyTemplates([]);
                 this.render();
@@ -342,11 +349,12 @@
                 });
             };
 
-            // Read the org-wide send settings singleton: which channels are allowed
-            // plus the distribution declaration (how each non-email channel is sent).
+            // Read the org-wide send settings singleton: the primary easydo channel
+            // plus the additional channels and their distribution declarations.
             Wizard.prototype.loadSettings = function () {
                 if (!this.xrm) return Promise.resolve(null);
-                var q = "?$select=alex_multichannelenabled,alex_allowemail,alex_allowsms,alex_allowwhatsapp," +
+                var q = "?$select=alex_easydochannel,alex_multichannelenabled,alex_allowemail,alex_allowsms,alex_allowwhatsapp," +
+                    "alex_emailmethod,alex_emailjourneyname,_alex_emailflowid_value," +
                     "alex_smsmethod,alex_smsjourneyname,_alex_smsflowid_value," +
                     "alex_whatsappmethod,alex_whatsappjourneyname,_alex_whatsappflowid_value&$top=1";
                 return this.xrm.WebApi.retrieveMultipleRecords("alex_easydosettings", q).then(
@@ -355,58 +363,90 @@
                 );
             };
 
-            // Apply the loaded settings and seed the per-send channel choices so only
-            // allowed channels start selected (email always wins as the default).
+            // Apply the loaded settings and seed the per-send channel choices: the
+            // primary channel is always on; additional allowed+complete channels
+            // default on (the admin enabled them) but the sender can deselect them.
             Wizard.prototype.applySettings = function (row) {
+                var self = this;
                 if (row) {
                     var fv = function (n) { return row["_" + n + "_value@OData.Community.Display.V1.FormattedValue"] || ""; };
+                    var pc = (row.alex_easydochannel === 0 || row.alex_easydochannel) ? CH_BY_OPT[row.alex_easydochannel] : null;
                     this.settings = {
+                        primaryChannel: pc || "email",
                         multiChannel: row.alex_multichannelenabled === true,
-                        allowEmail: row.alex_allowemail !== false,
-                        allowSms: row.alex_allowsms === true,
-                        allowWhatsApp: row.alex_allowwhatsapp === true,
-                        smsMethod: row.alex_smsmethod || null,
-                        smsJourneyName: row.alex_smsjourneyname || "",
-                        smsFlowName: fv("alex_smsflowid"),
-                        waMethod: row.alex_whatsappmethod || null,
-                        waJourneyName: row.alex_whatsappjourneyname || "",
-                        waFlowName: fv("alex_whatsappflowid")
+                        allow: {
+                            email: row.alex_allowemail === true,
+                            sms: row.alex_allowsms === true,
+                            whatsapp: row.alex_allowwhatsapp === true
+                        },
+                        method: {
+                            email: row.alex_emailmethod || null,
+                            sms: row.alex_smsmethod || null,
+                            whatsapp: row.alex_whatsappmethod || null
+                        },
+                        journey: {
+                            email: row.alex_emailjourneyname || "",
+                            sms: row.alex_smsjourneyname || "",
+                            whatsapp: row.alex_whatsappjourneyname || ""
+                        },
+                        flowName: {
+                            email: fv("alex_emailflowid"),
+                            sms: fv("alex_smsflowid"),
+                            whatsapp: fv("alex_whatsappflowid")
+                        }
                     };
                 }
                 var s = this.settings;
-                this.channels = {
-                    email: s.multiChannel ? s.allowEmail : true,
-                    sms: false,
-                    whatsapp: false
-                };
+                var ch = { email: false, sms: false, whatsapp: false };
+                ch[s.primaryChannel] = true; // primary is always used
+                if (s.multiChannel) {
+                    CHANNELS.forEach(function (c) {
+                        if (c !== s.primaryChannel && s.allow[c] && self.channelComplete(c)) ch[c] = true;
+                    });
+                }
+                this.channels = ch;
             };
 
             // METHOD codes from the alex_distributionmethod global choice.
             var METHOD_CIJ = 626210000, METHOD_FLOW = 626210001;
 
-            // A non-email channel is "complete" (offerable) only when its distribution
+            // An additional channel is "complete" (offerable) only when its distribution
             // declaration is fully set: CIJ needs a journey name, Flow needs a target flow.
             Wizard.prototype.channelComplete = function (ch) {
                 var s = this.settings || {};
-                var m = ch === "sms" ? s.smsMethod : s.waMethod;
-                if (m === METHOD_CIJ) return !!(ch === "sms" ? s.smsJourneyName : s.waJourneyName);
-                if (m === METHOD_FLOW) return !!(ch === "sms" ? s.smsFlowName : s.waFlowName);
+                if (!s.method) return false;
+                var m = s.method[ch];
+                if (m === METHOD_CIJ) return !!(s.journey && s.journey[ch]);
+                if (m === METHOD_FLOW) return !!(s.flowName && s.flowName[ch]);
                 return false;
             };
 
-            // Build the read-only declaration text for a non-email channel.
+            // Build the read-only declaration text for an additional channel.
             Wizard.prototype.channelDeclaration = function (ch, t) {
                 var s = this.settings || {};
-                var m = ch === "sms" ? s.smsMethod : s.waMethod;
-                if (m === METHOD_CIJ) {
-                    var jn = ch === "sms" ? s.smsJourneyName : s.waJourneyName;
-                    return t.declVia + " " + t.declCij + " \u00B7 " + jn;
-                }
-                if (m === METHOD_FLOW) {
-                    var fn = ch === "sms" ? s.smsFlowName : s.waFlowName;
-                    return t.declVia + " " + t.declFlow + " \u00B7 " + fn;
-                }
+                var m = s.method ? s.method[ch] : null;
+                if (m === METHOD_CIJ) return t.declVia + " " + t.declCij + " \u00B7 " + s.journey[ch];
+                if (m === METHOD_FLOW) return t.declVia + " " + t.declFlow + " \u00B7 " + s.flowName[ch];
                 return "";
+            };
+
+            // Does the primary channel require an email address on each recipient?
+            Wizard.prototype.primaryNeedsEmail = function () {
+                return (this.settings && this.settings.primaryChannel || "email") === "email";
+            };
+
+            // A recipient is ready when it carries the contact point the primary
+            // channel needs: an email for email, otherwise a phone number.
+            Wizard.prototype.recipientReady = function (r) {
+                if (!r) return false;
+                return this.primaryNeedsEmail() ? isEmail(r.email) : hasPhone(r.phone);
+            };
+
+            // Display label for a recipient (name + the relevant contact point).
+            Wizard.prototype.recipientLabel = function (r) {
+                var contact = r.email || r.phone || "";
+                if (r.name) return contact ? (r.name + " <" + contact + ">") : r.name;
+                return contact || "\u2014";
             };
 
             // Read the launch contact's name + email so a recipient slot can be
@@ -484,12 +524,13 @@
                 var roles = namedRoles(tpl);
                 this.roleMode = roles.length >= 2;
                 var lc = this.launchContact;
+                var lcUsable = !!(lc && (lc.email || lc.phone));
                 if (this.roleMode) {
                     // One fixed slot per signer role. The first slot is pre-filled
                     // with the launch contact (the user can change it); the rest are
                     // picked from contacts.
                     this.recipients = roles.map(function (r, i) {
-                        var pre = (i === 0 && lc && lc.email) ? lc : null;
+                        var pre = (i === 0 && lcUsable) ? lc : null;
                         return {
                             name: pre ? pre.name : "", email: pre ? pre.email : "",
                             phone: pre ? (pre.phone || "") : "",
@@ -501,7 +542,7 @@
                 if (forceReset || this.recipients.length === 0) {
                     if (this.demo) {
                         this.recipients = [{ name: this.lang === "he" ? "דנה לוי" : "Dana Levi", email: "dana@example.com", phone: "0540000000", contactId: "", roleName: "", sequence: 1 }];
-                    } else if (lc && lc.email) {
+                    } else if (lcUsable) {
                         this.recipients = [{ name: lc.name, email: lc.email, phone: lc.phone || "", contactId: lc.id, roleName: "", sequence: 1 }];
                     } else {
                         this.recipients = [{ name: "", email: "", phone: "", contactId: "", roleName: "", sequence: 1 }];
@@ -757,10 +798,11 @@
                     list.appendChild(el("div", { "class": "edo-wz-empty", text: t.noRecipients }));
                 }
                 this.recipients.forEach(function (r) {
+                    var contact = r.email || r.phone || "";
                     var info = el("div", { "class": "edo-wz-chip-info" }, [
-                        el("div", { "class": "edo-wz-chip-name", text: r.name || r.email || "\u2014" })
+                        el("div", { "class": "edo-wz-chip-name", text: r.name || contact || "\u2014" })
                     ]);
-                    if (r.email) info.appendChild(el("div", { "class": "edo-wz-chip-mail", text: r.email }));
+                    if (contact) info.appendChild(el("div", { "class": "edo-wz-chip-mail", text: contact }));
                     var badge = el("div", { "class": "edo-wz-ro-badge", text: t.recipientReadOnly });
                     list.appendChild(el("div", { "class": "edo-wz-chip locked" }, [info, badge]));
                 });
@@ -776,15 +818,16 @@
                 var self = this;
                 var r = this.recipients[idx];
                 container.innerHTML = "";
-                if (r.email || r.name) {
+                var contact = r.email || r.phone || "";
+                if (contact || r.name) {
                     var info = el("div", { "class": "edo-wz-chip-info" }, [
-                        el("div", { "class": "edo-wz-chip-name", text: r.name || r.email })
+                        el("div", { "class": "edo-wz-chip-name", text: r.name || contact })
                     ]);
-                    if (r.email) info.appendChild(el("div", { "class": "edo-wz-chip-mail", text: r.email }));
+                    if (contact) info.appendChild(el("div", { "class": "edo-wz-chip-mail", text: contact }));
                     var change = el("button", { "class": "edo-wz-icon-btn", text: "\u2715" });
                     change.title = t.changeContact; change.setAttribute("aria-label", t.changeContact);
                     change.onclick = function () {
-                        self.recipients[idx].name = ""; self.recipients[idx].email = ""; self.recipients[idx].contactId = "";
+                        self.recipients[idx].name = ""; self.recipients[idx].email = ""; self.recipients[idx].phone = ""; self.recipients[idx].contactId = "";
                         self.render();
                     };
                     container.appendChild(el("div", { "class": "edo-wz-chip" }, [info, change]));
@@ -810,8 +853,12 @@
                 qstr = (qstr || "").trim();
                 if (!this.xrm || qstr.length < 2) { pop.innerHTML = ""; pop.classList.remove("show"); return; }
                 var safe = qstr.replace(/'/g, "''");
+                var match = "(contains(fullname,'" + safe + "') or contains(emailaddress1,'" + safe + "') or contains(mobilephone,'" + safe + "'))";
+                // When the primary channel is email a recipient must have one; for
+                // SMS / WhatsApp a phone number is enough, so don't force an email.
+                var filter = this.primaryNeedsEmail() ? (match + " and emailaddress1 ne null") : match;
                 var q = "?$select=contactid,fullname,emailaddress1,mobilephone,telephone1" +
-                    "&$filter=(contains(fullname,'" + safe + "') or contains(emailaddress1,'" + safe + "')) and emailaddress1 ne null" +
+                    "&$filter=" + filter +
                     "&$top=6";
                 this.xrm.WebApi.retrieveMultipleRecords("contact", q).then(
                     function (res) {
@@ -823,16 +870,17 @@
                             return;
                         }
                         rows.forEach(function (c) {
+                            var cphone = c.mobilephone || c.telephone1 || "";
                             var item = el("div", { "class": "edo-wz-pop-item" }, [
-                                el("div", { "class": "edo-wz-pop-name", text: c.fullname || c.emailaddress1 }),
-                                el("div", { "class": "edo-wz-pop-mail", text: c.emailaddress1 || "" })
+                                el("div", { "class": "edo-wz-pop-name", text: c.fullname || c.emailaddress1 || cphone }),
+                                el("div", { "class": "edo-wz-pop-mail", text: c.emailaddress1 || cphone || "" })
                             ]);
                             // mousedown (not click) so selection fires before input blur.
                             item.onmousedown = function (ev) {
                                 ev.preventDefault();
                                 self.recipients[idx].name = c.fullname || "";
                                 self.recipients[idx].email = c.emailaddress1 || "";
-                                self.recipients[idx].phone = c.mobilephone || c.telephone1 || "";
+                                self.recipients[idx].phone = cphone;
                                 self.recipients[idx].contactId = c.contactid || "";
                                 self.render();
                             };
@@ -891,59 +939,52 @@
                 modeCards.appendChild(mkMode(true, t.modeDraft, t.modeDraftDesc));
                 wrap.appendChild(modeCards);
 
-                var langLabel = el("div", { "class": "edo-wz-field-label", text: t.languageLabel });
-                var seg = el("div", { "class": "edo-wz-seg" });
-                var mkSeg = function (l, label) {
-                    var b = el("button", { "class": "edo-wz-seg-btn" + (self.docLang === l ? " on" : ""), text: label });
-                    b.onclick = function () { self.docLang = l; self.render(); };
-                    return b;
-                };
-                seg.appendChild(mkSeg("he", t.langHe));
-                seg.appendChild(mkSeg("en", t.langEn));
-                wrap.appendChild(el("div", { "class": "edo-wz-field" }, [langLabel, seg]));
-
-                // Notification channels. Shown only when the org enabled multi-channel
-                // sending; otherwise the document is sent by email only (easydo default).
+                // Channels. The PRIMARY easydo channel (org-wide) is always used and
+                // shown locked; ADDITIONAL channels (when enabled and complete) are
+                // optional per-send toggles distributed via the declared CIJ / Flow.
                 var s = this.settings;
+                var chLabels = { email: t.channelEmail, sms: t.channelSms, whatsapp: t.channelWhatsApp };
+                var chLabel = el("div", { "class": "edo-wz-field-label", text: t.channelsLabel });
+                var chList = el("div", { "class": "edo-wz-channels" });
+                // Primary channel — locked "on".
+                var primBox = el("div", { "class": "edo-wz-chk on locked" }, [
+                    el("div", { "class": "edo-wz-chk-box" }),
+                    el("div", { "class": "edo-wz-chk-label", text: chLabels[s.primaryChannel] + " \u00B7 " + t.channelPrimary })
+                ]);
+                chList.appendChild(primBox);
+                // Additional channels (only the allowed + complete ones, excluding primary).
                 if (s.multiChannel) {
-                    var chLabel = el("div", { "class": "edo-wz-field-label", text: t.channelsLabel });
-                    var chList = el("div", { "class": "edo-wz-channels" });
-                    var mkChannel = function (key, label, allowed, declCh) {
-                        if (!allowed) return;
-                        // Non-email channels are only offerable once their distribution
-                        // declaration is complete (a method + a concrete target).
-                        if (declCh && !self.channelComplete(declCh)) return;
+                    CHANNELS.forEach(function (key) {
+                        if (key === s.primaryChannel) return;
+                        if (!s.allow[key] || !self.channelComplete(key)) return;
                         var on = !!self.channels[key];
                         var box = el("div", { "class": "edo-wz-chk" + (on ? " on" : "") }, [
                             el("div", { "class": "edo-wz-chk-box" }),
-                            el("div", { "class": "edo-wz-chk-label", text: label })
+                            el("div", { "class": "edo-wz-chk-label", text: chLabels[key] })
                         ]);
                         box.onclick = function () { self.channels[key] = !self.channels[key]; self.render(); };
                         chList.appendChild(box);
-                        // When a non-email channel is selected, show the read-only
-                        // distribution declaration so the sender knows how the link
-                        // reaches the recipient and must verify the target is active.
-                        if (declCh && on) {
+                        // Show the read-only distribution declaration when selected so the
+                        // sender knows how the link reaches the recipient and must verify it.
+                        if (on) {
                             chList.appendChild(el("div", { "class": "edo-wz-decl" }, [
-                                el("div", { "class": "edo-wz-decl-text", text: self.channelDeclaration(declCh, t) }),
+                                el("div", { "class": "edo-wz-decl-text", text: self.channelDeclaration(key, t) }),
                                 el("div", { "class": "edo-wz-decl-warn", text: t.declVerify })
                             ]));
                         }
-                    };
-                    mkChannel("email", t.channelEmail, s.allowEmail, null);
-                    mkChannel("sms", t.channelSms, s.allowSms, "sms");
-                    mkChannel("whatsapp", t.channelWhatsApp, s.allowWhatsApp, "whatsapp");
-                    var field = el("div", { "class": "edo-wz-field" }, [chLabel, chList]);
-                    field.appendChild(el("div", { "class": "edo-wz-step-hint", text: t.channelsHint }));
-                    wrap.appendChild(field);
+                    });
                 }
+                var field = el("div", { "class": "edo-wz-field" }, [chLabel, chList]);
+                field.appendChild(el("div", { "class": "edo-wz-step-hint", text: t.channelsHint }));
+                wrap.appendChild(field);
                 return wrap;
             };
 
             Wizard.prototype.stepReview = function (t) {
+                var self = this;
                 var wrap = el("div", { "class": "edo-wz-step" }, [this.heading(t.reviewHeading, t.reviewHint)]);
                 var tpl = this.findTemplate();
-                var valid = this.recipients.filter(function (r) { return isEmail(r.email); });
+                var valid = this.recipients.filter(function (r) { return self.recipientReady(r); });
                 var rows = [];
                 var addRow = function (label, value) {
                     rows.push(el("div", { "class": "edo-wz-rev-row" }, [
@@ -954,27 +995,27 @@
                 addRow(t.reviewTemplate, tpl ? tpl.name : "-");
                 if (this.roleMode) {
                     this.recipients.forEach(function (r) {
-                        addRow(r.roleName, isEmail(r.email) ? (r.name ? (r.name + " <" + r.email + ">") : r.email) : "-");
+                        addRow(r.roleName, self.recipientReady(r) ? self.recipientLabel(r) : "-");
                     });
                 } else {
-                    addRow(t.reviewRecipients, valid.map(function (r) { return r.name ? (r.name + " <" + r.email + ">") : r.email; }).join(", ") || "-");
+                    addRow(t.reviewRecipients, valid.map(function (r) { return self.recipientLabel(r); }).join(", ") || "-");
                 }
                 addRow(t.reviewMode, this.isDraft ? t.modeDraft : t.modeSend);
+                // Channels: the primary easydo channel plus any selected additional ones.
+                var chLabels = { email: t.channelEmail, sms: t.channelSms, whatsapp: t.channelWhatsApp };
+                var picked = [chLabels[this.settings.primaryChannel] + " (" + t.channelPrimary + ")"];
+                var declRows = [];
                 if (this.settings.multiChannel) {
-                    var picked = [];
-                    var declRows = [];
-                    if (this.channels.email && this.settings.allowEmail) picked.push(t.channelEmail);
-                    if (this.channels.sms && this.settings.allowSms && this.channelComplete("sms")) {
-                        picked.push(t.channelSms);
-                        declRows.push(t.channelSms + " \u2014 " + this.channelDeclaration("sms", t));
-                    }
-                    if (this.channels.whatsapp && this.settings.allowWhatsApp && this.channelComplete("whatsapp")) {
-                        picked.push(t.channelWhatsApp);
-                        declRows.push(t.channelWhatsApp + " \u2014 " + this.channelDeclaration("whatsapp", t));
-                    }
-                    addRow(t.reviewChannels, picked.join(", ") || t.channelEmail);
-                    if (declRows.length) addRow(t.reviewDistribution, declRows.join("  |  "));
+                    CHANNELS.forEach(function (ch) {
+                        if (ch === self.settings.primaryChannel) return;
+                        if (self.channels[ch] && self.settings.allow[ch] && self.channelComplete(ch)) {
+                            picked.push(chLabels[ch]);
+                            declRows.push(chLabels[ch] + " \u2014 " + self.channelDeclaration(ch, t));
+                        }
+                    });
                 }
+                addRow(t.reviewChannels, picked.join(", "));
+                if (declRows.length) addRow(t.reviewDistribution, declRows.join("  |  "));
                 var editedFields = this.editedFields();
                 if (editedFields.length > 0) {
                     addRow(t.reviewFields, editedFields.map(function (f) { return f.label; }).join(", "));
@@ -1016,15 +1057,17 @@
             };
 
             Wizard.prototype.stepError = function (t) {
+                var self = this;
                 var key = this.stepKeys[this.step] || "template";
                 if (key === "template") { if (!this.selectedTemplateId) return t.pickTemplate; }
                 if (key === "recipients" || key === "review") {
                     if (key === "review" && !this.selectedTemplateId) return t.pickTemplate;
+                    var needMsg = this.primaryNeedsEmail() ? t.needRecipient : t.needRecipientPhone;
                     if (this.roleMode) {
-                        var allFilled = this.recipients.every(function (r) { return isEmail(r.email); });
-                        if (!allFilled) return t.needRecipient;
-                    } else if (this.recipients.filter(function (r) { return isEmail(r.email); }).length === 0) {
-                        return t.needRecipient;
+                        var allFilled = this.recipients.every(function (r) { return self.recipientReady(r); });
+                        if (!allFilled) return needMsg;
+                    } else if (this.recipients.filter(function (r) { return self.recipientReady(r); }).length === 0) {
+                        return needMsg;
                     }
                 }
                 return "";
@@ -1051,7 +1094,7 @@
                 var tpl = this.findTemplate();
                 // In role mode keep the role's sequence; otherwise number sequentially.
                 var recipients = this.recipients
-                    .filter(function (r) { return isEmail(r.email); })
+                    .filter(function (r) { return self.recipientReady(r); })
                     .map(function (r, i) {
                         return {
                             name: r.name,
@@ -1067,38 +1110,44 @@
                     return { name: f.externalId, value: f.value, label: f.label, readOnly: !!f.readOnly };
                 });
                 var relatedContactId = this.ctx.entityName === "contact" ? this.ctx.recordId : "";
-                // Notification channels: when multi-channel is off the document is sent
-                // by email only (easydo default). Otherwise honour the picked channels.
-                var channels = this.settings.multiChannel
-                    ? { email: !!this.channels.email, sms: !!this.channels.sms, whatsapp: !!this.channels.whatsapp }
-                    : { email: true, sms: false, whatsapp: false };
-                // Distribution declaration snapshot: records, per non-email channel that
-                // is actually selected, HOW the signing link is distributed (method +
-                // concrete target) at send time. Stored on the request for governance.
+                // Channels actually used: the primary easydo channel is always on; the
+                // selected additional channels are honoured only when multi-channel is on.
+                var primary = this.settings.primaryChannel || "email";
+                var channels = { email: false, sms: false, whatsapp: false };
+                channels[primary] = true;
+                if (this.settings.multiChannel) {
+                    CHANNELS.forEach(function (ch) {
+                        if (ch !== primary && self.channels[ch] && self.settings.allow[ch] && self.channelComplete(ch)) {
+                            channels[ch] = true;
+                        }
+                    });
+                }
+                // Distribution declaration snapshot: per additional channel actually
+                // selected, HOW the signing link is distributed (method + concrete
+                // target) at send time. Stored on the request for governance.
                 var declaration = null;
                 if (this.settings.multiChannel) {
-                    var s2 = this.settings;
-                    var declFor = function (ch) {
-                        if (!channels[ch === "sms" ? "sms" : "whatsapp"]) return null;
-                        if (!self.channelComplete(ch)) return null;
-                        var m = ch === "sms" ? s2.smsMethod : s2.waMethod;
-                        return {
+                    var decl = {};
+                    CHANNELS.forEach(function (ch) {
+                        if (ch === primary || !channels[ch] || !self.channelComplete(ch)) return;
+                        var m = self.settings.method[ch];
+                        decl[ch] = {
                             method: m,
-                            journeyName: m === METHOD_CIJ ? (ch === "sms" ? s2.smsJourneyName : s2.waJourneyName) : "",
-                            flowName: m === METHOD_FLOW ? (ch === "sms" ? s2.smsFlowName : s2.waFlowName) : ""
+                            journeyName: m === METHOD_CIJ ? self.settings.journey[ch] : "",
+                            flowName: m === METHOD_FLOW ? self.settings.flowName[ch] : ""
                         };
-                    };
-                    var dSms = declFor("sms"), dWa = declFor("whatsapp");
-                    if (dSms || dWa) declaration = { sms: dSms, whatsapp: dWa };
+                    });
+                    for (var k in decl) { if (decl.hasOwnProperty(k)) { declaration = decl; break; } }
                 }
                 return {
                     templateId: this.demo ? "" : (tpl ? tpl.id : ""),
                     templateExternalId: tpl ? tpl.externalId : "",
                     isDraft: this.isDraft,
-                    language: this.docLang,
+                    language: this.lang,
                     recipients: recipients,
                     fieldValues: fieldValues,
                     notifyEmails: recipients.map(function (r) { return { name: r.name, email: r.email }; }),
+                    primaryChannel: primary,
                     channels: channels,
                     channelDeclaration: declaration,
                     launchEntityName: this.ctx.entityName,
