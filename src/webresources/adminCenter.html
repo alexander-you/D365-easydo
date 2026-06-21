@@ -419,10 +419,12 @@
     }
     .drawer-close:hover { color:var(--text); background:var(--hairline); }
     .drawer-close svg { width:16px; height:16px; }
-    .drawer-body { flex:1 1 auto; overflow:auto; padding:18px 22px 26px; }
-    .pane-grid { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
-    @media (max-width:560px){ .pane-grid{ grid-template-columns:1fr; } }
+    .drawer-body { flex:1 1 auto; overflow:hidden; padding:18px 22px 22px; display:flex; min-height:0; }
+    .pane-grid { flex:1 1 auto; min-height:0; display:grid; grid-template-columns:1fr 1fr; gap:22px; width:100%; }
+    @media (max-width:620px){ .pane-grid{ grid-template-columns:1fr; } }
+    .pane { display:flex; flex-direction:column; min-height:0; }
     .pane h3 {
+      flex:0 0 auto;
       margin:0 0 12px; font-size:13px; font-weight:650; color:var(--text-3);
       display:flex; align-items:center; gap:7px;
     }
@@ -430,18 +432,20 @@
       font-size:11px; font-weight:700; padding:1px 8px; border-radius:980px;
       background:var(--hairline); color:var(--text-2);
     }
-    .tlist { display:flex; flex-direction:column; gap:8px; }
+    .tlist { display:flex; flex-direction:column; gap:8px; flex:1 1 auto; overflow:auto; min-height:0; padding-bottom:4px; }
     .titem {
       display:flex; align-items:center; gap:10px; padding:11px 12px;
       border:1px solid var(--hairline); border-radius:13px; background:var(--surface-solid);
     }
+    .titem.col { flex-direction:column; align-items:stretch; gap:9px; }
     .titem .ti-main { flex:1 1 auto; min-width:0; }
     .titem .ti-name { font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .titem .ti-logical { font-size:11.5px; color:var(--text-3); margin-top:2px; direction:ltr; text-align:right; }
     .titem .ti-act { flex:0 0 auto; }
+    .titem .ti-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; }
     .empty-note { font-size:13px; color:var(--text-3); padding:16px 4px; text-align:center; line-height:1.5; }
     .search-box {
-      display:flex; align-items:center; gap:8px; margin-bottom:12px;
+      display:flex; align-items:center; gap:8px; margin-bottom:12px; flex:0 0 auto;
       border:1px solid var(--hairline-strong); border-radius:11px; padding:8px 12px;
       background:var(--surface-solid);
     }
@@ -450,7 +454,7 @@
       border:0; outline:0; background:transparent; color:var(--text);
       font-size:14px; width:100%; font-family:inherit;
     }
-    .add-list { max-height:46vh; overflow:auto; }
+    .add-list { }
     .ti-btn-add {
       border:1px solid var(--blue); background:transparent; color:var(--blue);
       border-radius:980px; padding:5px 12px; font-size:12.5px; font-weight:600; cursor:pointer;
@@ -922,11 +926,13 @@
         list.forEach(function (cfg) {
           var st = DEP_STATUS[cfg.status] || ["ממתין", "warn"];
           var row = document.createElement("div");
-          row.className = "titem";
+          row.className = "titem col";
           row.innerHTML =
             '<div class="ti-main"><div class="ti-name"></div><div class="ti-logical"></div></div>' +
-            '<span class="pill ' + st[1] + ' sm"><span class="pdot"></span>' + st[0] + '</span>' +
-            '<div class="ti-act"></div>';
+            '<div class="ti-foot">' +
+              '<span class="pill ' + st[1] + ' sm"><span class="pdot"></span>' + st[0] + '</span>' +
+              '<div class="ti-act"></div>' +
+            '</div>';
           row.querySelector(".ti-name").textContent = cfg.display;
           row.querySelector(".ti-logical").textContent = cfg.logical;
           var rb = document.createElement("button");
