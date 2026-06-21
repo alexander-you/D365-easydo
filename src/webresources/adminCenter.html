@@ -355,10 +355,127 @@
       transition: width .8s cubic-bezier(.22,1,.36,1), background .3s ease; }
     .progress-label { font-size:12.5px; color:var(--text-3); margin-top:9px; text-align:center; }
 
+    .ghost-btn.primary { background:var(--blue); color:#fff; border-color:transparent; }
+    .ghost-btn.primary:hover { background:var(--blue-press); border-color:transparent; }
+    .pill.sm { font-size:11px; padding:3px 8px; }
+
+    /* ===== Send-enable section ===== */
+    .send-card {
+      background: var(--surface);
+      -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+      border: 1px solid var(--hairline);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-card);
+      padding: 20px; margin-top: 22px;
+      display:flex; align-items:center; gap:16px;
+    }
+    .send-card .sc-ic {
+      width:46px; height:46px; flex:0 0 auto; border-radius:13px;
+      display:grid; place-items:center; color:#fff;
+      background: linear-gradient(160deg, #0a84ff, #0058b8);
+      box-shadow: 0 6px 18px rgba(0,113,227,.35);
+    }
+    .send-card .sc-ic svg { width:24px; height:24px; }
+    .send-card .sc-main { flex:1 1 auto; min-width:0; }
+    .send-card .sc-title { font-size:16px; font-weight:650; }
+    .send-card .sc-sub { font-size:13px; color:var(--text-2); margin-top:3px; line-height:1.45; }
+    .send-card .sc-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:11px; }
+    .send-card .sc-act { flex:0 0 auto; }
+    .tbl-chip {
+      display:inline-flex; align-items:center; gap:5px;
+      font-size:12px; font-weight:600; padding:4px 10px; border-radius:980px;
+      background: color-mix(in srgb, var(--green) 13%, transparent); color:var(--green-deep);
+    }
+    .tbl-chip svg { width:12px; height:12px; }
+    .tbl-chip.empty { background:var(--hairline); color:var(--text-3); }
+
+    /* ===== Drawer ===== */
+    .drawer-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,.32);
+      -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px);
+      opacity:0; pointer-events:none; transition:opacity .3s ease; z-index:40;
+    }
+    .drawer-overlay.open { opacity:1; pointer-events:auto; }
+    .drawer {
+      position:fixed; top:0; right:0; height:100%;
+      width:min(640px, 94vw);
+      background:var(--bg-grad-1);
+      border-inline-start:1px solid var(--hairline);
+      box-shadow:var(--shadow-pop);
+      transform:translateX(100%); transition:transform .35s cubic-bezier(.22,1,.36,1);
+      z-index:41; display:flex; flex-direction:column;
+    }
+    .drawer.open { transform:translateX(0); }
+    .drawer-head {
+      display:flex; align-items:center; gap:12px; padding:20px 22px;
+      border-bottom:1px solid var(--hairline);
+    }
+    .drawer-head .dh-title { font-size:18px; font-weight:700; }
+    .drawer-head .dh-sub { font-size:12.5px; color:var(--text-3); margin-top:2px; }
+    .drawer-close {
+      width:34px; height:34px; flex:0 0 auto; border-radius:50%; border:1px solid var(--hairline-strong);
+      background:var(--surface); cursor:pointer; color:var(--text-2);
+      display:grid; place-items:center; transition:background .2s ease, color .2s ease;
+    }
+    .drawer-close:hover { color:var(--text); background:var(--hairline); }
+    .drawer-close svg { width:16px; height:16px; }
+    .drawer-body { flex:1 1 auto; overflow:auto; padding:18px 22px 26px; }
+    .pane-grid { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+    @media (max-width:560px){ .pane-grid{ grid-template-columns:1fr; } }
+    .pane h3 {
+      margin:0 0 12px; font-size:13px; font-weight:650; color:var(--text-3);
+      display:flex; align-items:center; gap:7px;
+    }
+    .pane h3 .cnt {
+      font-size:11px; font-weight:700; padding:1px 8px; border-radius:980px;
+      background:var(--hairline); color:var(--text-2);
+    }
+    .tlist { display:flex; flex-direction:column; gap:8px; }
+    .titem {
+      display:flex; align-items:center; gap:10px; padding:11px 12px;
+      border:1px solid var(--hairline); border-radius:13px; background:var(--surface-solid);
+    }
+    .titem .ti-main { flex:1 1 auto; min-width:0; }
+    .titem .ti-name { font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .titem .ti-logical { font-size:11.5px; color:var(--text-3); margin-top:2px; direction:ltr; text-align:right; }
+    .titem .ti-act { flex:0 0 auto; }
+    .empty-note { font-size:13px; color:var(--text-3); padding:16px 4px; text-align:center; line-height:1.5; }
+    .search-box {
+      display:flex; align-items:center; gap:8px; margin-bottom:12px;
+      border:1px solid var(--hairline-strong); border-radius:11px; padding:8px 12px;
+      background:var(--surface-solid);
+    }
+    .search-box svg { width:15px; height:15px; color:var(--text-3); flex:0 0 auto; }
+    .search-box input {
+      border:0; outline:0; background:transparent; color:var(--text);
+      font-size:14px; width:100%; font-family:inherit;
+    }
+    .add-list { max-height:46vh; overflow:auto; }
+    .ti-btn-add {
+      border:1px solid var(--blue); background:transparent; color:var(--blue);
+      border-radius:980px; padding:5px 12px; font-size:12.5px; font-weight:600; cursor:pointer;
+      display:inline-flex; align-items:center; gap:5px; white-space:nowrap;
+      transition:background .2s ease, color .2s ease;
+    }
+    .ti-btn-add:hover { background:var(--blue); color:#fff; }
+    .ti-btn-add:disabled { opacity:.5; cursor:default; }
+    .ti-btn-add svg { width:13px; height:13px; }
+    .ti-btn-rem {
+      border:1px solid var(--hairline-strong); background:transparent; color:var(--text-2);
+      border-radius:980px; padding:5px 12px; font-size:12.5px; font-weight:600; cursor:pointer;
+      display:inline-flex; align-items:center; gap:5px; white-space:nowrap;
+      transition:background .2s ease, color .2s ease, border-color .2s ease;
+    }
+    .ti-btn-rem:hover { color:var(--red); border-color:var(--red); }
+    .ti-btn-rem:disabled { opacity:.5; cursor:default; }
+
     @media (max-width: 520px) {
       h1 { font-size: 25px; }
       .row { padding: 14px; gap: 11px; }
       .row-desc { display: none; }
+      .send-card { flex-wrap:wrap; }
+      .send-card .sc-act { width:100%; }
+      .send-card .sc-act .ghost-btn { width:100%; justify-content:center; }
     }
   </style>
 </head>
@@ -386,7 +503,7 @@
     </section>
 
     <div class="steps">
-      <div class="step open" id="step1">
+      <div class="step" id="step1">
         <div class="step-head" data-toggle="step1">
           <div class="step-num">1</div>
           <div class="step-title">בדיקת חיבורים</div>
@@ -405,7 +522,7 @@
         </div></div>
       </div>
 
-      <div class="step open" id="step2">
+      <div class="step" id="step2">
         <div class="step-head" data-toggle="step2">
           <div class="step-num">2</div>
           <div class="step-title">בדיקת זרימות</div>
@@ -426,8 +543,55 @@
       <div class="pbar"><div class="pbar-fill" id="pbarFill"></div></div>
       <div class="progress-label" id="progressLabel">בודק…</div>
     </div>
+
+    <div class="send-card" id="sendCard">
+      <div class="sc-ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>
+      </div>
+      <div class="sc-main">
+        <div class="sc-title">שליחה ישירות מהרשומה</div>
+        <div class="sc-sub">בחר באילו טבלאות יופיע כפתור שליחת מסמך לחתימה מתוך הרשומה עצמה.</div>
+        <div class="sc-chips" id="sendChips"></div>
+      </div>
+      <div class="sc-act">
+        <button class="ghost-btn primary" id="manageTablesBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          <span>ניהול טבלאות</span>
+        </button>
+      </div>
+    </div>
+
     <p class="footnote" id="footnote"></p>
   </div>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div style="flex:1 1 auto; min-width:0;">
+        <div class="dh-title">ניהול טבלאות שליחה</div>
+        <div class="dh-sub">הפעלת כפתור “שליחת מסמך לחתימה” בטבלאות</div>
+      </div>
+      <button class="drawer-close" id="drawerClose" title="סגור">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6 18 18M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <div class="pane-grid">
+        <div class="pane">
+          <h3>מופעלות כעת <span class="cnt" id="enabledCnt">0</span></h3>
+          <div class="tlist" id="enabledList"></div>
+        </div>
+        <div class="pane">
+          <h3>הוספת טבלה</h3>
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input id="tableSearch" type="text" placeholder="חיפוש טבלה…" autocomplete="off">
+          </div>
+          <div class="tlist add-list" id="availableList"></div>
+        </div>
+      </div>
+    </div>
+  </aside>
 
   <div class="toast" id="toast"></div>
 
@@ -445,6 +609,15 @@
         { id: "c7533576-826a-f111-ab0c-7ced8d72428a", he: "סנכרון תבניות easydo" },
         { id: "50007ad1-876a-f111-ab0c-7ced8d72428a", he: "שליחת בקשת חתימה" }
       ];
+
+      // deployment status (alex_deploymentstatus) -> [label, pill kind]
+      var DEP_STATUS = {
+        1: ["ממתין", "warn"],
+        2: ["בפריסה", "warn"],
+        3: ["מותקן", "ok"],
+        4: ["הוסר", "muted"],
+        5: ["נכשל", "bad"]
+      };
 
       // ---- Xrm + helpers ----
       function getXrm() {
@@ -496,6 +669,7 @@
       }
 
       var SVG_EXTERNAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>';
+      var SVG_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
 
       function iconLink(title, svg, onClick) {
         var b = document.createElement("button");
@@ -664,6 +838,193 @@
         });
       }
 
+      // ---- Send-enable tables (entity config) ----
+      var drawerOpen = false;
+
+      function enabledConfigs() {
+        var a = [];
+        for (var k in state.configs) {
+          if (state.configs.hasOwnProperty(k) && state.configs[k].enabled) a.push(state.configs[k]);
+        }
+        return a;
+      }
+
+      function loadConfigs() {
+        var q = "?$select=alex_easydoentityconfigid,alex_entitylogicalname,alex_entitydisplayname,alex_sendenabled,alex_deploymentstatus";
+        return xrm.WebApi.retrieveMultipleRecords("alex_easydoentityconfig", q).then(function (res) {
+          state.configs = {};
+          res.entities.forEach(function (e) {
+            var ln = e.alex_entitylogicalname;
+            if (!ln) return;
+            state.configs[ln] = {
+              id: e.alex_easydoentityconfigid,
+              logical: ln,
+              display: e.alex_entitydisplayname || ln,
+              enabled: e.alex_sendenabled === true,
+              status: e.alex_deploymentstatus || null
+            };
+          });
+          renderSendSummary();
+          if (drawerOpen) { renderEnabledList(); renderAvailableList(); }
+        }, function () {
+          state.configs = {};
+          renderSendSummary();
+        });
+      }
+
+      function renderSendSummary() {
+        var box = $("sendChips");
+        if (!box) return;
+        box.innerHTML = "";
+        var list = enabledConfigs().sort(function (a, b) { return a.display.localeCompare(b.display, "he"); });
+        if (!list.length) {
+          var c = document.createElement("span");
+          c.className = "tbl-chip empty";
+          c.textContent = "אין טבלאות מופעלות עדיין";
+          box.appendChild(c);
+          return;
+        }
+        list.forEach(function (cfg) {
+          var c = document.createElement("span");
+          c.className = "tbl-chip";
+          c.innerHTML = SVG_CHECK_SM + '<span></span>';
+          c.querySelector("span").textContent = cfg.display;
+          box.appendChild(c);
+        });
+      }
+
+      // ---- Drawer ----
+      function openDrawer() {
+        drawerOpen = true;
+        $("drawerOverlay").classList.add("open");
+        $("drawer").classList.add("open");
+        $("drawer").setAttribute("aria-hidden", "false");
+        renderEnabledList();
+        ensureMeta().then(renderAvailableList);
+      }
+      function closeDrawer() {
+        drawerOpen = false;
+        $("drawerOverlay").classList.remove("open");
+        $("drawer").classList.remove("open");
+        $("drawer").setAttribute("aria-hidden", "true");
+      }
+
+      function renderEnabledList() {
+        var box = $("enabledList");
+        if (!box) return;
+        var list = enabledConfigs().sort(function (a, b) { return a.display.localeCompare(b.display, "he"); });
+        $("enabledCnt").textContent = list.length;
+        box.innerHTML = "";
+        if (!list.length) {
+          box.innerHTML = '<div class="empty-note">עדיין לא הופעלה אף טבלה.<br>בחר טבלה מהצד כדי להוסיף.</div>';
+          return;
+        }
+        list.forEach(function (cfg) {
+          var st = DEP_STATUS[cfg.status] || ["ממתין", "warn"];
+          var row = document.createElement("div");
+          row.className = "titem";
+          row.innerHTML =
+            '<div class="ti-main"><div class="ti-name"></div><div class="ti-logical"></div></div>' +
+            '<span class="pill ' + st[1] + ' sm"><span class="pdot"></span>' + st[0] + '</span>' +
+            '<div class="ti-act"></div>';
+          row.querySelector(".ti-name").textContent = cfg.display;
+          row.querySelector(".ti-logical").textContent = cfg.logical;
+          var rb = document.createElement("button");
+          rb.className = "ti-btn-rem";
+          rb.innerHTML = '<span>הסר</span>';
+          rb.addEventListener("click", function () { disableTable(cfg, rb); });
+          row.querySelector(".ti-act").appendChild(rb);
+          box.appendChild(row);
+        });
+      }
+
+      function ensureMeta() {
+        if (state.metaTables) return Promise.resolve(state.metaTables);
+        var url = clientUrl() + "/api/data/v9.2/EntityDefinitions?$select=LogicalName,DisplayName,IsValidForAdvancedFind&$filter=IsValidForAdvancedFind eq true";
+        return fetch(url, {
+          headers: { Accept: "application/json", "OData-MaxVersion": "4.0", "OData-Version": "4.0" },
+          credentials: "include"
+        }).then(function (r) { return r.json(); }).then(function (d) {
+          var arr = (d.value || []).map(function (e) {
+            var dn = (e.DisplayName && e.DisplayName.UserLocalizedLabel) ? e.DisplayName.UserLocalizedLabel.Label : e.LogicalName;
+            return { logical: e.LogicalName, display: dn || e.LogicalName };
+          }).filter(function (t) {
+            // drop deprecated / system "(not in use)" tables and unnamed ones
+            if (!t.display) return false;
+            var c = t.display.charAt(0);
+            if (c === "(" || c === "[") return false;
+            if (t.display.indexOf("לא בשימוש") >= 0) return false;
+            return true;
+          });
+          arr.sort(function (a, b) { return a.display.localeCompare(b.display, "he"); });
+          state.metaTables = arr;
+          return arr;
+        }, function () { state.metaTables = []; return []; });
+      }
+
+      function renderAvailableList() {
+        var box = $("availableList");
+        if (!box) return;
+        var meta = state.metaTables || [];
+        var q = ($("tableSearch").value || "").trim().toLowerCase();
+        var enabledSet = {};
+        enabledConfigs().forEach(function (c) { enabledSet[c.logical] = true; });
+        var matches = meta.filter(function (t) {
+          if (enabledSet[t.logical]) return false;
+          if (!q) return true;
+          return t.display.toLowerCase().indexOf(q) >= 0 || t.logical.toLowerCase().indexOf(q) >= 0;
+        });
+        box.innerHTML = "";
+        if (!meta.length) {
+          box.innerHTML = '<div class="empty-note">לא ניתן לטעון את רשימת הטבלאות.</div>';
+          return;
+        }
+        if (!matches.length) {
+          box.innerHTML = '<div class="empty-note">לא נמצאו טבלאות תואמות.</div>';
+          return;
+        }
+        matches.slice(0, 60).forEach(function (t) {
+          var row = document.createElement("div");
+          row.className = "titem";
+          row.innerHTML = '<div class="ti-main"><div class="ti-name"></div><div class="ti-logical"></div></div><div class="ti-act"></div>';
+          row.querySelector(".ti-name").textContent = t.display;
+          row.querySelector(".ti-logical").textContent = t.logical;
+          var ab = document.createElement("button");
+          ab.className = "ti-btn-add";
+          ab.innerHTML = SVG_PLUS + '<span>הפעל</span>';
+          ab.addEventListener("click", function () { enableTable(t, ab); });
+          row.querySelector(".ti-act").appendChild(ab);
+          box.appendChild(row);
+        });
+      }
+
+      function enableTable(t, btn) {
+        btn.disabled = true; btn.querySelector("span").textContent = "מפעיל…";
+        var existing = state.configs[t.logical];
+        var done = function () { toast("שליחה הופעלה עבור \u201C" + t.display + "\u201D"); loadConfigs(); };
+        var fail = function () { btn.disabled = false; btn.querySelector("span").textContent = "הפעל"; toast("הפעלת הטבלה נכשלה"); };
+        if (existing) {
+          xrm.WebApi.updateRecord("alex_easydoentityconfig", existing.id, { alex_sendenabled: true, alex_enableonform: true }).then(done, fail);
+        } else {
+          xrm.WebApi.createRecord("alex_easydoentityconfig", {
+            alex_name: t.display,
+            alex_entitylogicalname: t.logical,
+            alex_entitydisplayname: t.display,
+            alex_sendenabled: true,
+            alex_enableonform: true
+          }).then(done, fail);
+        }
+      }
+
+      function disableTable(cfg, btn) {
+        btn.disabled = true; btn.querySelector("span").textContent = "מסיר…";
+        xrm.WebApi.updateRecord("alex_easydoentityconfig", cfg.id, { alex_sendenabled: false }).then(function () {
+          toast("השליחה הוסרה מ\u201C" + cfg.display + "\u201D"); loadConfigs();
+        }, function () {
+          btn.disabled = false; btn.querySelector("span").textContent = "הסר"; toast("ההסרה נכשלה");
+        });
+      }
+
       // ---- Recompute step status + progress ----
       function recompute() {
         var connArr = CONNECTIONS.map(function (c) { return state.conns[c.logical]; });
@@ -715,11 +1076,12 @@
           $("heroSub").textContent = "פתח את מרכז הניהול מתוך אפליקציית easydo כדי לראות נתונים חיים.";
           return;
         }
-        state = { conns: {}, flows: {} };
+        state = { conns: {}, flows: {}, configs: {}, metaTables: null };
         initChecks();
         recompute();
+        renderSendSummary();
         var btn = $("refreshBtn"); btn.classList.add("spinning");
-        Promise.all([loadConnections(), loadFlows()]).then(function () {
+        Promise.all([loadConnections(), loadFlows(), loadConfigs()]).then(function () {
           btn.classList.remove("spinning");
           $("footnote").textContent = "סביבה: " + (envId() || "—");
         }, function () {
@@ -730,6 +1092,11 @@
       $("refreshBtn").addEventListener("click", refresh);
       $("manageConnBtn").addEventListener("click", openConnections);
       $("enableAllBtn").addEventListener("click", enableAll);
+      $("manageTablesBtn").addEventListener("click", openDrawer);
+      $("drawerClose").addEventListener("click", closeDrawer);
+      $("drawerOverlay").addEventListener("click", closeDrawer);
+      $("tableSearch").addEventListener("input", renderAvailableList);
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && drawerOpen) closeDrawer(); });
 
       // accordion: cards stay in sync — toggling one toggles all
       var heads = document.querySelectorAll(".step-head[data-toggle]");
