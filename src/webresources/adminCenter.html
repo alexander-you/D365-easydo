@@ -358,6 +358,9 @@
     .ghost-btn.primary { background:var(--blue); color:#fff; border-color:transparent; }
     .ghost-btn.primary:hover { background:var(--blue-press); border-color:transparent; }
     .pill.sm { font-size:11px; padding:3px 8px; }
+    .pill.muted { color:var(--text-3); background:var(--hairline); }
+    .pill.muted .pdot { background:var(--text-3); }
+    .pills-wrap { display:flex; align-items:center; gap:6px; flex-wrap:wrap; min-width:0; }
 
     /* ===== Send-enable section ===== */
     .send-card {
@@ -406,6 +409,53 @@
       z-index:41; display:flex; flex-direction:column;
     }
     .drawer.open { transform:translateX(0); }
+
+    /* ===== Confirm modal ===== */
+    .modal-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,.42);
+      -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+      display:flex; align-items:center; justify-content:center; padding:20px;
+      opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:60;
+    }
+    .modal-overlay.open { opacity:1; pointer-events:auto; }
+    .confirm-card {
+      width:min(460px, 94vw); background:var(--bg-grad-1);
+      border:1px solid var(--hairline); border-radius:20px;
+      box-shadow:var(--shadow-pop); padding:26px 26px 22px; text-align:center;
+      transform:translateY(8px) scale(.98);
+      transition:transform .25s cubic-bezier(.22,1,.36,1);
+    }
+    .modal-overlay.open .confirm-card { transform:translateY(0) scale(1); }
+    .cm-icon {
+      width:54px; height:54px; border-radius:50%; margin:0 auto 14px;
+      display:flex; align-items:center; justify-content:center;
+      background: color-mix(in srgb, var(--amber) 18%, transparent); color:var(--amber);
+    }
+    .cm-icon svg { width:28px; height:28px; }
+    .cm-title { font-size:18px; font-weight:700; margin-bottom:8px; }
+    .cm-body { font-size:13.5px; color:var(--text-2); line-height:1.6; }
+    .cm-schema {
+      margin-top:12px; font-size:12px; color:var(--text-3);
+      background:var(--hairline); border-radius:10px; padding:7px 10px;
+      font-family:ui-monospace,Menlo,Consolas,monospace; direction:ltr;
+    }
+    .cm-note {
+      margin-top:12px; font-size:12.5px; font-weight:600; color:var(--red);
+      background: color-mix(in srgb, var(--red) 10%, transparent);
+      border-radius:12px; padding:9px 12px; line-height:1.5;
+    }
+    .cm-acts { display:flex; gap:10px; margin-top:20px; }
+    .cm-btn {
+      flex:1 1 0; padding:11px 14px; border-radius:12px; font-size:14px; font-weight:600;
+      cursor:pointer; border:1px solid var(--hairline);
+      transition:filter .15s ease, background .15s ease;
+    }
+    .cm-btn.ghost { background:transparent; color:var(--text-2); }
+    .cm-btn.ghost:hover { background:var(--hairline); }
+    .cm-btn.primary { background:var(--blue); color:#fff; border-color:transparent; }
+    .cm-btn.primary:hover { background:var(--blue-press); }
+    .cm-btn:disabled { opacity:.6; cursor:default; }
+
     .drawer-head {
       display:flex; align-items:center; gap:12px; padding:20px 22px;
       border-bottom:1px solid var(--hairline);
@@ -596,6 +646,22 @@
       </div>
     </div>
   </aside>
+
+  <div class="modal-overlay" id="confirmOverlay">
+    <div class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="cmTitle">
+      <div class="cm-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+      </div>
+      <div class="cm-title" id="cmTitle">יצירת קשר חדש על בקשת חתימה</div>
+      <div class="cm-body" id="cmBody"></div>
+      <div class="cm-schema" id="cmSchema"></div>
+      <div class="cm-note">פעולה זו אינה הפיכה. בסביבת ייצור ודא שאתה מודע לכך לפני שתמשיך.</div>
+      <div class="cm-acts">
+        <button class="cm-btn ghost" id="cmCancel">ביטול</button>
+        <button class="cm-btn primary" id="cmConfirm">המשך</button>
+      </div>
+    </div>
+  </div>
 
   <div class="toast" id="toast"></div>
 
@@ -845,7 +911,7 @@
       }
 
       function loadConfigs() {
-        var q = "?$select=alex_easydoentityconfigid,alex_entitylogicalname,alex_entitydisplayname,alex_sendenabled,alex_enableonform";
+        var q = "?$select=alex_easydoentityconfigid,alex_entitylogicalname,alex_entitydisplayname,alex_sendenabled,alex_enableonform,alex_relationshipstatus,alex_relationshipschemaname";
         return xrm.WebApi.retrieveMultipleRecords("alex_easydoentityconfig", q).then(function (res) {
           state.configs = {};
           res.entities.forEach(function (e) {
@@ -856,7 +922,9 @@
               logical: ln,
               display: e.alex_entitydisplayname || ln,
               enabled: e.alex_sendenabled === true,
-              onForm: e.alex_enableonform === true
+              onForm: e.alex_enableonform === true,
+              relStatus: (e.alex_relationshipstatus == null ? 0 : e.alex_relationshipstatus),
+              relSchema: e.alex_relationshipschemaname || ""
             };
           });
           renderSendSummary();
@@ -918,12 +986,16 @@
           var active = cfg.onForm;
           var stLabel = active ? "פעיל בטופס" : "מוגדר (לא בטופס)";
           var stKind = active ? "ok" : "warn";
+          var rel = relPill(cfg.relStatus);
           var row = document.createElement("div");
           row.className = "titem col";
           row.innerHTML =
             '<div class="ti-main"><div class="ti-name"></div><div class="ti-logical"></div></div>' +
             '<div class="ti-foot">' +
-              '<span class="pill ' + stKind + ' sm"><span class="pdot"></span>' + stLabel + '</span>' +
+              '<div class="pills-wrap">' +
+                '<span class="pill ' + stKind + ' sm"><span class="pdot"></span>' + stLabel + '</span>' +
+                '<span class="pill ' + rel.kind + ' sm"><span class="pdot"></span>' + rel.label + '</span>' +
+              '</div>' +
               '<div class="ti-act"></div>' +
             '</div>';
           row.querySelector(".ti-name").textContent = cfg.display;
@@ -935,6 +1007,14 @@
           row.querySelector(".ti-act").appendChild(rb);
           box.appendChild(row);
         });
+      }
+
+      // relStatus: 0/1 not created, 2 creating, 3 created, 4 failed
+      function relPill(status) {
+        if (status === 3) return { kind: "ok", label: "נוצר קשר" };
+        if (status === 2) return { kind: "warn", label: "קשר בתהליך" };
+        if (status === 4) return { kind: "bad", label: "שגיאת קשר" };
+        return { kind: "muted", label: "ללא קשר" };
       }
 
       function ensureMeta() {
@@ -998,21 +1078,120 @@
       }
 
       function enableTable(t, btn) {
-        btn.disabled = true; btn.querySelector("span").textContent = "מפעיל…";
         var existing = state.configs[t.logical];
-        var done = function () { toast("שליחה הופעלה עבור \u201C" + t.display + "\u201D"); loadConfigs(); };
-        var fail = function () { btn.disabled = false; btn.querySelector("span").textContent = "הפעל"; toast("הפעלת הטבלה נכשלה"); };
-        if (existing) {
-          xrm.WebApi.updateRecord("alex_easydoentityconfig", existing.id, { alex_sendenabled: true, alex_enableonform: true }).then(done, fail);
-        } else {
-          xrm.WebApi.createRecord("alex_easydoentityconfig", {
-            alex_name: t.display,
-            alex_entitylogicalname: t.logical,
-            alex_entitydisplayname: t.display,
-            alex_sendenabled: true,
-            alex_enableonform: true
-          }).then(done, fail);
+        // If the dedicated lookup is already provisioned, just (re-)enable - no metadata change.
+        if (existing && existing.relStatus === 3) {
+          setEnableBusy(btn, true);
+          xrm.WebApi.updateRecord("alex_easydoentityconfig", existing.id, { alex_sendenabled: true, alex_enableonform: true })
+            .then(function () { toast("שליחה הופעלה עבור \u201C" + t.display + "\u201D"); loadConfigs(); },
+                  function () { setEnableBusy(btn, false); toast("הפעלת הטבלה נכשלה"); });
+          return;
         }
+        // New table (or lookup not yet created): warn first - this creates an irreversible lookup.
+        openConfirm(t, btn);
+      }
+
+      function setEnableBusy(btn, busy) {
+        if (!btn) return;
+        btn.disabled = busy;
+        var s = btn.querySelector("span");
+        if (s) s.textContent = busy ? "מפעיל\u2026" : "הפעל";
+      }
+
+      // contact -> Contact, alex_foo -> AlexFoo
+      function toPascal(logical) {
+        return (logical || "").split("_").filter(function (p) { return p !== ""; })
+          .map(function (p) { return p.charAt(0).toUpperCase() + p.slice(1); }).join("");
+      }
+      function lookupSchemaPreview(logical) { return "alex_Related" + toPascal(logical) + "Id"; }
+
+      // ---- Confirm modal (irreversible lookup creation) ----
+      function openConfirm(t, btn) {
+        $("cmBody").innerHTML = "תיווצר עמודת קשר (Lookup) חדשה על טבלת \u201Cבקשת חתימה\u201D המצביעה אל \u201C" +
+          escapeHtml(t.display) + "\u201D, כדי שתוכל לראות גריד של בקשות החתימה מתוך הרשומה.";
+        $("cmSchema").textContent = lookupSchemaPreview(t.logical);
+        $("confirmOverlay").classList.add("open");
+        var cancelBtn = $("cmCancel"), confirmBtn = $("cmConfirm");
+        confirmBtn.disabled = false; cancelBtn.disabled = false;
+        confirmBtn.textContent = "המשך";
+        function cleanup() {
+          $("confirmOverlay").classList.remove("open");
+          confirmBtn.removeEventListener("click", onConfirm);
+          cancelBtn.removeEventListener("click", onCancel);
+        }
+        function onCancel() { cleanup(); setEnableBusy(btn, false); }
+        function onConfirm() {
+          confirmBtn.disabled = true; cancelBtn.disabled = true; confirmBtn.textContent = "יוצר\u2026";
+          doEnableWithLookup(t, btn).then(cleanup, cleanup);
+        }
+        confirmBtn.addEventListener("click", onConfirm);
+        cancelBtn.addEventListener("click", onCancel);
+      }
+
+      function escapeHtml(s) {
+        return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      }
+
+      // Write config (status=Creating), provision the lookup via Custom API, then record the outcome.
+      function doEnableWithLookup(t, btn) {
+        setEnableBusy(btn, true);
+        var existing = state.configs[t.logical];
+        var baseFields = {
+          alex_sendenabled: true,
+          alex_enableonform: true,
+          alex_relationshipstatus: 2,   // Creating
+          alex_statusmessage: ""
+        };
+        var ensureConfig = existing
+          ? xrm.WebApi.updateRecord("alex_easydoentityconfig", existing.id, baseFields)
+              .then(function () { return existing.id; })
+          : xrm.WebApi.createRecord("alex_easydoentityconfig", (function () {
+              var f = { alex_name: t.display, alex_entitylogicalname: t.logical, alex_entitydisplayname: t.display };
+              for (var k in baseFields) if (baseFields.hasOwnProperty(k)) f[k] = baseFields[k];
+              return f;
+            })()).then(function (r) { return r.id; });
+
+        return ensureConfig.then(function (configId) {
+          return callEnsureLookup(t.logical).then(function (resp) {
+            return xrm.WebApi.updateRecord("alex_easydoentityconfig", configId, {
+              alex_relationshipstatus: 3,   // Created
+              alex_relationshipschemaname: (resp && resp.RelationshipSchemaName) || lookupSchemaPreview(t.logical),
+              alex_statusmessage: ""
+            }).then(function () {
+              toast("הופעל ונוצר קשר עבור \u201C" + t.display + "\u201D"); loadConfigs();
+            });
+          }, function (err) {
+            return xrm.WebApi.updateRecord("alex_easydoentityconfig", configId, {
+              alex_relationshipstatus: 4,   // Failed
+              alex_statusmessage: ("יצירת הקשר נכשלה: " + ((err && err.message) || err)).slice(0, 2000)
+            }).then(function () {
+              toast("השליחה הופעלה אך יצירת הקשר נכשלה"); loadConfigs();
+            });
+          });
+        }, function () {
+          setEnableBusy(btn, false); toast("הפעלת הטבלה נכשלה");
+        });
+      }
+
+      // Call the alex_EnsureSignatureLookup Custom API (unbound action).
+      function callEnsureLookup(logical) {
+        var url = clientUrl() + "/api/data/v9.2/alex_EnsureSignatureLookup";
+        return fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json", Accept: "application/json",
+            "OData-MaxVersion": "4.0", "OData-Version": "4.0"
+          },
+          credentials: "include",
+          body: JSON.stringify({ TableLogicalName: logical })
+        }).then(function (r) {
+          if (!r.ok) {
+            return r.json().then(function (e) {
+              throw new Error((e && e.error && e.error.message) || ("HTTP " + r.status));
+            }, function () { throw new Error("HTTP " + r.status); });
+          }
+          return r.json();
+        });
       }
 
       function disableTable(cfg, btn) {

@@ -85,6 +85,7 @@ $writeBackTypeId = Set-PluginType -TypeName "EasyDo.Plugins.WriteBackPlugin"    
 $prefillTypeId   = Set-PluginType -TypeName "EasyDo.Plugins.ResolvePrefillPlugin" -Friendly "EasyDo Resolve Prefill"
 $anchorTypeId    = Set-PluginType -TypeName "EasyDo.Plugins.PopulateAnchorPlugin" -Friendly "EasyDo Populate Anchor"
 $wizardTypeId    = Set-PluginType -TypeName "EasyDo.Plugins.WizardIntakePlugin"   -Friendly "EasyDo Wizard Intake"
+$ensureLookupTypeId = Set-PluginType -TypeName "EasyDo.Plugins.EnsureSignatureLookupPlugin" -Friendly "EasyDo Ensure Signature Lookup"
 
 # ---- 3. SDK step: WriteBack on Update of alex_signaturerequest ----------
 $updateMsgId = (Invoke-DV GET "sdkmessages?`$select=sdkmessageid&`$filter=name eq 'Update'").value[0].sdkmessageid
@@ -301,5 +302,62 @@ Set-AttachReqParam -UniqueName "SignatureRequestId" -Name "SignatureRequestId" -
 Set-AttachReqParam -UniqueName "FileName"           -Name "FileName"           -Type 10 -Optional $true
 Set-AttachReqParam -UniqueName "FileContent"        -Name "FileContent"        -Type 10 -Optional $false
 Set-AttachRespProp -UniqueName "AnnotationId"       -Name "AnnotationId"        -Type 10
+
+# ---- 8. Custom API: alex_EnsureSignatureLookup --------------------------
+# Provisions the dedicated native lookup (alex_Related<table>Id) from the
+# signature request back to a primary business table, so that table can show a
+# subgrid of its signature requests. Called by the admin center when an admin
+# enables a NEW table for sending (after an explicit "this is irreversible"
+# confirmation). Metadata create is done server-side for reliability.
+$ensureApiName = "alex_EnsureSignatureLookup"
+$ensureApiBody = @{
+    uniquename       = $ensureApiName
+    name             = "EnsureSignatureLookup"
+    displayname      = "Ensure Signature Lookup"
+    description      = "Provisions the dedicated native lookup from the signature request back to a primary business table (idempotent)."
+    bindingtype      = 0       # Global
+    isfunction       = $false
+    isprivate        = $false
+    allowedcustomprocessingsteptype = 0
+    "PluginTypeId@odata.bind" = "/plugintypes($ensureLookupTypeId)"
+}
+$existingEnsureApi = (Invoke-DV GET "customapis?`$select=customapiid&`$filter=uniquename eq '$ensureApiName'").value
+if ($existingEnsureApi -and $existingEnsureApi.Count -gt 0) {
+    $ensureApiId = $existingEnsureApi[0].customapiid
+    Invoke-DV PATCH "customapis($ensureApiId)" -Body @{ "PluginTypeId@odata.bind" = "/plugintypes($ensureLookupTypeId)"; description = $ensureApiBody.description } | Out-Null
+    Write-Output "Custom API exists ($ensureApiId), relinked"
+} else {
+    $r = Invoke-DV POST "customapis" -Body $ensureApiBody -ExtraHeaders $solHeader -ReturnHeaders
+    $ensureApiId = ($r.Headers["OData-EntityId"] -replace '.*\(([0-9a-fA-F-]+)\).*', '$1')
+    Write-Output "+ Custom API alex_EnsureSignatureLookup ($ensureApiId)"
+}
+function Set-EnsureReqParam {
+    param([string]$UniqueName, [string]$Name, [int]$Type, [bool]$Optional)
+    $f = (Invoke-DV GET "customapirequestparameters?`$select=customapirequestparameterid&`$filter=uniquename eq '$UniqueName' and _customapiid_value eq $ensureApiId").value
+    if ($f -and $f.Count -gt 0) { Write-Output "  req param exists $UniqueName"; return }
+    $body = @{
+        uniquename = $UniqueName; name = $Name; displayname = $Name
+        type = $Type; isoptional = $Optional
+        "CustomAPIId@odata.bind" = "/customapis($ensureApiId)"
+    }
+    Invoke-DV POST "customapirequestparameters" -Body $body -ExtraHeaders $solHeader | Out-Null
+    Write-Output "  + req param $UniqueName"
+}
+function Set-EnsureRespProp {
+    param([string]$UniqueName, [string]$Name, [int]$Type)
+    $f = (Invoke-DV GET "customapiresponseproperties?`$select=customapiresponsepropertyid&`$filter=uniquename eq '$UniqueName' and _customapiid_value eq $ensureApiId").value
+    if ($f -and $f.Count -gt 0) { Write-Output "  resp prop exists $UniqueName"; return }
+    $body = @{
+        uniquename = $UniqueName; name = $Name; displayname = $Name; type = $Type
+        "CustomAPIId@odata.bind" = "/customapis($ensureApiId)"
+    }
+    Invoke-DV POST "customapiresponseproperties" -Body $body -ExtraHeaders $solHeader | Out-Null
+    Write-Output "  + resp prop $UniqueName"
+}
+# Type 10 = String, Type 0 = Boolean
+Set-EnsureReqParam -UniqueName "TableLogicalName"       -Name "TableLogicalName"       -Type 10 -Optional $false
+Set-EnsureRespProp -UniqueName "RelationshipSchemaName" -Name "RelationshipSchemaName" -Type 10
+Set-EnsureRespProp -UniqueName "LookupLogicalName"      -Name "LookupLogicalName"      -Type 10
+Set-EnsureRespProp -UniqueName "Created"                -Name "Created"                -Type 0
 
 Write-Output "Done."
