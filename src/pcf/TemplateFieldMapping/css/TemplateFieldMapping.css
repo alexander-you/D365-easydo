@@ -215,6 +215,22 @@
 }
 .edo-root[dir="rtl"] .edo-carrow { transform: scaleX(-1); }
 
+/* ---- template-level flags (in config strip) ----------------------- */
+.edo-tplflags { gap: 10px; min-width: 320px; flex: 1.4; }
+.edo-flagrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--edo-line);
+  border-radius: 10px;
+  background: var(--edo-surface-2);
+}
+.edo-flagtext { display: flex; flex-direction: column; gap: 2px; }
+.edo-flaglabel { font-size: 13px; font-weight: 600; color: var(--edo-text); }
+.edo-flagrow .edo-toggle { flex: none; }
+
 /* ---- grid panel --------------------------------------------------- */
 .edo-grid { overflow: hidden; }
 .edo-gridbar {

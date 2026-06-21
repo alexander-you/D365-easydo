@@ -29,6 +29,8 @@ interface MappingRow {
   table: string;         // alex_dynamicstable  (target table the column lives on)
   column: string;        // alex_dynamicsfield
   readOnly: boolean;     // alex_isreadonly
+  visibleToUser: boolean;    // alex_isvisibletouser (show in send wizard data step)
+  editableBeforeSend: boolean; // alex_iseditablebeforesend (user may edit it there)
   direction: number | null; // alex_direction (choice)
   dirty: boolean;
 }
@@ -51,9 +53,10 @@ const I18N: Record<Lang, Record<string, string>> = {
     save: "Save", saving: "Saving…", validate: "Validate", refresh: "Refresh", showLogical: "Show logical names", hideLogical: "Hide logical names",
     gridTitle: "Field mappings", gridMeta: "Rows from",
     search: "Search field",
-    thEasydo: "easydo field", thTable: "Dynamics table", thColumn: "Dynamics column", thType: "Type", thReadOnly: "Locked", thDirection: "Direction", thStatus: "Status",
+    thEasydo: "easydo field", thTable: "Dynamics table", thColumn: "Dynamics column", thType: "Type", thReadOnly: "Locked", thDirection: "Direction", thVisible: "In wizard", thEditable: "Editable on send", thStatus: "Status",
     choose: "Choose…",
     locked: "Locked", editable: "Editable",
+    shown: "Shown", hidden: "Hidden", editOn: "Editable", editOff: "Fixed",
     dirPrefill: "Prefill", dirReadback: "Read back", dirBidir: "Bidirectional",
     stMapped: "Mapped", stUnmapped: "Unmapped",
     recordContext: "Record context", sourceTable: "Source table", mappingTable: "Mapping table", solution: "Solution", prefix: "Prefix", template: "Template",
@@ -65,6 +68,10 @@ const I18N: Record<Lang, Record<string, string>> = {
     demoTitle: "Demo preview", demoDesc: "No template record in context — showing sample data. Open this control on a template form to load live fields.",
     noRows: "This template has no synced fields yet", noRowsDesc: "Run the easydo template sync, then reopen this template.",
     primaryTableLabel: "Primary table", primaryHint: "The record this document is built on",
+    tplSettings: "Template settings",
+    sendFromObject: "Allow send from record", sendFromObjectHint: "Show this template in the send wizard launched from a record",
+    prefillEdit: "Allow editing data on send", prefillEditHint: "Let the sender edit prefilled fields in the wizard before sending",
+    onLbl: "On", offLbl: "Off",
     contactPathLabel: "Path to contact", contactPathNone: "No contact link",
     choosePrimary: "Choose a base table…", contactDisplay: "Contact",
     viaSep: "via",
@@ -82,9 +89,10 @@ const I18N: Record<Lang, Record<string, string>> = {
     save: "שמירה", saving: "שומר…", validate: "בדיקה", refresh: "רענון", showLogical: "הצג שמות לוגיים", hideLogical: "הסתר שמות לוגיים",
     gridTitle: "מיפויי שדות", gridMeta: "שורות מתוך",
     search: "חיפוש שדה",
-    thEasydo: "שדה easydo", thTable: "טבלת Dynamics", thColumn: "עמודת Dynamics", thType: "סוג", thReadOnly: "נעול", thDirection: "כיוון", thStatus: "סטטוס",
+    thEasydo: "שדה easydo", thTable: "טבלת Dynamics", thColumn: "עמודת Dynamics", thType: "סוג", thReadOnly: "נעול", thDirection: "כיוון", thVisible: "באשף", thEditable: "עריכה בשליחה", thStatus: "סטטוס",
     choose: "בחר…",
     locked: "נעול", editable: "ניתן לעריכה",
+    shown: "מוצג", hidden: "מוסתר", editOn: "ניתן לעריכה", editOff: "קבוע",
     dirPrefill: "מילוי מקדים", dirReadback: "קריאה חזרה", dirBidir: "דו‑כיווני",
     stMapped: "ממופה", stUnmapped: "לא ממופה",
     recordContext: "הקשר רשומה", sourceTable: "טבלת מקור", mappingTable: "טבלת מיפוי", solution: "פתרון", prefix: "תחילית", template: "תבנית",
@@ -96,6 +104,10 @@ const I18N: Record<Lang, Record<string, string>> = {
     demoTitle: "תצוגת דמו", demoDesc: "אין רשומת תבנית בהקשר — מוצגים נתוני דוגמה. פתחו את הפקד על טופס תבנית כדי לטעון שדות חיים.",
     noRows: "לתבנית זו אין עדיין שדות מסונכרנים", noRowsDesc: "הריצו את סנכרון תבניות easydo ופתחו מחדש את התבנית.",
     primaryTableLabel: "טבלה ראשית", primaryHint: "הרשומה שעליה בנוי המסמך",
+    tplSettings: "הגדרות תבנית",
+    sendFromObject: "אפשר שליחה מתוך הרשומה", sendFromObjectHint: "הצגת התבנית באשף השליחה שנפתח מרשומה",
+    prefillEdit: "אפשר עריכת נתונים בעת שליחה", prefillEditHint: "אפשרו לשולח לערוך שדות שמולאו מראש באשף לפני השליחה",
+    onLbl: "פעיל", offLbl: "כבוי",
     contactPathLabel: "נתיב לאיש קשר", contactPathNone: "אין קישור לאיש קשר",
     choosePrimary: "בחרו טבלת בסיס…", contactDisplay: "איש קשר",
     viaSep: "דרך",
@@ -146,7 +158,7 @@ function demoRows(): MappingRow[] {
     { external: "product.name", externalId: "custom_field_d", type: "input-text", lookup: "productid", table: "product", column: "name", readOnly: true, direction: DIR.PREFILL },
     { external: "Sign.Date", externalId: "custom_field_e", type: "input-date", lookup: "", table: "", column: "", readOnly: false, direction: null },
     { external: "AcademicYear", externalId: "custom_field_f", type: "input-text", lookup: "", table: "", column: "", readOnly: false, direction: null }
-  ].map(r => ({ ...r, id: "", dirty: false }));
+  ].map(r => ({ visibleToUser: r.direction === DIR.PREFILL || r.direction === DIR.BIDIR, editableBeforeSend: r.direction === DIR.BIDIR, ...r, id: "", dirty: false }));
 }
 
 /* ===================================================================== */
@@ -160,6 +172,8 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
   private demo = false;
   private templateId = "";
   private templateName = "";
+  private allowSendFromObject = false; // alex_allowsendfromobject (template-level)
+  private allowPrefillEdit = false;    // alex_allowprefilledit (template-level)
 
   private tables: TableMeta[] = [];
   private colCache: Record<string, ColMeta[]> = {};
@@ -204,6 +218,8 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       this.rows = [];
       this.primaryTable = "";
       this.contactPath = "";
+      this.allowSendFromObject = false;
+      this.allowPrefillEdit = false;
       this.lookups = [];
       this.renderLoading(I18N[this.lang].loadingMeta);
       void this.bootstrap();
@@ -363,7 +379,8 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
 
   private async fetchRows(): Promise<MappingRow[]> {
     const select = "alex_templatefieldmappingid,alex_externalfieldid,alex_externalfieldname," +
-      "alex_externalfieldtype,alex_lookupfield,alex_dynamicstable,alex_dynamicsfield,alex_isreadonly,alex_direction";
+      "alex_externalfieldtype,alex_lookupfield,alex_dynamicstable,alex_dynamicsfield,alex_isreadonly," +
+      "alex_isvisibletouser,alex_iseditablebeforesend,alex_direction";
     const q = `?$select=${select}&$filter=_alex_templateid_value eq ${this.templateId}&$orderby=alex_externalfieldname`;
     const res = await this.context.webAPI.retrieveMultipleRecords(ENTITY, q);
     return res.entities.map(e => ({
@@ -375,6 +392,8 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       table: (e["alex_dynamicstable"] as string) ?? "",
       column: (e["alex_dynamicsfield"] as string) ?? "",
       readOnly: !!e["alex_isreadonly"],
+      visibleToUser: !!e["alex_isvisibletouser"],
+      editableBeforeSend: !!e["alex_iseditablebeforesend"],
       direction: (e["alex_direction"] as number) ?? null,
       dirty: false
     }));
@@ -383,10 +402,12 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
   private async fetchTemplateConfig(): Promise<void> {
     try {
       const rec = await this.context.webAPI.retrieveRecord(
-        TEMPLATE_ENTITY, this.templateId, "?$select=alex_primarytable,alex_contactpath,alex_name"
+        TEMPLATE_ENTITY, this.templateId, "?$select=alex_primarytable,alex_contactpath,alex_name,alex_allowsendfromobject,alex_allowprefilledit"
       );
       this.primaryTable = (rec["alex_primarytable"] as string) ?? "";
       this.contactPath = (rec["alex_contactpath"] as string) ?? "";
+      this.allowSendFromObject = rec["alex_allowsendfromobject"] === true;
+      this.allowPrefillEdit = rec["alex_allowprefilledit"] === true;
       if (!this.templateName && rec["alex_name"]) this.templateName = rec["alex_name"] as string;
     } catch (e) {
       console.warn("[easydo mapping] config load failed", e);
@@ -428,6 +449,21 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     });
   }
 
+  // Persist a single template-level boolean flag immediately.
+  private async saveTemplateFlag(field: string, value: boolean): Promise<void> {
+    const t = I18N[this.lang];
+    if (this.demo || !this.templateId) return;
+    try {
+      const body: Record<string, unknown> = {};
+      body[field] = value;
+      await this.context.webAPI.updateRecord(TEMPLATE_ENTITY, this.templateId, body);
+      this.toast(t.saved, "ok");
+    } catch (e) {
+      console.error("[easydo mapping] flag save failed", e);
+      this.toast(t.saveErr, "err");
+    }
+  }
+
   /* ---- auto-save (immediate persistence) ------------------------ */
   // Each field change is persisted directly to Dataverse right away. This is
   // far more reliable than hooking the form OnSave (which races with Save&Close
@@ -441,6 +477,8 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
         alex_dynamicstable: r.table || null,
         alex_dynamicsfield: r.column || null,
         alex_isreadonly: r.readOnly,
+        alex_isvisibletouser: r.visibleToUser,
+        alex_iseditablebeforesend: r.editableBeforeSend,
         alex_direction: r.direction
       });
       r.dirty = false;
@@ -625,11 +663,34 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     g1.appendChild(this.el("div", "edo-chint", t.primaryHint));
     strip.appendChild(g1);
 
-    const g2 = this.el("div", "edo-cfield edo-chelp");
-    g2.appendChild(this.el("div", "edo-chint", t.configHint));
+    // Template-level flags (moved here from the hidden "General" form tab so the
+    // admin can configure everything from the one visible control).
+    const g2 = this.el("div", "edo-cfield edo-tplflags");
+    g2.appendChild(this.el("label", "edo-clabel", t.tplSettings));
+    g2.appendChild(this.buildFlagToggle(
+      this.allowSendFromObject, t.sendFromObject, t.sendFromObjectHint,
+      (v) => { this.allowSendFromObject = v; void this.saveTemplateFlag("alex_allowsendfromobject", v); }
+    ));
+    g2.appendChild(this.buildFlagToggle(
+      this.allowPrefillEdit, t.prefillEdit, t.prefillEditHint,
+      (v) => { this.allowPrefillEdit = v; void this.saveTemplateFlag("alex_allowprefilledit", v); }
+    ));
     strip.appendChild(g2);
 
     return strip;
+  }
+
+  // A labeled on/off switch for a template-level flag, with a description line.
+  private buildFlagToggle(checked: boolean, label: string, hint: string, onChange: (v: boolean) => void): HTMLElement {
+    const t = I18N[this.lang];
+    const row = this.el("div", "edo-flagrow");
+    const text = this.el("div", "edo-flagtext");
+    text.appendChild(this.el("div", "edo-flaglabel", label));
+    text.appendChild(this.el("div", "edo-chint", hint));
+    const toggle = this.buildBoolToggle(checked, t.onLbl, t.offLbl, onChange);
+    row.appendChild(text);
+    row.appendChild(toggle);
+    return row;
   }
 
   private async onPrimaryChanged(table: string): Promise<void> {
@@ -720,7 +781,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     const table = this.el("table", "edo-table");
     const thead = this.el("thead");
     const htr = this.el("tr");
-    [t.thEasydo, t.thTable, t.thColumn, t.thType, t.thReadOnly, t.thDirection, t.thStatus]
+    [t.thEasydo, t.thTable, t.thColumn, t.thType, t.thReadOnly, t.thDirection, t.thVisible, t.thEditable, t.thStatus]
       .forEach(h => htr.appendChild(this.el("th", undefined, h)));
     thead.appendChild(htr);
     table.appendChild(thead);
@@ -801,6 +862,16 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     );
     tdDir.appendChild(dirSel);
     tr.appendChild(tdDir);
+
+    const tdVis = this.el("td");
+    tdVis.appendChild(this.buildBoolToggle(r.visibleToUser, t.shown, t.hidden,
+      (v) => { r.visibleToUser = v; void this.persistRow(r); }));
+    tr.appendChild(tdVis);
+
+    const tdEdit = this.el("td");
+    tdEdit.appendChild(this.buildBoolToggle(r.editableBeforeSend, t.editOn, t.editOff,
+      (v) => { r.editableBeforeSend = v; void this.persistRow(r); }));
+    tr.appendChild(tdEdit);
 
     const tdStatus = this.el("td", "edo-status-cell");
     tr.appendChild(tdStatus);
@@ -932,6 +1003,22 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     cb.checked = r.readOnly;
     const label = this.el("span", "edo-toggle-label", r.readOnly ? t.locked : t.editable);
     cb.onchange = () => { r.readOnly = cb.checked; label.textContent = cb.checked ? t.locked : t.editable; void this.persistRow(r); };
+    sw.appendChild(cb);
+    sw.appendChild(this.el("span", "edo-slider"));
+    wrap.appendChild(sw);
+    wrap.appendChild(label);
+    return wrap;
+  }
+
+  // Generic on/off switch used by the wizard-visibility and editable columns.
+  private buildBoolToggle(checked: boolean, onLabel: string, offLabel: string, onChange: (v: boolean) => void): HTMLElement {
+    const wrap = this.el("label", "edo-toggle");
+    const sw = this.el("span", "edo-switch");
+    const cb = this.el("input") as HTMLInputElement;
+    cb.type = "checkbox";
+    cb.checked = checked;
+    const label = this.el("span", "edo-toggle-label", checked ? onLabel : offLabel);
+    cb.onchange = () => { label.textContent = cb.checked ? onLabel : offLabel; onChange(cb.checked); };
     sw.appendChild(cb);
     sw.appendChild(this.el("span", "edo-slider"));
     wrap.appendChild(sw);
