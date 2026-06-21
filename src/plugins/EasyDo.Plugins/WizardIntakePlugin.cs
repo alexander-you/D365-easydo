@@ -117,6 +117,10 @@ namespace EasyDo.Plugins
             target["alex_channelsms"] = p.ChannelSms;
             target["alex_channelwhatsapp"] = p.ChannelWhatsApp;
 
+            // Distribution declaration snapshot (how each non-email channel is sent).
+            if (!string.IsNullOrEmpty(p.ChannelDeclaration))
+                target["alex_channeldeclaration"] = p.ChannelDeclaration;
+
             if (string.IsNullOrEmpty(target.GetAttributeValue<string>("alex_name")))
                 target["alex_name"] = "easydo - " + (p.TemplateExternalId ?? "");
 
@@ -243,6 +247,19 @@ namespace EasyDo.Plugins
                 p.ChannelEmail = true;
             }
 
+            // Distribution declaration snapshot: { sms: {method,journeyName,flowName}, whatsapp: {...} }.
+            // Captured verbatim as a normalized JSON string for governance/audit on the request.
+            var declNode = payloadNode.SelectSingleNode("channelDeclaration");
+            if (declNode != null && !IsJsonNull(declNode))
+            {
+                var sms = BuildDeclJson(declNode.SelectSingleNode("sms"));
+                var wa = BuildDeclJson(declNode.SelectSingleNode("whatsapp"));
+                if (sms != null || wa != null)
+                {
+                    p.ChannelDeclaration = "{\"sms\":" + (sms ?? "null") + ",\"whatsapp\":" + (wa ?? "null") + "}";
+                }
+            }
+
             var recipients = payloadNode.SelectNodes("recipients/item");
             if (recipients != null)
             {
@@ -281,6 +298,51 @@ namespace EasyDo.Plugins
             return n == null ? null : n.InnerText;
         }
 
+        // True when a JsonReaderWriterFactory node represents a JSON null (type="null").
+        private static bool IsJsonNull(XmlNode node)
+        {
+            if (node == null) return true;
+            var t = node.Attributes != null ? node.Attributes["type"] : null;
+            return t != null && string.Equals(t.Value, "null", StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Build a compact JSON object for one channel's distribution declaration, or
+        // null when the channel was not declared.
+        private static string BuildDeclJson(XmlNode chNode)
+        {
+            if (chNode == null || IsJsonNull(chNode)) return null;
+            var method = Text(chNode, "method");
+            var journey = Text(chNode, "journeyName") ?? "";
+            var flow = Text(chNode, "flowName") ?? "";
+            int m;
+            var methodJson = int.TryParse(method, out m) ? m.ToString() : "null";
+            return "{\"method\":" + methodJson +
+                ",\"journeyName\":\"" + JsonEscape(journey) +
+                "\",\"flowName\":\"" + JsonEscape(flow) + "\"}";
+        }
+
+        private static string JsonEscape(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            var sb = new StringBuilder(s.Length);
+            foreach (var c in s)
+            {
+                switch (c)
+                {
+                    case '"': sb.Append("\\\""); break;
+                    case '\\': sb.Append("\\\\"); break;
+                    case '\n': sb.Append("\\n"); break;
+                    case '\r': sb.Append("\\r"); break;
+                    case '\t': sb.Append("\\t"); break;
+                    default:
+                        if (c < ' ') sb.Append("\\u").Append(((int)c).ToString("x4"));
+                        else sb.Append(c);
+                        break;
+                }
+            }
+            return sb.ToString();
+        }
+
         private sealed class WizardPayload
         {
             public string TemplateExternalId;
@@ -292,6 +354,7 @@ namespace EasyDo.Plugins
             public bool ChannelEmail;
             public bool ChannelSms;
             public bool ChannelWhatsApp;
+            public string ChannelDeclaration;
             public List<WizardRecipient> Recipients;
             public List<WizardFieldValue> FieldValues;
         }

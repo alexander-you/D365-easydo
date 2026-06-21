@@ -558,6 +558,25 @@
       border:1px solid var(--hairline-strong); border-radius:14px;
       background:linear-gradient(135deg, color-mix(in srgb, var(--green) 9%, var(--surface-solid)), var(--surface-solid));
     }
+    /* distribution governance sub-panel under SMS / WhatsApp */
+    .gs-dist {
+      margin:-4px 0 2px; padding:13px 15px; display:none; flex-direction:column; gap:11px;
+      border:1px solid var(--hairline); border-radius:13px;
+      background:color-mix(in srgb, var(--accent) 4%, var(--surface-solid));
+    }
+    .gs-dist.show { display:flex; }
+    .gs-dist.incomplete { border-color:var(--amber, #c98a00); background:color-mix(in srgb, var(--amber, #c98a00) 7%, var(--surface-solid)); }
+    .gs-dist-title { font-size:12.5px; font-weight:650; color:var(--text-3); }
+    .gs-dist-field { display:flex; flex-direction:column; gap:5px; }
+    .gs-dist-field > label { font-size:12px; font-weight:600; color:var(--text-2); }
+    .gs-dist-field select, .gs-dist-field input {
+      width:100%; box-sizing:border-box; padding:9px 11px; font:inherit; font-size:13.5px;
+      border:1px solid var(--hairline-strong); border-radius:10px; background:var(--surface-solid); color:var(--text-1);
+    }
+    .gs-dist-field select:focus, .gs-dist-field input:focus { outline:none; border-color:var(--accent); }
+    .gs-dist-warn { font-size:11.5px; color:var(--amber, #c98a00); font-weight:600; display:none; }
+    .gs-dist.incomplete .gs-dist-warn { display:block; }
+    .gs-dist-hint { font-size:11.5px; color:var(--text-3); line-height:1.5; }
 
     @media (max-width: 520px) {
       h1 { font-size: 25px; }
@@ -717,7 +736,7 @@
         <div class="gs-master">
           <div class="gs-main">
             <div class="gs-name">שליחה רב-ערוצית</div>
-            <div class="gs-desc">כשמופעל, ניתן לשלוח את קישור החתימה בכמה ערוצים במקביל (דוא״ל, SMS, וואטסאפ). כשכבוי, השליחה היא בדוא״ל בלבד.</div>
+            <div class="gs-desc">כשמופעל, ניתן לשלוח את קישור החתימה בכמה ערוצים במקביל (דוא״ל, SMS, WhatsApp). כשכבוי, השליחה היא בדוא״ל בלבד.</div>
           </div>
           <button class="switch" id="swMultiChannel" role="switch" aria-label="שליחה רב-ערוצית"></button>
         </div>
@@ -737,15 +756,57 @@
             </div>
             <button class="switch" id="swSms" role="switch" aria-label="אפשר SMS"></button>
           </div>
+          <div class="gs-dist" id="distSms">
+            <div class="gs-dist-title">הפצת SMS — מי אחראי לשליחה?</div>
+            <div class="gs-dist-field">
+              <label for="smsMethod">שיטת הפצה</label>
+              <select id="smsMethod">
+                <option value="">— בחר שיטה —</option>
+                <option value="626210000">מסעות לקוח (CIJ)</option>
+                <option value="626210001">זרימת Power Automate (Flow)</option>
+              </select>
+            </div>
+            <div class="gs-dist-field" id="smsCijField" style="display:none;">
+              <label for="smsJourney">שם המסע ב-CIJ</label>
+              <input id="smsJourney" type="text" placeholder="שם המסע שמפיץ את הקישור">
+            </div>
+            <div class="gs-dist-field" id="smsFlowField" style="display:none;">
+              <label for="smsFlow">זרימת Power Automate</label>
+              <select id="smsFlow"><option value="">— בחר זרימה —</option></select>
+            </div>
+            <div class="gs-dist-warn">יש לבחור שיטת הפצה ויעד כדי להפעיל את הערוץ.</div>
+            <div class="gs-dist-hint">הערוץ הוא הצהרתי בלבד: המערכת מחוללת את הקישור, וההפצה בפועל באחריות המסע / הזרימה שתבחר.</div>
+          </div>
           <div class="gs-row" id="rowWhatsApp">
             <div class="gs-main">
-              <div class="gs-name">וואטסאפ</div>
-              <div class="gs-desc">שליחת קישור החתימה בהודעת וואטסאפ למספר הטלפון של הנמען (נשלף אוטומטית מאיש הקשר).</div>
+              <div class="gs-name">WhatsApp</div>
+              <div class="gs-desc">שליחת קישור החתימה בהודעת WhatsApp למספר הטלפון של הנמען (נשלף אוטומטית מאיש הקשר).</div>
             </div>
-            <button class="switch" id="swWhatsApp" role="switch" aria-label="אפשר וואטסאפ"></button>
+            <button class="switch" id="swWhatsApp" role="switch" aria-label="אפשר WhatsApp"></button>
+          </div>
+          <div class="gs-dist" id="distWhatsApp">
+            <div class="gs-dist-title">הפצת WhatsApp — מי אחראי לשליחה?</div>
+            <div class="gs-dist-field">
+              <label for="waMethod">שיטת הפצה</label>
+              <select id="waMethod">
+                <option value="">— בחר שיטה —</option>
+                <option value="626210000">מסעות לקוח (CIJ)</option>
+                <option value="626210001">זרימת Power Automate (Flow)</option>
+              </select>
+            </div>
+            <div class="gs-dist-field" id="waCijField" style="display:none;">
+              <label for="waJourney">שם המסע ב-CIJ</label>
+              <input id="waJourney" type="text" placeholder="שם המסע שמפיץ את הקישור">
+            </div>
+            <div class="gs-dist-field" id="waFlowField" style="display:none;">
+              <label for="waFlow">זרימת Power Automate</label>
+              <select id="waFlow"><option value="">— בחר זרימה —</option></select>
+            </div>
+            <div class="gs-dist-warn">יש לבחור שיטת הפצה ויעד כדי להפעיל את הערוץ.</div>
+            <div class="gs-dist-hint">הערוץ הוא הצהרתי בלבד: המערכת מחוללת את הקישור, וההפצה בפועל באחריות המסע / הזרימה שתבחר.</div>
           </div>
         </div>
-        <div class="pane-hint">easydo מאפשרת ערוץ התראה אחד לכל נמען. כאשר נבחרים כמה ערוצים, קישור החתימה מחולל ללא התראה מ-easydo ומופץ בכל הערוצים שנבחרו דרך שירות הלקוח.</div>
+        <div class="pane-hint">easydo מאפשרת ערוץ התראה אחד לכל נמען. כאשר נבחרים כמה ערוצים, קישור החתימה מחולל ללא התראה מ-easydo ומופץ בכל הערוצים שנבחרו דרך שירות הלקוח. הגדרת ההפצה בפועל מתבצעת דרך Customer Insights - Journeys (CIJ) או דרך זרימות Power Automate (Flow) שמוגדרות ידנית על-ידי הארגון.</div>
       </div>
     </div>
   </aside>
@@ -1077,19 +1138,48 @@
 
       // ---- Global send settings (singleton) ----
       var settingsOpen = false;
-      var SETTINGS_DEFAULTS = { multiChannel: false, allowEmail: true, allowSms: false, allowWhatsApp: false };
+      // Distribution method choice values (global choice alex_distributionmethod).
+      var METHOD_CIJ = 626210000, METHOD_FLOW = 626210001;
+      // When a channel is being switched on but its distribution is not yet
+      // configured, it stays "pending" (panel revealed, not committed).
+      var pendingSms = false, pendingWhatsApp = false;
+      var SETTINGS_DEFAULTS = {
+        multiChannel: false, allowEmail: true, allowSms: false, allowWhatsApp: false,
+        smsMethod: null, smsJourneyName: "", smsFlowId: null, smsFlowName: "",
+        waMethod: null, waJourneyName: "", waFlowId: null, waFlowName: ""
+      };
+
+      // Modern cloud flows (category 5, type 1) offered in the Flow picker.
+      function loadCloudFlows() {
+        var q = "?$select=workflowid,name&$filter=category eq 5 and type eq 1&$orderby=name";
+        return xrm.WebApi.retrieveMultipleRecords("workflow", q).then(function (res) {
+          state.cloudFlows = res.entities.map(function (e) { return { id: e.workflowid, name: e.name }; });
+        }, function () { state.cloudFlows = []; });
+      }
 
       function loadSettings() {
-        var q = "?$select=alex_easydosettingsid,alex_multichannelenabled,alex_allowemail,alex_allowsms,alex_allowwhatsapp&$top=1";
-        return xrm.WebApi.retrieveMultipleRecords("alex_easydosettings", q).then(function (res) {
+        var q = "?$select=alex_easydosettingsid,alex_multichannelenabled,alex_allowemail,alex_allowsms,alex_allowwhatsapp," +
+          "alex_smsmethod,alex_smsjourneyname,_alex_smsflowid_value,alex_whatsappmethod,alex_whatsappjourneyname,_alex_whatsappflowid_value&$top=1";
+        return loadCloudFlows().then(function () {
+          return xrm.WebApi.retrieveMultipleRecords("alex_easydosettings", q);
+        }).then(function (res) {
           if (res.entities.length) {
             var e = res.entities[0];
+            var F = "@OData.Community.Display.V1.FormattedValue";
             state.settings = {
               id: e.alex_easydosettingsid,
               multiChannel: e.alex_multichannelenabled === true,
               allowEmail: e.alex_allowemail !== false,
               allowSms: e.alex_allowsms === true,
-              allowWhatsApp: e.alex_allowwhatsapp === true
+              allowWhatsApp: e.alex_allowwhatsapp === true,
+              smsMethod: (e.alex_smsmethod === 0 || e.alex_smsmethod) ? e.alex_smsmethod : null,
+              smsJourneyName: e.alex_smsjourneyname || "",
+              smsFlowId: e._alex_smsflowid_value || null,
+              smsFlowName: e["_alex_smsflowid_value" + F] || "",
+              waMethod: (e.alex_whatsappmethod === 0 || e.alex_whatsappmethod) ? e.alex_whatsappmethod : null,
+              waJourneyName: e.alex_whatsappjourneyname || "",
+              waFlowId: e._alex_whatsappflowid_value || null,
+              waFlowName: e["_alex_whatsappflowid_value" + F] || ""
             };
           } else {
             state.settings = null; // no row yet; created lazily on first save
@@ -1117,8 +1207,16 @@
           alex_multichannelenabled: s.multiChannel,
           alex_allowemail: s.allowEmail,
           alex_allowsms: s.allowSms,
-          alex_allowwhatsapp: s.allowWhatsApp
+          alex_allowwhatsapp: s.allowWhatsApp,
+          alex_smsmethod: (s.smsMethod === 0 || s.smsMethod) ? s.smsMethod : null,
+          alex_smsjourneyname: s.smsJourneyName || null,
+          alex_whatsappmethod: (s.waMethod === 0 || s.waMethod) ? s.waMethod : null,
+          alex_whatsappjourneyname: s.waJourneyName || null
         };
+        // Flow lookups: bind when chosen. (A stale id under a non-Flow method is
+        // harmless because the method decides which target is consumed.)
+        if (s.smsFlowId) body["alex_SmsFlowId@odata.bind"] = "/workflows(" + s.smsFlowId + ")";
+        if (s.waFlowId) body["alex_WhatsAppFlowId@odata.bind"] = "/workflows(" + s.waFlowId + ")";
         var p;
         if (s.id) {
           p = xrm.WebApi.updateRecord("alex_easydosettings", s.id, body);
@@ -1132,6 +1230,63 @@
         return p.then(function () { toast("ההגדרות נשמרו"); }, function () {
           toast("שמירת ההגדרות נכשלה");
         });
+      }
+
+      // A non-email channel is "complete" only when it declares a distribution
+      // method AND the matching target (a CIJ journey name or a Flow).
+      function channelComplete(ch) {
+        var s = currentSettings();
+        var m = ch === "sms" ? s.smsMethod : s.waMethod;
+        var jn = ch === "sms" ? s.smsJourneyName : s.waJourneyName;
+        var fid = ch === "sms" ? s.smsFlowId : s.waFlowId;
+        if (m === METHOD_CIJ) return !!(jn && ("" + jn).trim());
+        if (m === METHOD_FLOW) return !!fid;
+        return false;
+      }
+
+      // Switch a non-email channel on/off. Turning ON is HARD-BLOCKED until the
+      // distribution method + target are declared (the toggle reveals the panel
+      // and stays "pending" until completed) so an admin must think twice.
+      function toggleChannel(ch) {
+        if (!currentSettings().multiChannel) return;
+        var s = currentSettings();
+        var on = ch === "sms" ? s.allowSms : s.allowWhatsApp;
+        if (on) {
+          if (ch === "sms") { pendingSms = false; saveSettings({ allowSms: false }); }
+          else { pendingWhatsApp = false; saveSettings({ allowWhatsApp: false }); }
+          return;
+        }
+        if (channelComplete(ch)) {
+          if (ch === "sms") { pendingSms = false; saveSettings({ allowSms: true }); }
+          else { pendingWhatsApp = false; saveSettings({ allowWhatsApp: true }); }
+        } else {
+          if (ch === "sms") pendingSms = true; else pendingWhatsApp = true;
+          renderSettings();
+          toast("בחר שיטת הפצה ויעד כדי להפעיל את הערוץ");
+        }
+      }
+
+      // Persist a channel's distribution choice; auto-commit a pending channel
+      // the moment its declaration becomes complete.
+      function onDistChange(ch) {
+        var s = currentSettings();
+        state.settings = s; // materialise so the patch sticks
+        var isSms = ch === "sms";
+        var methodRaw = $(isSms ? "smsMethod" : "waMethod").value;
+        var mVal = methodRaw === "" ? null : parseInt(methodRaw, 10);
+        var journey = $(isSms ? "smsJourney" : "waJourney").value;
+        var flowId = $(isSms ? "smsFlow" : "waFlow").value || null;
+        var flowName = "";
+        (state.cloudFlows || []).forEach(function (f) { if (f.id === flowId) flowName = f.name; });
+
+        var patch = {};
+        if (isSms) { patch.smsMethod = mVal; patch.smsJourneyName = journey; patch.smsFlowId = flowId; patch.smsFlowName = flowName; }
+        else { patch.waMethod = mVal; patch.waJourneyName = journey; patch.waFlowId = flowId; patch.waFlowName = flowName; }
+        for (var k in patch) if (patch.hasOwnProperty(k)) s[k] = patch[k];
+
+        if (isSms && pendingSms && channelComplete("sms")) { pendingSms = false; patch.allowSms = true; }
+        if (!isSms && pendingWhatsApp && channelComplete("wa")) { pendingWhatsApp = false; patch.allowWhatsApp = true; }
+        saveSettings(patch);
       }
 
       function setSwitch(id, on, disabled) {
@@ -1148,11 +1303,51 @@
         // When multi-channel is off only email applies; the other channels are disabled.
         var locked = !s.multiChannel;
         setSwitch("swEmail", s.allowEmail, locked);
-        setSwitch("swSms", s.allowSms, locked);
-        setSwitch("swWhatsApp", s.allowWhatsApp, locked);
+        // A pending channel shows the switch "on" (amber) while it is being configured.
+        setSwitch("swSms", s.allowSms || pendingSms, locked);
+        setSwitch("swWhatsApp", s.allowWhatsApp || pendingWhatsApp, locked);
         $("rowEmail").classList.toggle("disabled", locked);
         $("rowSms").classList.toggle("disabled", locked);
         $("rowWhatsApp").classList.toggle("disabled", locked);
+        renderDist("sms");
+        renderDist("wa");
+      }
+
+      // Render one channel's distribution governance panel (method + target).
+      function renderDist(ch) {
+        var s = currentSettings();
+        var isSms = ch === "sms";
+        var active = s.multiChannel && (isSms ? (s.allowSms || pendingSms) : (s.allowWhatsApp || pendingWhatsApp));
+        var panel = $(isSms ? "distSms" : "distWhatsApp");
+        if (!panel) return;
+        panel.classList.toggle("show", active);
+        if (!active) { panel.classList.remove("incomplete"); return; }
+        panel.classList.toggle("incomplete", !channelComplete(ch));
+
+        var method = isSms ? s.smsMethod : s.waMethod;
+        var methodSel = $(isSms ? "smsMethod" : "waMethod");
+        methodSel.value = (method === 0 || method) ? String(method) : "";
+        $(isSms ? "smsCijField" : "waCijField").style.display = method === METHOD_CIJ ? "" : "none";
+        $(isSms ? "smsFlowField" : "waFlowField").style.display = method === METHOD_FLOW ? "" : "none";
+
+        $(isSms ? "smsJourney" : "waJourney").value = (isSms ? s.smsJourneyName : s.waJourneyName) || "";
+        fillFlowSelect($(isSms ? "smsFlow" : "waFlow"), isSms ? s.smsFlowId : s.waFlowId);
+      }
+
+      // (Re)build a flow <select> from the loaded modern cloud flows.
+      function fillFlowSelect(sel, selectedId) {
+        if (!sel) return;
+        var cur = selectedId || "";
+        sel.innerHTML = "";
+        var ph = document.createElement("option");
+        ph.value = ""; ph.textContent = "— בחר זרימה —";
+        sel.appendChild(ph);
+        (state.cloudFlows || []).forEach(function (f) {
+          var o = document.createElement("option");
+          o.value = f.id; o.textContent = f.name;
+          sel.appendChild(o);
+        });
+        sel.value = cur;
       }
 
       function renderSettingsSummary() {
@@ -1165,8 +1360,8 @@
           chips.push("דוא״ל בלבד");
         } else {
           if (s.allowEmail) chips.push("דוא״ל");
-          if (s.allowSms) chips.push("SMS");
-          if (s.allowWhatsApp) chips.push("וואטסאפ");
+          if (s.allowSms && channelComplete("sms")) chips.push("SMS");
+          if (s.allowWhatsApp && channelComplete("wa")) chips.push("WhatsApp");
           if (!chips.length) chips.push("לא נבחר ערוץ");
         }
         chips.forEach(function (txt) {
@@ -1187,6 +1382,7 @@
       }
       function closeSettings() {
         settingsOpen = false;
+        pendingSms = false; pendingWhatsApp = false;
         $("settingsOverlay").classList.remove("open");
         $("settingsDrawer").classList.remove("open");
         $("settingsDrawer").setAttribute("aria-hidden", "true");
@@ -1474,7 +1670,7 @@
           $("heroSub").textContent = "פתח את מרכז הניהול מתוך אפליקציית easydo כדי לראות נתונים חיים.";
           return;
         }
-        state = { conns: {}, flows: {}, configs: {}, metaTables: null, settings: null };
+        state = { conns: {}, flows: {}, configs: {}, metaTables: null, settings: null, cloudFlows: [] };
         initChecks();
         recompute();
         renderSendSummary();
@@ -1500,8 +1696,14 @@
       $("settingsOverlay").addEventListener("click", closeSettings);
       $("swMultiChannel").addEventListener("click", function () { saveSettings({ multiChannel: !currentSettings().multiChannel }); });
       $("swEmail").addEventListener("click", function () { if (currentSettings().multiChannel) saveSettings({ allowEmail: !currentSettings().allowEmail }); });
-      $("swSms").addEventListener("click", function () { if (currentSettings().multiChannel) saveSettings({ allowSms: !currentSettings().allowSms }); });
-      $("swWhatsApp").addEventListener("click", function () { if (currentSettings().multiChannel) saveSettings({ allowWhatsApp: !currentSettings().allowWhatsApp }); });
+      $("swSms").addEventListener("click", function () { toggleChannel("sms"); });
+      $("swWhatsApp").addEventListener("click", function () { toggleChannel("wa"); });
+      $("smsMethod").addEventListener("change", function () { onDistChange("sms"); });
+      $("waMethod").addEventListener("change", function () { onDistChange("wa"); });
+      $("smsJourney").addEventListener("change", function () { onDistChange("sms"); });
+      $("waJourney").addEventListener("change", function () { onDistChange("wa"); });
+      $("smsFlow").addEventListener("change", function () { onDistChange("sms"); });
+      $("waFlow").addEventListener("change", function () { onDistChange("wa"); });
       document.addEventListener("keydown", function (e) {
         if (e.key !== "Escape") return;
         if (drawerOpen) closeDrawer();
