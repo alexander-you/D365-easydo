@@ -219,7 +219,7 @@
                       "phone": "@item()?['alex_phone']",
                       "name": "@item()?['alex_name']",
                       "sequence": "@item()?['alex_signingorder']",
-                      "notify_platform": "@if(equals(triggerOutputs()?['body/alex_easydochannel'], 626210001), 'sms', if(equals(triggerOutputs()?['body/alex_easydochannel'], 626210002), 'whatsapp', 'email'))",
+                      "notify_platform": "@if(not(equals(coalesce(triggerOutputs()?['body/alex_ccconversationid'], ''), '')), null, if(equals(triggerOutputs()?['body/alex_easydochannel'], 626210001), 'sms', if(equals(triggerOutputs()?['body/alex_easydochannel'], 626210002), 'whatsapp', 'email')))",
                       "recipient": "@equals(item()?['alex_signingorder'], 1)"
                     }
                   }

@@ -496,10 +496,20 @@
                 return (this.settings && this.settings.primaryChannel || "email") === "email";
             };
 
+            // True when launched from a live Contact Center conversation. The signing
+            // link is delivered over that conversation (notify_platform = null), so the
+            // recipient does NOT need an email or phone for easydo to notify.
+            Wizard.prototype.isCcSend = function () {
+                return !!(this.ctx && this.ctx.ccConversationId);
+            };
+
             // A recipient is ready when it carries the contact point the primary
             // channel needs: an email for email, otherwise a phone number.
             Wizard.prototype.recipientReady = function (r) {
                 if (!r) return false;
+                // Contact Center: delivered over the live conversation, so any resolved
+                // recipient identity is enough (no email/phone requirement).
+                if (this.isCcSend()) return !!(r.name || r.email || r.phone || r.contactId);
                 return this.primaryNeedsEmail() ? isEmail(r.email) : hasPhone(r.phone);
             };
 
@@ -1234,7 +1244,12 @@
                     channelDeclaration: declaration,
                     launchEntityName: this.ctx.entityName,
                     launchRecordId: this.ctx.recordId,
-                    relatedContactId: relatedContactId
+                    relatedContactId: relatedContactId,
+                    // Contact Center live-conversation context. When present the Send
+                    // flow sets notify_platform = null (easydo stays silent) and the
+                    // wizard pushes the link into the conversation instead.
+                    ccConversationId: this.ctx.ccConversationId || "",
+                    ccChannel: this.ctx.ccChannel || ""
                 };
             };
 

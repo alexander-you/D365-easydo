@@ -135,6 +135,14 @@ namespace EasyDo.Plugins
             if (!string.IsNullOrEmpty(p.ChannelDeclaration))
                 target["alex_channeldeclaration"] = p.ChannelDeclaration;
 
+            // Contact Center context: the live conversation this request was sent from.
+            // When set, the Send flow uses notify_platform = null (easydo stays silent)
+            // and the signing link is delivered over the conversation instead.
+            if (!string.IsNullOrEmpty(p.CcConversationId))
+                target["alex_ccconversationid"] = p.CcConversationId;
+            if (!string.IsNullOrEmpty(p.CcChannel))
+                target["alex_ccchannel"] = p.CcChannel;
+
             if (string.IsNullOrEmpty(target.GetAttributeValue<string>("alex_name")))
                 target["alex_name"] = "easydo - " + (p.TemplateExternalId ?? "");
 
@@ -246,6 +254,8 @@ namespace EasyDo.Plugins
                 LaunchEntityName = Text(payloadNode, "launchEntityName"),
                 LaunchRecordId = Text(payloadNode, "launchRecordId"),
                 RelatedContactId = Text(payloadNode, "relatedContactId"),
+                CcConversationId = Text(payloadNode, "ccConversationId"),
+                CcChannel = Text(payloadNode, "ccChannel"),
                 IsDraft = string.Equals(Text(payloadNode, "isDraft"), "true", StringComparison.OrdinalIgnoreCase),
                 IsRealtime = string.Equals(Text(payloadNode, "isRealtime"), "true", StringComparison.OrdinalIgnoreCase),
                 Recipients = new List<WizardRecipient>(),
@@ -384,6 +394,8 @@ namespace EasyDo.Plugins
             public string LaunchEntityName;
             public string LaunchRecordId;
             public string RelatedContactId;
+            public string CcConversationId;
+            public string CcChannel;
             public bool ChannelEmail;
             public bool ChannelSms;
             public bool ChannelWhatsApp;

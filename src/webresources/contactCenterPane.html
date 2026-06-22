@@ -46,6 +46,12 @@
 
         .edo-cc { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 
+        .edo-cc-brand {
+            padding: 12px 18px; background: #fff; border-bottom: 1px solid var(--edo-line);
+            display: flex; align-items: center;
+        }
+        .edo-cc-logo { height: 24px; width: auto; display: block; }
+
         .edo-cc-head {
             padding: 16px 18px; border-bottom: 1px solid var(--edo-line);
             background: linear-gradient(135deg, var(--edo-accent), var(--edo-accent-2));
@@ -87,6 +93,9 @@
 
 <body>
     <div class="edo-cc">
+        <div class="edo-cc-brand">
+            <img id="ccLogo" class="edo-cc-logo" alt="easydo" />
+        </div>
         <div class="edo-cc-head">
             <div class="edo-cc-title" id="ccTitle">שליחת מסמך לחתימה</div>
             <div class="edo-cc-sub" id="ccSub">easydo · Dynamics 365 Contact Center</div>
@@ -160,6 +169,17 @@
                 var lang = pickLang();
                 document.documentElement.lang = lang;
                 document.documentElement.dir = (lang === "he") ? "rtl" : "ltr";
+                setLogo();
+            }
+
+            // Point the brand image at the easydo logo web resource; hide on failure.
+            function setLogo() {
+                var img = $("ccLogo");
+                if (!img) { return; }
+                var base = "";
+                try { base = getXrm().Utility.getGlobalContext().getClientUrl(); } catch (e) { base = ""; }
+                img.onerror = function () { var b = img.parentNode; if (b) { b.style.display = "none"; } };
+                img.src = base + "/WebResources/alex_/images/easydoLogo.svg";
             }
 
             function setState(kind, text) {
