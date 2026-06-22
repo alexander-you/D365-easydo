@@ -204,6 +204,7 @@
                     recipientsHeading: "נמענים", recipientsHint: "הוסיפו את האנשים שיקבלו את המסמך לחתימה.",
                     recipientsHintLocked: "הנמען נקבע אוטומטית מהרשומה. בדקו ואשרו \u2014 לא ניתן לערוך או להוסיף נמענים.",
                     recipientReadOnly: "לקריאה בלבד",
+                    ccRecipientHint: "ל-easydo נדרש דוא\"ל לזיהוי החותם. המלאו/תקנו את הדוא\"ל — קישור החתימה עצמו יישלח בשיחה החיה.",
                     recipientName: "שם", recipientEmail: "דוא\"ל", addRecipient: "הוספת נמען", removeRecipient: "הסרה",
                     noRecipients: "אין נמען זמין לשליחה מרשומה זו.",
                     settingsHeading: "הגדרות שליחה", settingsHint: "בחרו כיצד לשלוח את המסמך.",
@@ -250,6 +251,7 @@
                     recipientsHeading: "Recipients", recipientsHint: "Add the people who will receive the document to sign.",
                     recipientsHintLocked: "The recipient is set automatically from the record. Review and approve \u2014 editing or adding recipients is disabled.",
                     recipientReadOnly: "Read-only",
+                    ccRecipientHint: "easydo needs an email to identify the signer. Enter or correct the email — the signing link itself is sent in the live conversation.",
                     recipientName: "Name", recipientEmail: "Email", addRecipient: "Add recipient", removeRecipient: "Remove",
                     noRecipients: "No recipient is available to send from this record.",
                     settingsHeading: "Send settings", settingsHint: "Choose how to send the document.",
@@ -522,9 +524,10 @@
             // channel needs: an email for email, otherwise a phone number.
             Wizard.prototype.recipientReady = function (r) {
                 if (!r) return false;
-                // Contact Center: delivered over the live conversation, so any resolved
-                // recipient identity is enough (no email/phone requirement).
-                if (this.isCcSend()) return !!(r.name || r.email || r.phone || r.contactId);
+                // Contact Center: the signing link is distributed over the live
+                // conversation, but easydo still needs an email-identified signer for
+                // the ad-hoc assignee (a phone alone is not accepted by easydo).
+                if (this.isCcSend()) return isEmail(r.email);
                 return this.primaryNeedsEmail() ? isEmail(r.email) : hasPhone(r.phone);
             };
 
@@ -738,9 +741,20 @@
                 );
             };
 
+            // Rebuild only the footer (error + nav buttons) so live field edits can
+            // update the Next/Send enabled state without re-rendering the content,
+            // which would drop focus from the input being typed into.
+            Wizard.prototype.syncFooter = function () {
+                if (!this._footer || !this._footer.parentNode || !this._t) return;
+                var nf = this.buildFooter(this._t);
+                this._footer.parentNode.replaceChild(nf, this._footer);
+                this._footer = nf;
+            };
+
             // ----------------------------- rendering -----------------------------
             Wizard.prototype.render = function () {
                 var t = DICT[this.lang];
+                this._t = t;
                 this.root.setAttribute("dir", this.lang === "he" ? "rtl" : "ltr");
                 document.documentElement.setAttribute("lang", this.lang);
                 this.root.innerHTML = "";
@@ -756,7 +770,8 @@
                 body.appendChild(this.buildNav(t));
                 body.appendChild(this.buildContent(t));
                 this.root.appendChild(body);
-                this.root.appendChild(this.buildFooter(t));
+                this._footer = this.buildFooter(t);
+                this.root.appendChild(this._footer);
                 if (this._toast) this.root.appendChild(this._toast);
             };
 
@@ -866,8 +881,32 @@
 
             Wizard.prototype.stepRecipients = function (t) {
                 var self = this;
-                var wrap = el("div", { "class": "edo-wz-step" }, [this.heading(t.recipientsHeading, this.roleMode ? t.roleHint : t.recipientsHintLocked)]);
+                var hint = this.isCcSend() ? t.ccRecipientHint : (this.roleMode ? t.roleHint : t.recipientsHintLocked);
+                var wrap = el("div", { "class": "edo-wz-step" }, [this.heading(t.recipientsHeading, hint)]);
                 var list = el("div", { "class": "edo-wz-recips" });
+
+                // Contact Center: easydo needs an email-identified signer, but the
+                // customer resolved from the live conversation may have none. Let the
+                // agent enter/correct the email (required); name is pre-filled. The
+                // link itself is delivered over the conversation, not by easydo.
+                if (this.isCcSend()) {
+                    this.recipients.forEach(function (r, idx) {
+                        var nameInput = el("input", { "class": "edo-wz-input" });
+                        nameInput.value = r.name || ""; nameInput.placeholder = t.recipientName;
+                        nameInput.oninput = function () { self.recipients[idx].name = nameInput.value; };
+                        var emailInput = el("input", { "class": "edo-wz-input" });
+                        emailInput.type = "email"; emailInput.value = r.email || ""; emailInput.placeholder = t.recipientEmail;
+                        emailInput.oninput = function () { self.recipients[idx].email = emailInput.value.trim(); self.syncFooter(); };
+                        list.appendChild(el("div", { "class": "edo-wz-field" }, [
+                            el("div", { "class": "edo-wz-field-label", text: t.recipientName }), nameInput
+                        ]));
+                        list.appendChild(el("div", { "class": "edo-wz-field" }, [
+                            el("div", { "class": "edo-wz-field-label", text: t.recipientEmail }), emailInput
+                        ]));
+                    });
+                    wrap.appendChild(list);
+                    return wrap;
+                }
 
                 if (this.roleMode) {
                     // One fixed slot per signer role. The user only picks WHO fills
@@ -1210,6 +1249,12 @@
                 if (key === "template") { if (!this.selectedTemplateId) return t.pickTemplate; }
                 if (key === "recipients" || key === "review") {
                     if (key === "review" && !this.selectedTemplateId) return t.pickTemplate;
+                    if (this.isCcSend()) {
+                        // CC: editable single recipient; easydo requires a valid email.
+                        var okCc = this.recipients.some(function (r) { return self.recipientReady(r); });
+                        if (!okCc) return t.needRecipient;
+                        return "";
+                    }
                     var needMsg = this.primaryNeedsEmail() ? t.needRecipient : t.needRecipientPhone;
                     if (this.roleMode) {
                         var allFilled = this.recipients.every(function (r) { return self.recipientReady(r); });
