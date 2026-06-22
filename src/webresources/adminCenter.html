@@ -942,6 +942,12 @@
             </div>
             <button class="switch" id="swCcDefaultCase" role="switch" aria-label="שיוך ברירת מחדל לאירוע"></button>
           </div>
+          <!-- Message template wrapping the signing link inside the live conversation. -->
+          <div class="gs-dist-field" style="margin-top:2px;">
+            <label for="ccMsgTemplate">תבנית הודעת השליחה בשיחה</label>
+            <input id="ccMsgTemplate" type="text" placeholder="לדוגמה: מסמך מוכן לחתימה: {קישור}" autocomplete="off">
+            <div class="gs-desc" style="margin-top:6px;">הטקסט שיישלח עם קישור החתימה בשיחה. השתמשו ב-{קישור} כמציין מיקום לכתובת החתימה. אם ריק — יישלח הקישור בלבד.</div>
+          </div>
         </div>
         <div class="pane-hint">השיחה החיה (msdyn_ocliveworkitem) מנוהלת מכאן ואינה מופיעה ברשימת טבלאות השליחה. הקישור מופץ בערוץ השיחה עצמו, ולכן easydo אינה שולחת התראה משלה. דורש רישוי Omnichannel / Contact Center.</div>
       </div>
@@ -1301,7 +1307,7 @@
       function freshSettings() {
         return {
           id: null, primaryChannel: "email", multiChannel: false, allowPreview: false, realtimeEnabled: false,
-          ccEnabled: false, ccAgentReview: false, ccRealtime: false, ccDefaultCase: false,
+          ccEnabled: false, ccAgentReview: false, ccRealtime: false, ccDefaultCase: false, ccMessageTemplate: "",
           allow: { email: false, sms: false, whatsapp: false },
           method: { email: null, sms: null, whatsapp: null },
           journey: { email: "", sms: "", whatsapp: "" },
@@ -1320,7 +1326,7 @@
 
       function loadSettings() {
         var q = "?$select=alex_easydosettingsid,alex_easydochannel,alex_multichannelenabled,alex_allowpreview,alex_realtimeenabled," +
-          "alex_contactcenterenabled,alex_ccagentreview,alex_ccrealtimeresults,alex_ccdefaultcase," +
+          "alex_contactcenterenabled,alex_ccagentreview,alex_ccrealtimeresults,alex_ccdefaultcase,alex_ccmessagetemplate," +
           "alex_allowemail,alex_allowsms,alex_allowwhatsapp," +
           "alex_emailmethod,alex_emailjourneyname,_alex_emailflowid_value," +
           "alex_smsmethod,alex_smsjourneyname,_alex_smsflowid_value," +
@@ -1342,6 +1348,7 @@
               ccAgentReview: e.alex_ccagentreview === true,
               ccRealtime: e.alex_ccrealtimeresults === true,
               ccDefaultCase: e.alex_ccdefaultcase === true,
+              ccMessageTemplate: e.alex_ccmessagetemplate || "",
               allow: {
                 email: e.alex_allowemail === true,
                 sms: e.alex_allowsms === true,
@@ -1400,6 +1407,7 @@
           alex_ccagentreview: s.ccAgentReview === true,
           alex_ccrealtimeresults: s.ccRealtime === true,
           alex_ccdefaultcase: s.ccDefaultCase === true,
+          alex_ccmessagetemplate: s.ccMessageTemplate || null,
           alex_allowemail: s.allow.email,
           alex_allowsms: s.allow.sms,
           alex_allowwhatsapp: s.allow.whatsapp,
@@ -1506,6 +1514,17 @@
         var s = currentSettings();
         if (!s.ccEnabled) return;
         s.ccDefaultCase = !s.ccDefaultCase;
+        state.settings = s;
+        saveSettings();
+      }
+
+      // Persist the live-conversation message template on change (blur/enter).
+      function commitCcMessageTemplate() {
+        var s = currentSettings();
+        if (!s.ccEnabled) return;
+        var v = $("ccMsgTemplate").value;
+        if ((s.ccMessageTemplate || "") === (v || "")) return;
+        s.ccMessageTemplate = v;
         state.settings = s;
         saveSettings();
       }
@@ -1687,6 +1706,11 @@
         setSwitch("swCcAgentReview", s.ccAgentReview, locked);
         setSwitch("swCcRealtime", s.ccRealtime, locked);
         setSwitch("swCcDefaultCase", s.ccDefaultCase, locked);
+        var tplInput = $("ccMsgTemplate");
+        if (tplInput) {
+          if (document.activeElement !== tplInput) tplInput.value = s.ccMessageTemplate || "";
+          tplInput.disabled = locked;
+        }
       }
 
       function renderCcSummary() {
@@ -2042,6 +2066,7 @@
       $("swCcAgentReview").addEventListener("click", toggleCcAgentReview);
       $("swCcRealtime").addEventListener("click", toggleCcRealtime);
       $("swCcDefaultCase").addEventListener("click", toggleCcDefaultCase);
+      $("ccMsgTemplate").addEventListener("change", commitCcMessageTemplate);
       $("primarySeg").addEventListener("click", function (e) {
         var btn = e.target.closest ? e.target.closest(".gs-seg-btn") : null;
         if (btn && btn.getAttribute("data-ch")) setPrimary(btn.getAttribute("data-ch"));

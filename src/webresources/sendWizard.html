@@ -126,6 +126,10 @@
         .edo-wz-seg-btn { appearance: none; border: none; background: transparent; color: var(--edo-sub); font: inherit; font-weight: 600; padding: 7px 18px; border-radius: 7px; cursor: pointer; transition: background .12s ease, color .12s ease, box-shadow .12s ease; }
         .edo-wz-seg-btn.on { background: var(--edo-bg); color: var(--edo-accent); box-shadow: var(--edo-shadow); }
 
+        .edo-wz-cc-banner { display: flex; align-items: flex-start; gap: 11px; border: 1px solid rgba(79, 70, 229, .25); background: rgba(79, 70, 229, .06); border-radius: 12px; padding: 13px 15px; margin-bottom: 18px; }
+        .edo-wz-cc-banner-icon { font-size: 18px; line-height: 1.3; flex: 0 0 auto; }
+        .edo-wz-cc-banner-text { font-size: 13px; line-height: 1.55; color: var(--edo-ink); font-weight: 550; }
+
         .edo-wz-channels { display: flex; flex-wrap: wrap; gap: 10px; }
         .edo-wz-chk { display: inline-flex; align-items: center; gap: 9px; border: 1px solid var(--edo-line); border-radius: 10px; padding: 9px 14px; background: var(--edo-bg); cursor: pointer; transition: border-color .12s ease, background .12s ease, box-shadow .12s ease; user-select: none; }
         .edo-wz-chk:hover { border-color: var(--edo-accent); }
@@ -222,7 +226,10 @@
                     recipientNoPhone: "לנמען שנפתר מהרשומה אין מספר טלפון, הנדרש לשליחה ב-SMS/וואטסאפ. הוסיפו טלפון לאיש הקשר או שנו את ערוץ השליחה בהגדרות.",
                     idLabel: "מזהה: ", sentOk: "הבקשה נוצרה ונשלחה לעיבוד.", sentErr: "אירעה שגיאה ביצירת הבקשה: ",
                     realtimeLabel: "מצב זמן אמת", realtimeDesc: "שלחו את המסמך תוך כדי שיחה עם הלקוח והמתינו לתוצאה בחלון צף — עם התקדמות חיה ואפשרות לאשר או לדחות.",
-                    ccSending: "מייצר קישור חתימה ושולח לשיחה החיה...", ccSentOk: "קישור החתימה נשלח לשיחה.", ccReviewOk: "קישור החתימה הוכן בתיבת ההודעות שלך לאישור ושליחה.", ccSentErr: "לא ניתן לשלוח את קישור החתימה לשיחה: "
+                    ccSending: "מייצר קישור חתימה ושולח לשיחה החיה...", ccSentOk: "קישור החתימה נשלח לשיחה.", ccReviewOk: "קישור החתימה הוכן בתיבת ההודעות שלך לאישור ושליחה.", ccSentErr: "לא ניתן לשלוח את קישור החתימה לשיחה: ",
+                    ccBanner: "אתם בשיחה חיה עם הלקוח. קישור החתימה נוצר אוטומטית ונשלח ישירות לשיחה הפעילה (צ'אט/וואטסאפ) \u2014 אין צורך לבחור ערוץ.",
+                    ccLiveChannel: "שיחה חיה", ccLivePrimary: "ערוץ מרכזי", ccModeNote: "שליחה אוטומטית לשיחה החיה",
+                    ccBackupHint: "הקישור נשלח תמיד דרך השיחה החיה. ערוצים נוספים הם גיבוי בלבד (התראת easydo)."
                 },
                 en: {
                     title: "Send for signature",
@@ -265,7 +272,10 @@
                     recipientNoPhone: "The recipient resolved from the record has no phone number, which is required to send by SMS/WhatsApp. Add a phone to the contact or change the send channel in settings.",
                     idLabel: "ID: ", sentOk: "Request created and queued for processing.", sentErr: "Could not create the request: ",
                     realtimeLabel: "Real-time mode", realtimeDesc: "Send the document during a live call with the customer and wait for the result in a floating panel — with live progress and an option to approve or reject.",
-                    ccSending: "Generating the signing link and sending it to the live conversation...", ccSentOk: "The signing link was sent to the conversation.", ccReviewOk: "The signing link is ready in your message box to review and send.", ccSentErr: "Could not send the signing link to the conversation: "
+                    ccSending: "Generating the signing link and sending it to the live conversation...", ccSentOk: "The signing link was sent to the conversation.", ccReviewOk: "The signing link is ready in your message box to review and send.", ccSentErr: "Could not send the signing link to the conversation: ",
+                    ccBanner: "You are in a live conversation with the customer. The signing link is generated automatically and sent straight to the active conversation (chat/WhatsApp) \u2014 no need to pick a channel.",
+                    ccLiveChannel: "Live conversation", ccLivePrimary: "Primary channel", ccModeNote: "Auto-send to the live conversation",
+                    ccBackupHint: "The link is always delivered over the live conversation. Additional channels are backup only (easydo notification)."
                 }
             };
 
@@ -410,7 +420,7 @@
             Wizard.prototype.loadSettings = function () {
                 if (!this.xrm) return Promise.resolve(null);
                 var q = "?$select=alex_easydochannel,alex_multichannelenabled,alex_allowpreview,alex_realtimeenabled,alex_allowemail,alex_allowsms,alex_allowwhatsapp," +
-                    "alex_ccagentreview," +
+                    "alex_ccagentreview,alex_ccmessagetemplate," +
                     "alex_emailmethod,alex_emailjourneyname,_alex_emailflowid_value," +
                     "alex_smsmethod,alex_smsjourneyname,_alex_smsflowid_value," +
                     "alex_whatsappmethod,alex_whatsappjourneyname,_alex_whatsappflowid_value&$top=1";
@@ -435,6 +445,8 @@
                         realtimeEnabled: row.alex_realtimeenabled === true,
                         // CC: when on, drop the link in the agent sendbox to review; when off, send it directly.
                         ccAgentReview: row.alex_ccagentreview === true,
+                        // CC: admin-defined message wrapping the signing link in the live conversation.
+                        ccMessageTemplate: row.alex_ccmessagetemplate || "",
                         allow: {
                             email: row.alex_allowemail === true,
                             sms: row.alex_allowsms === true,
@@ -466,6 +478,9 @@
                     });
                 }
                 this.channels = ch;
+                // Contact Center: the link is delivered over the live conversation, so
+                // no easydo channel is pre-selected (backups are opt-in only).
+                if (self.isCcSend()) { this.channels = { email: false, sms: false, whatsapp: false }; }
             };
 
             // METHOD codes from the alex_distributionmethod global choice.
@@ -999,41 +1014,79 @@
 
             Wizard.prototype.stepSettings = function (t) {
                 var self = this;
+                var cc = this.isCcSend();
                 var wrap = el("div", { "class": "edo-wz-step" }, [this.heading(t.settingsHeading, t.settingsHint)]);
-                var modeCards = el("div", { "class": "edo-wz-cards" });
-                var mkMode = function (draft, title, desc) {
-                    var sel = self.isDraft === draft;
-                    var radio = el("div", { "class": "edo-wz-radio" + (sel ? " on" : "") });
-                    var info = el("div", { "class": "edo-wz-card-info" }, [
-                        el("div", { "class": "edo-wz-card-title", text: title }),
-                        el("div", { "class": "edo-wz-card-sub", text: desc })
-                    ]);
-                    var card = el("div", { "class": "edo-wz-card" + (sel ? " sel" : "") }, [radio, info]);
-                    card.onclick = function () { self.isDraft = draft; self.render(); };
-                    return card;
-                };
-                modeCards.appendChild(mkMode(false, t.modeSend, t.modeSendDesc));
-                // The preview option is only offered when the org enabled it.
-                if (this.settings && this.settings.allowPreview) {
-                    modeCards.appendChild(mkMode(true, t.modeDraft, t.modeDraftDesc));
-                }
-                wrap.appendChild(modeCards);
 
-                // Channels. The PRIMARY easydo channel (org-wide) is always used and
-                // shown locked; ADDITIONAL channels (when enabled and complete) are
-                // optional per-send toggles. The end user only picks what the admin
-                // allowed — no distribution internals are shown here.
+                // Contact Center: the document is sent over the live conversation, so
+                // explain that the link is generated and delivered automatically.
+                if (cc) {
+                    wrap.appendChild(el("div", { "class": "edo-wz-cc-banner" }, [
+                        el("div", { "class": "edo-wz-cc-banner-icon", text: "\uD83D\uDCAC" }),
+                        el("div", { "class": "edo-wz-cc-banner-text", text: t.ccBanner })
+                    ]));
+                }
+
+                // Send-mode cards (direct vs preview). The preview option is hidden for
+                // Contact Center sends — a live conversation always sends directly.
+                if (cc) {
+                    this.isDraft = false;
+                } else {
+                    var modeCards = el("div", { "class": "edo-wz-cards" });
+                    var mkMode = function (draft, title, desc) {
+                        var sel = self.isDraft === draft;
+                        var radio = el("div", { "class": "edo-wz-radio" + (sel ? " on" : "") });
+                        var info = el("div", { "class": "edo-wz-card-info" }, [
+                            el("div", { "class": "edo-wz-card-title", text: title }),
+                            el("div", { "class": "edo-wz-card-sub", text: desc })
+                        ]);
+                        var card = el("div", { "class": "edo-wz-card" + (sel ? " sel" : "") }, [radio, info]);
+                        card.onclick = function () { self.isDraft = draft; self.render(); };
+                        return card;
+                    };
+                    modeCards.appendChild(mkMode(false, t.modeSend, t.modeSendDesc));
+                    // The preview option is only offered when the org enabled it.
+                    if (this.settings && this.settings.allowPreview) {
+                        modeCards.appendChild(mkMode(true, t.modeDraft, t.modeDraftDesc));
+                    }
+                    wrap.appendChild(modeCards);
+                }
+
                 var s = this.settings;
                 var chLabels = { email: t.channelEmail, sms: t.channelSms, whatsapp: t.channelWhatsApp };
                 var chLabel = el("div", { "class": "edo-wz-field-label", text: t.channelsLabel });
                 var chList = el("div", { "class": "edo-wz-channels" });
-                // Primary channel — locked "on".
+
+                if (cc) {
+                    // The live conversation is the primary channel — locked "on".
+                    var liveBox = el("div", { "class": "edo-wz-chk on locked" }, [
+                        el("div", { "class": "edo-wz-chk-box" }),
+                        el("div", { "class": "edo-wz-chk-label", text: t.ccLiveChannel + " \u00B7 " + t.ccLivePrimary })
+                    ]);
+                    chList.appendChild(liveBox);
+                    // easydo channels are OPTIONAL backups here (none required).
+                    CHANNELS.forEach(function (key) {
+                        if (!s.allow || !s.allow[key]) return;
+                        var on = !!self.channels[key];
+                        var box = el("div", { "class": "edo-wz-chk" + (on ? " on" : "") }, [
+                            el("div", { "class": "edo-wz-chk-box" }),
+                            el("div", { "class": "edo-wz-chk-label", text: chLabels[key] })
+                        ]);
+                        box.onclick = function () { self.channels[key] = !self.channels[key]; self.render(); };
+                        chList.appendChild(box);
+                    });
+                    wrap.appendChild(el("div", { "class": "edo-wz-field" }, [chLabel, chList,
+                        el("div", { text: t.ccBackupHint, style: "margin:8px 2px 0; font-size:12px; line-height:1.5; color: var(--edo-sub);" })
+                    ]));
+                    return wrap;
+                }
+
+                // Standard send: PRIMARY easydo channel (locked) + optional additional
+                // channels (when enabled and complete).
                 var primBox = el("div", { "class": "edo-wz-chk on locked" }, [
                     el("div", { "class": "edo-wz-chk-box" }),
                     el("div", { "class": "edo-wz-chk-label", text: chLabels[s.primaryChannel] + " \u00B7 " + t.channelPrimary })
                 ]);
                 chList.appendChild(primBox);
-                // Additional channels (only the allowed + complete ones, excluding primary).
                 if (s.multiChannel) {
                     CHANNELS.forEach(function (key) {
                         if (key === s.primaryChannel) return;
@@ -1072,18 +1125,28 @@
                 } else {
                     addRow(t.reviewRecipients, valid.map(function (r) { return self.recipientLabel(r); }).join(", ") || "-");
                 }
-                addRow(t.reviewMode, this.isDraft ? t.modeDraft : t.modeSend);
-                // Channels: the primary easydo channel plus any selected additional ones.
-                // Distribution internals are intentionally omitted from the end-user view.
+                addRow(t.reviewMode, this.isCcSend() ? t.ccModeNote : (this.isDraft ? t.modeDraft : t.modeSend));
+                // Channels: for a live conversation the primary is the live chat; for a
+                // standard send it is the org easydo channel. Selected backups follow.
                 var chLabels = { email: t.channelEmail, sms: t.channelSms, whatsapp: t.channelWhatsApp };
-                var picked = [chLabels[this.settings.primaryChannel] + " (" + t.channelPrimary + ")"];
-                if (this.settings.multiChannel) {
+                var picked;
+                if (this.isCcSend()) {
+                    picked = [t.ccLiveChannel + " (" + t.ccLivePrimary + ")"];
                     CHANNELS.forEach(function (ch) {
-                        if (ch === self.settings.primaryChannel) return;
-                        if (self.channels[ch] && self.settings.allow[ch] && self.channelComplete(ch)) {
+                        if (self.channels[ch] && self.settings.allow && self.settings.allow[ch]) {
                             picked.push(chLabels[ch]);
                         }
                     });
+                } else {
+                    picked = [chLabels[this.settings.primaryChannel] + " (" + t.channelPrimary + ")"];
+                    if (this.settings.multiChannel) {
+                        CHANNELS.forEach(function (ch) {
+                            if (ch === self.settings.primaryChannel) return;
+                            if (self.channels[ch] && self.settings.allow[ch] && self.channelComplete(ch)) {
+                                picked.push(chLabels[ch]);
+                            }
+                        });
+                    }
                 }
                 addRow(t.reviewChannels, picked.join(", "));
                 var editedFields = this.editedFields();
@@ -1095,9 +1158,9 @@
                 }
                 wrap.appendChild(el("div", { "class": "edo-wz-review" }, rows));
                 // Real-time mode (per-send), only when the org enabled it and this is
-                // a direct send (not a preview draft). The agent waits live for the
-                // signed document in a floating panel after sending.
-                if (this.settings && this.settings.realtimeEnabled && !this.isDraft) {
+                // a direct send (not a preview draft). Hidden for Contact Center sends,
+                // where the live conversation already provides the real-time channel.
+                if (this.settings && this.settings.realtimeEnabled && !this.isDraft && !this.isCcSend()) {
                     var on = !!this.isRealtime;
                     var box = el("div", { "class": "edo-wz-chk" + (on ? " on" : "") }, [
                         el("div", { "class": "edo-wz-chk-box" }),
@@ -1415,6 +1478,19 @@
                 );
             };
 
+            // Wrap the signing link in the admin-defined message template. The
+            // placeholder {link} or {קישור} is replaced with the URL; with no
+            // placeholder the link is appended; with no template the raw link is sent.
+            Wizard.prototype.buildCcMessage = function (link) {
+                var tpl = (this.settings && this.settings.ccMessageTemplate) || "";
+                tpl = ("" + tpl).replace(/^\s+|\s+$/g, "");
+                if (!tpl) return link;
+                if (tpl.indexOf("{link}") !== -1 || tpl.indexOf("{\u05e7\u05d9\u05e9\u05d5\u05e8}") !== -1) {
+                    return tpl.split("{link}").join(link).split("{\u05e7\u05d9\u05e9\u05d5\u05e8}").join(link);
+                }
+                return tpl + "\n" + link;
+            };
+
             Wizard.prototype.pushLinkToConversation = function (link) {
                 var self = this;
                 var t = DICT[this.lang];
@@ -1428,7 +1504,8 @@
                     return;
                 }
                 try {
-                    Promise.resolve(oc.sendMessageToConversation(link, toSendBox, cid)).then(
+                    var msg = self.buildCcMessage(link);
+                    Promise.resolve(oc.sendMessageToConversation(msg, toSendBox, cid)).then(
                         function () {
                             self.toast(true, toSendBox ? t.ccReviewOk : t.ccSentOk);
                             window.setTimeout(function () { self.closePane(); }, 1400);

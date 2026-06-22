@@ -46,11 +46,11 @@
 
         .edo-cc { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 
-        .edo-cc-brand {
-            padding: 12px 18px; background: #fff; border-bottom: 1px solid var(--edo-line);
-            display: flex; align-items: center;
+        .edo-cc-foot {
+            flex: 0 0 auto; padding: 14px 18px; background: #fff; border-top: 1px solid var(--edo-line);
+            display: flex; align-items: center; justify-content: center;
         }
-        .edo-cc-logo { height: 24px; width: auto; display: block; }
+        .edo-cc-logo { height: 26px; width: auto; display: block; opacity: 0.92; }
 
         .edo-cc-head {
             padding: 16px 18px; border-bottom: 1px solid var(--edo-line);
@@ -93,9 +93,6 @@
 
 <body>
     <div class="edo-cc">
-        <div class="edo-cc-brand">
-            <img id="ccLogo" class="edo-cc-logo" alt="easydo" />
-        </div>
         <div class="edo-cc-head">
             <div class="edo-cc-title" id="ccTitle">שליחת מסמך לחתימה</div>
             <div class="edo-cc-sub" id="ccSub">easydo · Dynamics 365 Contact Center</div>
@@ -111,6 +108,9 @@
 
             <button class="edo-cc-btn" id="ccSendBtn" disabled>שליחת מסמך לחתימה</button>
             <div class="edo-cc-hint" id="ccHint">פתחו שיחה פעילה כדי לשלוח מסמך.</div>
+        </div>
+        <div class="edo-cc-foot">
+            <img id="ccLogo" class="edo-cc-logo" alt="easydo" />
         </div>
     </div>
 

@@ -584,7 +584,7 @@
                   "entityName": "alex_signaturerequests",
                   "recordId": "@triggerOutputs()?['body/alex_signaturerequestid']",
                   "item/alex_status": 626210008,
-                  "item/alex_errormessage": "@concat('Send failed on ', utcNow(), '. See flow run history for details.')"
+                  "item/alex_errormessage": "@concat('Send failed on ', utcNow(), ' | easydo: ', take(string(coalesce(outputs('Send_the_template_for_signature')?['body'], outputs('Set_the_preview_recipients')?['body'], outputs('Get_the_preview_form')?['body'], 'no response body')), 1700))"
                 },
                 "authentication": "@parameters('$authentication')"
               }
