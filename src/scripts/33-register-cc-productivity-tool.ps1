@@ -45,10 +45,12 @@ $paneId       = "1cc5913d-d322-f111-8341-7ced8d421ee7"
 
 # --- 1) Tool configuration --------------------------------------------------
 $existingTool = (Invoke-DV GET "msdyn_panetoolconfigurations?`$filter=msdyn_uniquename eq '$toolUnique'&`$select=msdyn_panetoolconfigurationid" -Silent).value
+$toolDescription = "שליחת מסמך לחתימה ללקוח של השיחה הפעילה, ישירות מתוך סשן הנציג."
 $toolBody = @{
     msdyn_name           = $toolName
     msdyn_uniquename     = $toolUnique
     msdyn_controlname    = $controlName
+    msdyn_description    = $toolDescription
     msdyn_type           = 0            # 0 = Control (פקד)
     msdyn_data           = "{}"
     msdyn_category       = 100000001    # Agent guidance (הדרכת סוכנים)

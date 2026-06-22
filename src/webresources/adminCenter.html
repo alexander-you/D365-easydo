@@ -554,6 +554,7 @@
     .switch.on { background:var(--green); }
     .switch.on::after { transform:translateX(-18px); }
     .switch:disabled { cursor:default; opacity:.6; }
+    .cc-prof-ctl { flex:0 0 auto; display:flex; align-items:center; }
     .gs-master {
       display:flex; align-items:center; gap:14px; padding:16px;
       border:1px solid var(--hairline-strong); border-radius:14px;
@@ -949,7 +950,11 @@
             <div class="gs-desc" style="margin-top:6px;">הטקסט שיישלח עם קישור החתימה בשיחה. השתמשו ב-{קישור} כמציין מיקום לכתובת החתימה. אם ריק — יישלח הקישור בלבד.</div>
           </div>
         </div>
-        <div class="pane-hint">השיחה החיה (msdyn_ocliveworkitem) מנוהלת מכאן ואינה מופיעה ברשימת טבלאות השליחה. הקישור מופץ בערוץ השיחה עצמו, ולכן easydo אינה שולחת התראה משלה. דורש רישוי Omnichannel / Contact Center.</div>
+        <div class="gs-group" id="ccProfGroup" style="margin-top:4px;">
+          <div class="gs-group-title">פריסת הפאנל בפרופילי חוויית הנציג</div>
+          <div class="pane-hint" style="margin:2px 0 4px;">בחר באילו פרופילים (לא-מנוהלים) כלי החתימה יופיע בחלונית הפרודוקטיביות של הנציג. ההפעלה יוצרת את ה-tab ישירות, ללא צורך בהרצת סקריפט.</div>
+          <div id="ccProfList"><div class="empty-note">טוען פרופילים…</div></div>
+        </div> מנוהלת מכאן ואינה מופיעה ברשימת טבלאות השליחה. הקישור מופץ בערוץ השיחה עצמו, ולכן easydo אינה שולחת התראה משלה. דורש רישוי Omnichannel / Contact Center.</div>
       </div>
     </div>
   </aside>
@@ -1742,12 +1747,140 @@
         $("ccDrawer").classList.add("open");
         $("ccDrawer").setAttribute("aria-hidden", "false");
         renderCc();
+        loadCcProfiles();
       }
       function closeCc() {
         ccOpen = false;
         $("ccOverlay").classList.remove("open");
         $("ccDrawer").classList.remove("open");
         $("ccDrawer").setAttribute("aria-hidden", "true");
+      }
+
+      // ---- Experience-profile pane deployment ----
+      // Dataverse has no FK between an experience profile (msdyn_appconfiguration)
+      // and its productivity pane (msdyn_paneconfiguration); Customer Service
+      // names the pane "<profileUnique>_pp". We resolve panes by that convention
+      // and toggle the easydo tool tab (msdyn_panetabconfiguration) per profile.
+      var CC_TOOL_UNIQUE = "alex_easydo_cc_signature_tool";
+
+      function loadCcProfiles() {
+        var box = $("ccProfList");
+        if (box) box.innerHTML = '<div class="empty-note">טוען פרופילים…</div>';
+        var toolId = null, profiles = [];
+        return xrm.WebApi.retrieveMultipleRecords("msdyn_panetoolconfiguration",
+            "?$select=msdyn_panetoolconfigurationid&$filter=msdyn_uniquename eq '" + CC_TOOL_UNIQUE + "'&$top=1")
+          .then(function (r) {
+            if (!r.entities.length) { state.ccTool = null; return null; }
+            toolId = r.entities[0].msdyn_panetoolconfigurationid;
+            state.ccTool = toolId;
+            return xrm.WebApi.retrieveMultipleRecords("msdyn_appconfiguration",
+              "?$select=msdyn_appconfigurationid,msdyn_name,msdyn_uniquename&$filter=statecode eq 0 and ismanaged eq false&$orderby=msdyn_name");
+          })
+          .then(function (pr) {
+            if (!pr) { renderCcProfiles(); return null; }
+            profiles = (pr.entities || []).map(function (e) {
+              return {
+                id: e.msdyn_appconfigurationid, name: e.msdyn_name || e.msdyn_uniquename,
+                unique: e.msdyn_uniquename, paneUnique: (e.msdyn_uniquename || "") + "_pp",
+                paneId: null, tabId: null, enabled: false, busy: false
+              };
+            });
+            if (!profiles.length) { state.ccProfiles = []; renderCcProfiles(); return null; }
+            var names = profiles.map(function (p) { return "msdyn_uniquename eq '" + p.paneUnique + "'"; }).join(" or ");
+            return xrm.WebApi.retrieveMultipleRecords("msdyn_paneconfiguration",
+              "?$select=msdyn_paneconfigurationid,msdyn_uniquename&$filter=" + names);
+          })
+          .then(function (paneRes) {
+            if (!paneRes) return null;
+            var byUnique = {};
+            (paneRes.entities || []).forEach(function (p) { byUnique[p.msdyn_uniquename] = p.msdyn_paneconfigurationid; });
+            profiles.forEach(function (p) { p.paneId = byUnique[p.paneUnique] || null; });
+            return xrm.WebApi.retrieveMultipleRecords("msdyn_panetabconfiguration",
+              "?$select=msdyn_panetabconfigurationid,msdyn_isenabled,_msdyn_productivitypaneid_value&$filter=_msdyn_toolid_value eq " + toolId);
+          })
+          .then(function (tabRes) {
+            if (!tabRes) return;
+            var byPane = {};
+            (tabRes.entities || []).forEach(function (t) {
+              byPane[t._msdyn_productivitypaneid_value] = { id: t.msdyn_panetabconfigurationid, on: t.msdyn_isenabled === true };
+            });
+            profiles.forEach(function (p) {
+              if (p.paneId && byPane[p.paneId]) { p.tabId = byPane[p.paneId].id; p.enabled = byPane[p.paneId].on; }
+            });
+            state.ccProfiles = profiles;
+            renderCcProfiles();
+          }, function () {
+            state.ccProfiles = [];
+            var b = $("ccProfList");
+            if (b) b.innerHTML = '<div class="empty-note">לא ניתן לטעון את רשימת הפרופילים.</div>';
+          });
+      }
+
+      function renderCcProfiles() {
+        var box = $("ccProfList");
+        if (!box) return;
+        box.innerHTML = "";
+        if (!state.ccTool) {
+          box.innerHTML = '<div class="empty-note">כלי החתימה טרם נרשם בסביבה.<br>הרץ את 33-register-cc-productivity-tool.ps1 כדי לרשום אותו.</div>';
+          return;
+        }
+        var list = state.ccProfiles || [];
+        if (!list.length) {
+          box.innerHTML = '<div class="empty-note">לא נמצאו פרופילי חוויה לא-מנוהלים.</div>';
+          return;
+        }
+        list.forEach(function (p) {
+          var row = document.createElement("div");
+          row.className = "gs-master";
+          row.innerHTML =
+            '<div class="gs-main"><div class="gs-name"></div><div class="gs-desc"></div></div>' +
+            '<div class="cc-prof-ctl"></div>';
+          row.querySelector(".gs-name").textContent = p.name;
+          var desc = row.querySelector(".gs-desc");
+          var ctl = row.querySelector(".cc-prof-ctl");
+          if (!p.paneId) {
+            desc.textContent = "אין חלונית פרודוקטיביות לפרופיל זה — לא ניתן להוסיף את הכלי.";
+            var tag = document.createElement("span");
+            tag.className = "pill muted sm";
+            tag.innerHTML = '<span class="pdot"></span>אין חלונית';
+            ctl.appendChild(tag);
+          } else {
+            desc.textContent = p.enabled ? "כלי החתימה מופעל בחלונית הנציג." : "כלי החתימה אינו מופעל בפרופיל זה.";
+            var sw = document.createElement("button");
+            sw.className = "switch" + (p.enabled ? " on" : "");
+            sw.setAttribute("role", "switch");
+            sw.setAttribute("aria-checked", p.enabled ? "true" : "false");
+            sw.disabled = !!p.busy;
+            sw.addEventListener("click", function () { toggleCcProfile(p, sw); });
+            ctl.appendChild(sw);
+          }
+          box.appendChild(row);
+        });
+      }
+
+      function toggleCcProfile(p, sw) {
+        if (p.busy || !p.paneId || !state.ccTool) return;
+        p.busy = true; sw.disabled = true;
+        var done = function () { p.busy = false; renderCcProfiles(); };
+        var fail = function (e) { toast("שגיאה: " + ((e && e.message) ? e.message : "לא הושלם")); done(); };
+        if (p.enabled && p.tabId) {
+          xrm.WebApi.deleteRecord("msdyn_panetabconfiguration", p.tabId).then(function () {
+            p.enabled = false; p.tabId = null; toast("הכלי הוסר מהפרופיל " + p.name); done();
+          }, fail);
+        } else {
+          var body = {
+            msdyn_name: "easydo signature " + p.unique + " pane tab",
+            msdyn_uniquename: "alex_easydo_cc_signature_tool_" + p.unique + "_pane_tab",
+            msdyn_order: 40,
+            msdyn_isenabled: true,
+            msdyn_tooltip: "easydo - שליחה לחתימה",
+            "msdyn_ProductivityPaneId@odata.bind": "/msdyn_paneconfigurations(" + p.paneId + ")",
+            "msdyn_ToolId@odata.bind": "/msdyn_panetoolconfigurations(" + state.ccTool + ")"
+          };
+          xrm.WebApi.createRecord("msdyn_panetabconfiguration", body).then(function (r) {
+            p.enabled = true; p.tabId = r.id; toast("הכלי הופעל בפרופיל " + p.name); done();
+          }, fail);
+        }
       }
 
       function renderEnabledList() {
