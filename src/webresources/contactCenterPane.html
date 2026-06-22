@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<!--
+  contactCenterPane.html  -  easydo Contact Center productivity pane
+
+  Hosted as a custom productivity tool / app side pane in the Dynamics 365
+  Contact Center (Customer Service workspace) agent app. It is ALWAYS available
+  next to the live conversation; the agent does NOT pass it any context.
+
+  On load and on conversation switch it asks EasyDo.ContactCenter.getCurrentContext()
+  which calls Microsoft.Omnichannel.getConversationId() to discover the FOCUSED
+  conversation, resolves the durable host (contact / case) and reports the channel
+  + customer so this pane can show them. The "Send for signature" button is enabled
+  only when the integration is on AND there is an active conversation; clicking it
+  calls EasyDo.ContactCenter.launch() which opens the shared send wizard pre-targeted
+  at the host record.
+
+  ES5-only (no arrow/const/let) for broad model-driven app compatibility.
+-->
+<html lang="he">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>easydo</title>
+    <style>
+        :root {
+            --edo-accent: #4b2e83;
+            --edo-accent-2: #6b4bb3;
+            --edo-ink: #1b1b2b;
+            --edo-sub: #6b6b80;
+            --edo-line: #e3e3ee;
+            --edo-ok: #2e8b57;
+            --edo-warn: #c0392b;
+            --edo-bg: #f5f5fa;
+            --edo-radius: 12px;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0; padding: 0; height: 100%;
+            font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+            color: var(--edo-ink); background: #fff;
+        }
+
+        .edo-cc { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+
+        .edo-cc-head {
+            padding: 16px 18px; border-bottom: 1px solid var(--edo-line);
+            background: linear-gradient(135deg, var(--edo-accent), var(--edo-accent-2));
+            color: #fff;
+        }
+        .edo-cc-title { font-size: 16px; font-weight: 700; }
+        .edo-cc-sub { font-size: 12px; opacity: 0.92; margin-top: 3px; }
+
+        .edo-cc-body { flex: 1 1 auto; min-height: 0; padding: 16px 18px; overflow: auto; }
+
+        .edo-cc-card {
+            border: 1px solid var(--edo-line); border-radius: var(--edo-radius);
+            background: var(--edo-bg); padding: 14px 16px; margin-bottom: 14px;
+        }
+        .edo-cc-row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; padding: 4px 0; }
+        .edo-cc-row .k { color: var(--edo-sub); }
+        .edo-cc-row .v { font-weight: 600; text-align: left; }
+
+        .edo-cc-state {
+            display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px;
+            padding: 5px 10px; border-radius: 999px; margin-bottom: 12px;
+        }
+        .edo-cc-state .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--edo-sub); }
+        .edo-cc-state.on { background: rgba(46, 139, 87, 0.12); color: var(--edo-ok); }
+        .edo-cc-state.on .dot { background: var(--edo-ok); }
+        .edo-cc-state.off { background: rgba(107, 107, 128, 0.12); color: var(--edo-sub); }
+
+        .edo-cc-btn {
+            width: 100%; border: 0; border-radius: var(--edo-radius);
+            background: var(--edo-accent); color: #fff; font-size: 14px; font-weight: 700;
+            padding: 12px 16px; cursor: pointer; transition: background .15s ease;
+        }
+        .edo-cc-btn:hover:not(:disabled) { background: var(--edo-accent-2); }
+        .edo-cc-btn:disabled { background: #c9c9d6; cursor: not-allowed; }
+
+        .edo-cc-hint { font-size: 12px; color: var(--edo-sub); margin-top: 10px; text-align: center; }
+    </style>
+</head>
+
+<body>
+    <div class="edo-cc">
+        <div class="edo-cc-head">
+            <div class="edo-cc-title" id="ccTitle">שליחת מסמך לחתימה</div>
+            <div class="edo-cc-sub" id="ccSub">easydo · Dynamics 365 Contact Center</div>
+        </div>
+        <div class="edo-cc-body">
+            <div class="edo-cc-state off" id="ccState"><span class="dot"></span><span id="ccStateText">בודק…</span></div>
+
+            <div class="edo-cc-card" id="ccCard" style="display:none;">
+                <div class="edo-cc-row"><span class="k" id="ccCustK">לקוח</span><span class="v" id="ccCustV">—</span></div>
+                <div class="edo-cc-row"><span class="k" id="ccTargetK">יעד מסמך</span><span class="v" id="ccTargetV">—</span></div>
+                <div class="edo-cc-row"><span class="k" id="ccChanK">ערוץ</span><span class="v" id="ccChanV">—</span></div>
+            </div>
+
+            <button class="edo-cc-btn" id="ccSendBtn" disabled>שליחת מסמך לחתימה</button>
+            <div class="edo-cc-hint" id="ccHint">פתחו שיחה פעילה כדי לשלוח מסמך.</div>
+        </div>
+    </div>
+
+    <script src="../scripts/contactCenterSend.js"></script>
+    <script>
+        "use strict";
+        (function () {
+            var T = {
+                he: {
+                    title: "שליחת מסמך לחתימה", sub: "easydo · Dynamics 365 Contact Center",
+                    cust: "לקוח", target: "יעד מסמך", chan: "ערוץ", send: "שליחת מסמך לחתימה",
+                    checking: "בודק…", off: "האינטגרציה כבויה", noConv: "אין שיחה פעילה",
+                    ready: "שיחה פעילה", contact: "איש קשר", incident: "אירוע", account: "חשבון",
+                    hintOff: "הפעילו את האינטגרציה בניהול adminCenter.",
+                    hintNoConv: "פתחו שיחה פעילה כדי לשלוח מסמך.",
+                    hintReady: "המסמך יישלח ללקוח של השיחה הפעילה."
+                },
+                en: {
+                    title: "Send for signature", sub: "easydo · Dynamics 365 Contact Center",
+                    cust: "Customer", target: "Document host", chan: "Channel", send: "Send for signature",
+                    checking: "Checking…", off: "Integration is off", noConv: "No active conversation",
+                    ready: "Active conversation", contact: "Contact", incident: "Case", account: "Account",
+                    hintOff: "Enable the integration in the admin center.",
+                    hintNoConv: "Open an active conversation to send a document.",
+                    hintReady: "The document will be sent to the active conversation's customer."
+                }
+            };
+
+            function getXrm() {
+                if (typeof Xrm !== "undefined" && Xrm.Utility) { return Xrm; }
+                if (window.parent && window.parent.Xrm && window.parent.Xrm.Utility) { return window.parent.Xrm; }
+                return null;
+            }
+            function pickLang() {
+                try {
+                    var lcid = getXrm().Utility.getGlobalContext().userSettings.languageId;
+                    return lcid === 1037 ? "he" : "en";
+                } catch (e) { return "he"; }
+            }
+            var L = T[pickLang()];
+
+            function $(id) { return document.getElementById(id); }
+            function entityLabel(name) {
+                if (name === "incident") { return L.incident; }
+                if (name === "account") { return L.account; }
+                return L.contact;
+            }
+
+            function applyStatic() {
+                $("ccTitle").textContent = L.title;
+                $("ccSub").textContent = L.sub;
+                $("ccCustK").textContent = L.cust;
+                $("ccTargetK").textContent = L.target;
+                $("ccChanK").textContent = L.chan;
+                $("ccSendBtn").textContent = L.send;
+                document.documentElement.lang = pickLang();
+            }
+
+            function setState(kind, text) {
+                var el = $("ccState");
+                el.className = "edo-cc-state " + (kind === "ready" ? "on" : "off");
+                $("ccStateText").textContent = text;
+            }
+
+            function render(ctx) {
+                if (!ctx || !ctx.enabled) {
+                    setState("off", L.off);
+                    $("ccCard").style.display = "none";
+                    $("ccSendBtn").disabled = true;
+                    $("ccHint").textContent = L.hintOff;
+                    return;
+                }
+                if (!ctx.hasConversation || !ctx.host) {
+                    setState("off", L.noConv);
+                    $("ccCard").style.display = "none";
+                    $("ccSendBtn").disabled = true;
+                    $("ccHint").textContent = L.hintNoConv;
+                    return;
+                }
+                var h = ctx.host;
+                setState("ready", L.ready);
+                $("ccCustV").textContent = h.recordName || "—";
+                $("ccTargetV").textContent = entityLabel(h.entityName) + (h.recordName ? " · " + h.recordName : "");
+                $("ccChanV").textContent = h.channelLabel || h.channel || "—";
+                $("ccCard").style.display = "block";
+                $("ccSendBtn").disabled = false;
+                $("ccHint").textContent = L.hintReady;
+            }
+
+            function refresh() {
+                if (!EasyDo || !EasyDo.ContactCenter || !EasyDo.ContactCenter.getCurrentContext) {
+                    setState("off", L.off);
+                    return;
+                }
+                EasyDo.ContactCenter.getCurrentContext().then(render, function () { setState("off", L.off); });
+            }
+
+            applyStatic();
+            setState("off", L.checking);
+            $("ccStateText").textContent = L.checking;
+
+            $("ccSendBtn").addEventListener("click", function () {
+                if (EasyDo && EasyDo.ContactCenter && EasyDo.ContactCenter.launch) {
+                    EasyDo.ContactCenter.launch();
+                }
+            });
+
+            // Re-evaluate on load, when the pane regains focus, and on a light timer
+            // so switching the focused conversation updates the button/context.
+            refresh();
+            window.addEventListener("focus", refresh);
+            document.addEventListener("visibilitychange", function () {
+                if (!document.hidden) { refresh(); }
+            });
+            setInterval(refresh, 5000);
+        })();
+    </script>
+</body>
+
+</html>

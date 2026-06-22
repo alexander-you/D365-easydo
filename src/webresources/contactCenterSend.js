@@ -148,6 +148,28 @@ EasyDo.ContactCenter = EasyDo.ContactCenter || {};
     };
 
     /**
+     * Snapshot of the current conversation for a hosting UI (e.g. the productivity
+     * pane). Resolves the active conversation + its durable host without opening
+     * anything. Returns:
+     *   { enabled, hasConversation, host } where host (when present) is
+     *   { entityName, recordId, recordName, channel, channelLabel, conversationId }.
+     * @returns {Promise<object>}
+     */
+    EasyDo.ContactCenter.getCurrentContext = function () {
+        return loadCcSettings().then(function (cfg) {
+            if (!cfg.enabled) { return { enabled: false, hasConversation: false, host: null }; }
+            return getConversationId().then(function (cid) {
+                if (!cid) { return { enabled: true, hasConversation: false, host: null }; }
+                return resolveHost(cid, cfg.defaultCase).then(function (host) {
+                    return { enabled: true, hasConversation: true, host: host || null };
+                });
+            });
+        }, function () {
+            return { enabled: false, hasConversation: false, host: null };
+        });
+    };
+
+    /**
      * Resolve the conversation's durable host (contact or case) and open the send
      * wizard side pane pre-targeted at it. The conversation id + channel are
      * passed through so a later step can distribute the link over the live channel.

@@ -140,6 +140,23 @@ The Send button (the agent trigger inside the session) is shown **only** when **
    **open / active** (not wrapped-up or closed). The button is hidden on closed conversations, on
    non-conversation sessions, and when no conversation is focused.
 
+### 6.2 Agent-side launcher (built)
+
+The host surface chosen is the **productivity pane** (always available next to the live
+conversation; the agent passes it no context — it discovers the focused conversation itself).
+
+- `contactCenterSend.js` (`alex_/scripts/contactCenterSend.js`) — namespace `EasyDo.ContactCenter`:
+  - `isEnabled()` → `Promise<boolean>`: master toggle on **and** an active conversation exists.
+  - `getCurrentContext()` → `{ enabled, hasConversation, host }` for a hosting UI.
+  - `launch()` → resolves the durable host (contact via `msdyn_customer`, or case via `msdyn_issueid`
+    per `alex_ccdefaultcase`) and opens the **shared** send wizard (`alex_/html/sendWizard.html`,
+    pane `easydoSendWizard`) pre-targeted at it, passing `ccconversationid` + `ccchannel` for the
+    later distribution step.
+- `contactCenterPane.html` (`alex_/html/contactCenterPane.html`) — productivity-pane host: shows the
+  active customer / document host / channel and a **Send for signature** button gated by `isEnabled`.
+- **Surface registration** (remaining): register `contactCenterPane.html` as a **custom productivity
+  tool** in the Contact Center admin center agent experience profile. Config-only; not scripted.
+
 ### 7. Open questions
 
 **Resolved (verified live 2026-06-22):**
@@ -150,8 +167,9 @@ The Send button (the agent trigger inside the session) is shown **only** when **
 
 **Still open (build-time decisions):**
 
-- Best **host surface** for the agent control: CIF 2.0 **App Side Pane** vs **Productivity Pane**
-  vs conversation-form web resource.
+- ~~Best **host surface** for the agent control~~ → **Resolved**: **productivity pane** custom tool
+  (`contactCenterPane.html`). The pane discovers the focused conversation itself via
+  `getConversationId()`, so no context needs to be passed in.
 - Send **directly** (`toSendBox=false`) vs to the **agent sendbox** (`toSendBox=true`) by default.
 
 ---
