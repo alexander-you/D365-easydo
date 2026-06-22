@@ -530,6 +530,7 @@
     /* ===== Global send settings (toggles) ===== */
     .gs-body { flex:1 1 auto; overflow:auto; min-height:0; width:100%; display:flex; flex-direction:column; gap:14px; }
     .gs-group { display:flex; flex-direction:column; gap:10px; }
+    .gs-group.disabled { opacity:.5; }
     .gs-group-title { font-size:13px; font-weight:650; color:var(--text-3); margin:2px 0 0; }
     .gs-row {
       display:flex; align-items:center; gap:14px; padding:14px 16px;
@@ -699,6 +700,23 @@
       <div class="sc-act">
         <button class="ghost-btn primary" id="manageSettingsBtn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+          <span>הגדרות</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="send-card" id="contactCenterCard">
+      <div class="sc-ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+      </div>
+      <div class="sc-main">
+        <div class="sc-title">אינטגרציה עם Dynamics 365 Contact Center</div>
+        <div class="sc-sub">בזמן שיחה חיה הנציג מחולל קישור חתימה ושולח אותו ללקוח בערוץ השיחה. הפעלת האינטגרציה חושפת את כפתור השליחה בסשן.</div>
+        <div class="sc-chips" id="ccChips"></div>
+      </div>
+      <div class="sc-act">
+        <button class="ghost-btn primary" id="manageCcBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           <span>הגדרות</span>
         </button>
       </div>
@@ -878,6 +896,58 @@
     </div>
   </aside>
 
+  <div class="drawer-overlay" id="ccOverlay"></div>
+  <aside class="drawer" id="ccDrawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div style="flex:1 1 auto; min-width:0;">
+        <div class="dh-title">אינטגרציה עם Dynamics 365 Contact Center</div>
+        <div class="dh-sub">חתימה מתוך שיחה חיה</div>
+      </div>
+      <button class="drawer-close" id="ccClose" title="סגור">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6 18 18M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <div class="gs-body">
+        <!-- Master switch: enabling the integration exposes the send button inside the session. -->
+        <div class="gs-master">
+          <div class="gs-main">
+            <div class="gs-name">הפעלת חתימה ב-Contact Center</div>
+            <div class="gs-desc">כאשר מופעל, כפתור “שליחת מסמך לחתימה” נחשף בתוך סשן הנציג בזמן שיחה חיה. הכפתור מוצג רק כאשר קיימת שיחה פעילה (לא בשיחה סגורה או בסשן שאינו שיחה).</div>
+          </div>
+          <button class="switch" id="swCcEnabled" role="switch" aria-label="הפעלת חתימה ב-Contact Center"></button>
+        </div>
+        <div class="gs-group" id="ccGroup">
+          <!-- Send behaviour: direct to customer vs agent sendbox for review. -->
+          <div class="gs-master">
+            <div class="gs-main">
+              <div class="gs-name">אישור נציג לפני שליחה</div>
+              <div class="gs-desc">כבוי = קישור החתימה נשלח ישירות ללקוח בערוץ השיחה. דלוק = הקישור מונח בתיבת הנציג לאישור לפני השליחה.</div>
+            </div>
+            <button class="switch" id="swCcAgentReview" role="switch" aria-label="אישור נציג לפני שליחה"></button>
+          </div>
+          <!-- Real-time results inside the conversation. -->
+          <div class="gs-master">
+            <div class="gs-main">
+              <div class="gs-name">תוצאות בזמן אמת בשיחה</div>
+              <div class="gs-desc">כאשר מופעל, הנציג עוקב אחר תוצאת החתימה בזמן אמת בתוך סשן השיחה לאחר שליחת הקישור.</div>
+            </div>
+            <button class="switch" id="swCcRealtime" role="switch" aria-label="תוצאות בזמן אמת בשיחה"></button>
+          </div>
+          <!-- Document host default: the conversation can't host the file. -->
+          <div class="gs-master">
+            <div class="gs-main">
+              <div class="gs-name">שיוך ברירת מחדל: אירוע</div>
+              <div class="gs-desc">השיחה אינה יכולה לארח את המסמך, לכן הבקשה משויכת לרשומה קבועה. כבוי = תמיד איש הקשר המקושר לשיחה. דלוק = האירוע (תיק) המקושר כשקיים, אחרת איש הקשר. הנציג יכול לשנות בעת השליחה.</div>
+            </div>
+            <button class="switch" id="swCcDefaultCase" role="switch" aria-label="שיוך ברירת מחדל לאירוע"></button>
+          </div>
+        </div>
+        <div class="pane-hint">השיחה החיה (msdyn_ocliveworkitem) מנוהלת מכאן ואינה מופיעה ברשימת טבלאות השליחה. הקישור מופץ בערוץ השיחה עצמו, ולכן easydo אינה שולחת התראה משלה. דורש רישוי Omnichannel / Contact Center.</div>
+      </div>
+    </div>
+  </aside>
+
   <div class="modal-overlay" id="confirmOverlay">
     <div class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="cmTitle">
       <div class="cm-icon">
@@ -963,6 +1033,11 @@
 
       var SVG_EXTERNAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>';
       var SVG_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+
+      // Transient / system tables that must never appear in the send-enable
+      // table picker. The live conversation can't host a document; it is managed
+      // from the "Contact Center integration" area instead.
+      var HIDDEN_TABLES = { "msdyn_ocliveworkitem": true };
 
       function iconLink(title, svg, onClick) {
         var b = document.createElement("button");
@@ -1206,6 +1281,7 @@
 
       // ---- Global send settings (singleton) ----
       var settingsOpen = false;
+      var ccOpen = false;
       // Distribution method choice values (global choice alex_distributionmethod).
       var METHOD_CIJ = 626210000, METHOD_FLOW = 626210001;
       // Channels and their stable identifiers. The PRIMARY channel is the single
@@ -1225,6 +1301,7 @@
       function freshSettings() {
         return {
           id: null, primaryChannel: "email", multiChannel: false, allowPreview: false, realtimeEnabled: false,
+          ccEnabled: false, ccAgentReview: false, ccRealtime: false, ccDefaultCase: false,
           allow: { email: false, sms: false, whatsapp: false },
           method: { email: null, sms: null, whatsapp: null },
           journey: { email: "", sms: "", whatsapp: "" },
@@ -1243,6 +1320,7 @@
 
       function loadSettings() {
         var q = "?$select=alex_easydosettingsid,alex_easydochannel,alex_multichannelenabled,alex_allowpreview,alex_realtimeenabled," +
+          "alex_contactcenterenabled,alex_ccagentreview,alex_ccrealtimeresults,alex_ccdefaultcase," +
           "alex_allowemail,alex_allowsms,alex_allowwhatsapp," +
           "alex_emailmethod,alex_emailjourneyname,_alex_emailflowid_value," +
           "alex_smsmethod,alex_smsjourneyname,_alex_smsflowid_value," +
@@ -1260,6 +1338,10 @@
               multiChannel: e.alex_multichannelenabled === true,
               allowPreview: e.alex_allowpreview === true,
               realtimeEnabled: e.alex_realtimeenabled === true,
+              ccEnabled: e.alex_contactcenterenabled === true,
+              ccAgentReview: e.alex_ccagentreview === true,
+              ccRealtime: e.alex_ccrealtimeresults === true,
+              ccDefaultCase: e.alex_ccdefaultcase === true,
               allow: {
                 email: e.alex_allowemail === true,
                 sms: e.alex_allowsms === true,
@@ -1290,10 +1372,13 @@
             state.settings = null; // no row yet; created lazily on first save
           }
           renderSettingsSummary();
+          renderCcSummary();
           if (settingsOpen) renderSettings();
+          if (ccOpen) renderCc();
         }, function () {
           state.settings = null;
           renderSettingsSummary();
+          renderCcSummary();
         });
       }
 
@@ -1311,6 +1396,10 @@
           alex_multichannelenabled: s.multiChannel,
           alex_allowpreview: s.allowPreview === true,
           alex_realtimeenabled: s.realtimeEnabled === true,
+          alex_contactcenterenabled: s.ccEnabled === true,
+          alex_ccagentreview: s.ccAgentReview === true,
+          alex_ccrealtimeresults: s.ccRealtime === true,
+          alex_ccdefaultcase: s.ccDefaultCase === true,
           alex_allowemail: s.allow.email,
           alex_allowsms: s.allow.sms,
           alex_allowwhatsapp: s.allow.whatsapp,
@@ -1377,6 +1466,40 @@
       function toggleRealtime() {
         var s = currentSettings();
         s.realtimeEnabled = !s.realtimeEnabled;
+        state.settings = s;
+        saveSettings();
+      }
+
+      // ---- Contact Center integration ----
+      // Master switch: enabling the integration exposes the send button inside
+      // the live conversation session.
+      function toggleCcEnabled() {
+        var s = currentSettings();
+        s.ccEnabled = !s.ccEnabled;
+        state.settings = s;
+        saveSettings();
+      }
+      // Send behaviour default: direct to customer vs agent sendbox for review.
+      function toggleCcAgentReview() {
+        var s = currentSettings();
+        if (!s.ccEnabled) return;
+        s.ccAgentReview = !s.ccAgentReview;
+        state.settings = s;
+        saveSettings();
+      }
+      // Whether the agent watches the signing result live inside the session.
+      function toggleCcRealtime() {
+        var s = currentSettings();
+        if (!s.ccEnabled) return;
+        s.ccRealtime = !s.ccRealtime;
+        state.settings = s;
+        saveSettings();
+      }
+      // Default document host when a case is linked to the conversation.
+      function toggleCcDefaultCase() {
+        var s = currentSettings();
+        if (!s.ccEnabled) return;
+        s.ccDefaultCase = !s.ccDefaultCase;
         state.settings = s;
         saveSettings();
       }
@@ -1547,6 +1670,56 @@
         $("settingsDrawer").setAttribute("aria-hidden", "true");
       }
 
+      // ---- Contact Center drawer ----
+      function renderCc() {
+        var s = currentSettings();
+        setSwitch("swCcEnabled", s.ccEnabled, false);
+        // Sub-settings are locked until the integration is enabled.
+        var locked = !s.ccEnabled;
+        var grp = $("ccGroup");
+        if (grp) grp.classList.toggle("disabled", locked);
+        setSwitch("swCcAgentReview", s.ccAgentReview, locked);
+        setSwitch("swCcRealtime", s.ccRealtime, locked);
+        setSwitch("swCcDefaultCase", s.ccDefaultCase, locked);
+      }
+
+      function renderCcSummary() {
+        var box = $("ccChips");
+        if (!box) return;
+        box.innerHTML = "";
+        var s = currentSettings();
+        var chips = [];
+        if (s.ccEnabled) {
+          chips.push("מופעל");
+          chips.push(s.ccAgentReview ? "אישור נציג" : "שליחה ישירה");
+          if (s.ccRealtime) chips.push("זמן אמת");
+          chips.push(s.ccDefaultCase ? "שיוך לאירוע" : "שיוך לאיש קשר");
+        } else {
+          chips.push("כבוי");
+        }
+        chips.forEach(function (txt) {
+          var c = document.createElement("span");
+          c.className = "tbl-chip";
+          c.innerHTML = SVG_CHECK_SM + '<span></span>';
+          c.querySelector("span").textContent = txt;
+          box.appendChild(c);
+        });
+      }
+
+      function openCc() {
+        ccOpen = true;
+        $("ccOverlay").classList.add("open");
+        $("ccDrawer").classList.add("open");
+        $("ccDrawer").setAttribute("aria-hidden", "false");
+        renderCc();
+      }
+      function closeCc() {
+        ccOpen = false;
+        $("ccOverlay").classList.remove("open");
+        $("ccDrawer").classList.remove("open");
+        $("ccDrawer").setAttribute("aria-hidden", "true");
+      }
+
       function renderEnabledList() {
         var box = $("enabledList");
         if (!box) return;
@@ -1605,6 +1778,9 @@
           }).filter(function (t) {
             // drop deprecated / system "(not in use)" tables and unnamed ones
             if (!t.display) return false;
+            // hide transient/system tables that can't host a document (managed
+            // via their own admin area instead) - e.g. the live conversation.
+            if (HIDDEN_TABLES[t.logical]) return false;
             var c = t.display.charAt(0);
             if (c === "(" || c === "[") return false;
             if (t.display.indexOf("לא בשימוש") >= 0) return false;
@@ -1853,6 +2029,13 @@
       $("manageSettingsBtn").addEventListener("click", openSettings);
       $("settingsClose").addEventListener("click", closeSettings);
       $("settingsOverlay").addEventListener("click", closeSettings);
+      $("manageCcBtn").addEventListener("click", openCc);
+      $("ccClose").addEventListener("click", closeCc);
+      $("ccOverlay").addEventListener("click", closeCc);
+      $("swCcEnabled").addEventListener("click", toggleCcEnabled);
+      $("swCcAgentReview").addEventListener("click", toggleCcAgentReview);
+      $("swCcRealtime").addEventListener("click", toggleCcRealtime);
+      $("swCcDefaultCase").addEventListener("click", toggleCcDefaultCase);
       $("primarySeg").addEventListener("click", function (e) {
         var btn = e.target.closest ? e.target.closest(".gs-seg-btn") : null;
         if (btn && btn.getAttribute("data-ch")) setPrimary(btn.getAttribute("data-ch"));
@@ -1876,6 +2059,7 @@
         if (e.key !== "Escape") return;
         if (drawerOpen) closeDrawer();
         if (settingsOpen) closeSettings();
+        if (ccOpen) closeCc();
       });
 
       // accordion: cards stay in sync — toggling one toggles all
