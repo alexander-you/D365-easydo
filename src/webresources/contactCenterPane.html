@@ -16,7 +16,7 @@
 
   ES5-only (no arrow/const/let) for broad model-driven app compatibility.
 -->
-<html lang="he">
+<html lang="he" dir="rtl">
 
 <head>
     <meta charset="utf-8" />
@@ -62,7 +62,7 @@
         }
         .edo-cc-row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; padding: 4px 0; }
         .edo-cc-row .k { color: var(--edo-sub); }
-        .edo-cc-row .v { font-weight: 600; text-align: left; }
+        .edo-cc-row .v { font-weight: 600; text-align: end; }
 
         .edo-cc-state {
             display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px;
@@ -157,7 +157,9 @@
                 $("ccTargetK").textContent = L.target;
                 $("ccChanK").textContent = L.chan;
                 $("ccSendBtn").textContent = L.send;
-                document.documentElement.lang = pickLang();
+                var lang = pickLang();
+                document.documentElement.lang = lang;
+                document.documentElement.dir = (lang === "he") ? "rtl" : "ltr";
             }
 
             function setState(kind, text) {
