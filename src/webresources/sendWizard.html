@@ -387,7 +387,7 @@
                 // the feature is treated as off (primary channel = email).
                 this.settings = {
                     primaryChannel: "email", multiChannel: false, allowPreview: false, realtimeEnabled: false,
-                    ccAgentReview: true,
+                    ccAgentReview: true, ccRealtime: false,
                     allow: { email: false, sms: false, whatsapp: false },
                     method: { email: null, sms: null, whatsapp: null },
                     journey: { email: "", sms: "", whatsapp: "" },
@@ -422,7 +422,7 @@
             Wizard.prototype.loadSettings = function () {
                 if (!this.xrm) return Promise.resolve(null);
                 var q = "?$select=alex_easydochannel,alex_multichannelenabled,alex_allowpreview,alex_realtimeenabled,alex_allowemail,alex_allowsms,alex_allowwhatsapp," +
-                    "alex_ccagentreview,alex_ccmessagetemplate," +
+                    "alex_ccagentreview,alex_ccrealtimeresults,alex_ccmessagetemplate," +
                     "alex_emailmethod,alex_emailjourneyname,_alex_emailflowid_value," +
                     "alex_smsmethod,alex_smsjourneyname,_alex_smsflowid_value," +
                     "alex_whatsappmethod,alex_whatsappjourneyname,_alex_whatsappflowid_value&$top=1";
@@ -447,6 +447,8 @@
                         realtimeEnabled: row.alex_realtimeenabled === true,
                         // CC: when on, drop the link in the agent sendbox to review; when off, send it directly.
                         ccAgentReview: row.alex_ccagentreview === true,
+                        // CC: when on, the agent can watch the signing result live after sending.
+                        ccRealtime: row.alex_ccrealtimeresults === true,
                         // CC: admin-defined message wrapping the signing link in the live conversation.
                         ccMessageTemplate: row.alex_ccmessagetemplate || "",
                         allow: {
@@ -1196,10 +1198,15 @@
                     addRow(t.reviewContext, this.ctx.recordName || this.ctx.entityName);
                 }
                 wrap.appendChild(el("div", { "class": "edo-wz-review" }, rows));
-                // Real-time mode (per-send), only when the org enabled it and this is
-                // a direct send (not a preview draft). Hidden for Contact Center sends,
-                // where the live conversation already provides the real-time channel.
-                if (this.settings && this.settings.realtimeEnabled && !this.isDraft && !this.isCcSend()) {
+                // Real-time mode (per-send), only on a direct send (not a preview
+                // draft). For a standard send it requires the org realtimeEnabled flag;
+                // for a Contact Center send it requires the org ccRealtime flag and the
+                // link is still distributed over the live conversation as well.
+                var showRealtime = this.settings && !this.isDraft && (
+                    (this.isCcSend() && this.settings.ccRealtime) ||
+                    (!this.isCcSend() && this.settings.realtimeEnabled)
+                );
+                if (showRealtime) {
                     var on = !!this.isRealtime;
                     var box = el("div", { "class": "edo-wz-chk" + (on ? " on" : "") }, [
                         el("div", { "class": "edo-wz-chk-box" }),
@@ -1389,9 +1396,9 @@
                             return;
                         }
                         self.toast(true, t.sentOk);
-                        // Real-time send: open the live signing panel and let the agent
-                        // wait for the signed document, then close the wizard pane.
-                        if (self.isRealtime) {
+                        // Real-time send (standard, non-CC): open the live signing panel
+                        // and let the agent wait for the signed document, then close.
+                        if (self.isRealtime && !self.ctx.ccConversationId) {
                             var rid = res && res.id ? res.id.replace(/[{}]/g, "") : null;
                             self.openRealtime(rid);
                             return;
@@ -1512,7 +1519,7 @@
                             return;
                         }
                         if (rec && rec.alex_signinglink) {
-                            self.pushLinkToConversation(rec.alex_signinglink);
+                            self.pushLinkToConversation(rec.alex_signinglink, requestId);
                             return;
                         }
                         window.setTimeout(function () { self.pollSigningLink(requestId, attempt + 1); }, 3000);
@@ -1536,13 +1543,19 @@
                 return tpl + "\n" + link;
             };
 
-            Wizard.prototype.pushLinkToConversation = function (link) {
+            Wizard.prototype.pushLinkToConversation = function (link, requestId) {
                 var self = this;
                 var t = DICT[this.lang];
                 var oc = getOmnichannel();
                 var cid = this.ctx.ccConversationId;
                 // ccAgentReview on => land in the agent sendbox (review); off => send directly.
                 var toSendBox = this.settings.ccAgentReview !== false;
+                // After the link is in the conversation, optionally open the real-time
+                // result panel so the agent watches the signing live; otherwise close.
+                var finish = function () {
+                    if (self.isRealtime && requestId) { self.openRealtime(requestId); return; }
+                    window.setTimeout(function () { self.closePane(); }, 1400);
+                };
                 if (!oc || !oc.sendMessageToConversation || !cid) {
                     self.toast(false, t.ccSentErr);
                     window.setTimeout(function () { self.closePane(); }, 2000);
@@ -1553,7 +1566,7 @@
                     Promise.resolve(oc.sendMessageToConversation(msg, toSendBox, cid)).then(
                         function () {
                             self.toast(true, toSendBox ? t.ccReviewOk : t.ccSentOk);
-                            window.setTimeout(function () { self.closePane(); }, 1400);
+                            finish();
                         },
                         function (err) {
                             self.toast(false, t.ccSentErr + (err && err.message ? err.message : ""));
