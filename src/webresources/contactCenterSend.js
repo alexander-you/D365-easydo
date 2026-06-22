@@ -35,22 +35,34 @@ EasyDo.ContactCenter = EasyDo.ContactCenter || {};
     var WIZARD_PANE_ID = "easydoSendWizard";
     var DIALOG_WIDTH = 600;
 
-    function getXrm() {
-        if (typeof Xrm !== "undefined" && Xrm.WebApi) { return Xrm; }
-        if (window.parent && window.parent.Xrm && window.parent.Xrm.WebApi) { return window.parent.Xrm; }
-        return null;
+    // Walk the frame chain (self -> parent -> ... -> top) and return the first
+    // window for which pick(win) yields a truthy value. When this web resource is
+    // hosted inside a PCF control inside the productivity pane it can be nested a
+    // few frames deep, so we cannot rely on window.parent alone.
+    function probeFrames(pick) {
+        var win = window;
+        for (var i = 0; i < 8 && win; i++) {
+            try {
+                var v = pick(win);
+                if (v) { return v; }
+            } catch (e) { /* cross-origin guard */ }
+            if (win === win.parent) { break; }
+            win = win.parent;
+        }
+        try { return pick(window.top) || null; } catch (e) { return null; }
     }
 
-    // The Omnichannel client API is injected on the app window. In a hosted web
-    // resource it may live on the parent frame, so probe both.
+    function getXrm() {
+        if (typeof Xrm !== "undefined" && Xrm.WebApi) { return Xrm; }
+        return probeFrames(function (w) { return (w.Xrm && w.Xrm.WebApi) ? w.Xrm : null; });
+    }
+
+    // The Omnichannel client API is injected on the app's top window. In a hosted
+    // web resource (possibly nested in a PCF) it lives further up the frame chain.
     function getOmnichannel() {
-        try {
-            if (window.Microsoft && window.Microsoft.Omnichannel) { return window.Microsoft.Omnichannel; }
-            if (window.parent && window.parent.Microsoft && window.parent.Microsoft.Omnichannel) {
-                return window.parent.Microsoft.Omnichannel;
-            }
-        } catch (e) { /* cross-origin guard */ }
-        return null;
+        return probeFrames(function (w) {
+            return (w.Microsoft && w.Microsoft.Omnichannel) ? w.Microsoft.Omnichannel : null;
+        });
     }
 
     function getUiLang() {

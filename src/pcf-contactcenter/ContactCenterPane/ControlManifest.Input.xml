@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest>
+  <!-- Standalone control hosted as a Contact Center productivity-pane tool.
+       It does not bind to a form field: it simply renders an iframe pointing at
+       the alex_/html/contactCenterPane.html web resource (same-origin, so the
+       hosted page gets native Xrm.WebApi). All real logic lives in the web
+       resource; this control is a thin iframe wrapper required because custom
+       productivity tools must be a Control or a Custom Page (an HTML web
+       resource cannot be registered directly). -->
+  <control namespace="EasyDo" constructor="ContactCenterPane" version="0.1.0" display-name-key="ContactCenterPane_Display" description-key="ContactCenterPane_Desc" control-type="standard" >
+    <external-service-usage enabled="false">
+    </external-service-usage>
+    <!-- Optional override for the hosted web resource name. Defaults to the
+         contact-center pane web resource when left empty. -->
+    <property name="webResource" display-name-key="WebResource_Display" description-key="WebResource_Desc" of-type="SingleLine.Text" usage="input" required="false" />
+    <resources>
+      <code path="index.ts" order="1"/>
+      <css path="css/ContactCenterPane.css" order="1" />
+    </resources>
+    <feature-usage>
+      <uses-feature name="Utility" required="true" />
+    </feature-usage>
+  </control>
+</manifest>

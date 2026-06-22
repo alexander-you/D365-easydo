@@ -154,8 +154,31 @@ conversation; the agent passes it no context — it discovers the focused conver
     later distribution step.
 - `contactCenterPane.html` (`alex_/html/contactCenterPane.html`) — productivity-pane host: shows the
   active customer / document host / channel and a **Send for signature** button gated by `isEnabled`.
-- **Surface registration** (remaining): register `contactCenterPane.html` as a **custom productivity
-  tool** in the Contact Center admin center agent experience profile. Config-only; not scripted.
+- **Surface registration** (built, 2026-06-22): registered as a custom productivity tool and wired
+  into the Contact Center agent experience profile via the Web API — see §6.3.
+
+### 6.3 Productivity-tool registration (built, Web API)
+
+A custom productivity tool must be a **Control** or a **Custom Page**; an HTML web resource cannot be
+registered directly, and custom pages have no working Dataverse Web API at runtime (the same dead-end
+that pushed the send wizard to a web resource). So the pane is hosted by a thin **PCF iframe wrapper**.
+
+- **PCF control** `EasyDo.ContactCenterPane` (`src/pcf-contactcenter/`) — a standalone control whose
+  only job is to render an `<iframe>` at `<clientUrl>/WebResources/alex_/html/contactCenterPane.html`.
+  Because the web resource is served from the org domain it stays **same-origin**, keeping native
+  `Xrm.WebApi` and reaching the Omnichannel client API up the frame chain (`contactCenterSend.js`
+  walks `window` → `parent` → … → `top`). Pushed with `pac pcf push --publisher-prefix alex`;
+  registered in the org as `alex_EasyDo.ContactCenterPane`.
+- **Registration** `src/scripts/33-register-cc-productivity-tool.ps1` (idempotent, Web API only):
+  - `msdyn_panetoolconfiguration` — `msdyn_type=0` (Control), `msdyn_controlname=alex_EasyDo.ContactCenterPane`,
+    `msdyn_data={}`, `msdyn_category=100000001` (Agent guidance), `msdyn_isglobal=false` (session tool).
+  - `msdyn_panetabconfiguration` — wires the tool into the agent experience profile's productivity
+    pane (`msdyn_ProductivityPaneId` → the profile's pane, `msdyn_ToolId` → the tool, `msdyn_order=40`,
+    enabled). Just creating the tool is **not** enough — the tab is what makes it appear in the profile.
+- **Portability preserved**: these `msdyn_*` records reference profile entities that exist only where
+  Contact Center is installed, so they are created in the **active/default** solution and are **never**
+  added to `alex_d365_easydo` (verified: 0 of them are components of the core solution). Run script 33
+  only in Contact Center environments, after pushing the PCF control.
 
 ### 7. Open questions
 
