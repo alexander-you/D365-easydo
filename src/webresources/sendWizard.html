@@ -221,7 +221,8 @@
                     recipientNoEmail: "לנמען שנפתר מהרשומה אין כתובת דוא\"ל, הנדרשת לשליחה בדוא\"ל. הוסיפו דוא\"ל לאיש הקשר או שנו את ערוץ השליחה בהגדרות.",
                     recipientNoPhone: "לנמען שנפתר מהרשומה אין מספר טלפון, הנדרש לשליחה ב-SMS/וואטסאפ. הוסיפו טלפון לאיש הקשר או שנו את ערוץ השליחה בהגדרות.",
                     idLabel: "מזהה: ", sentOk: "הבקשה נוצרה ונשלחה לעיבוד.", sentErr: "אירעה שגיאה ביצירת הבקשה: ",
-                    realtimeLabel: "מצב זמן אמת", realtimeDesc: "שלחו את המסמך תוך כדי שיחה עם הלקוח והמתינו לתוצאה בחלון צף — עם התקדמות חיה ואפשרות לאשר או לדחות."
+                    realtimeLabel: "מצב זמן אמת", realtimeDesc: "שלחו את המסמך תוך כדי שיחה עם הלקוח והמתינו לתוצאה בחלון צף — עם התקדמות חיה ואפשרות לאשר או לדחות.",
+                    ccSending: "מייצר קישור חתימה ושולח לשיחה החיה...", ccSentOk: "קישור החתימה נשלח לשיחה.", ccReviewOk: "קישור החתימה הוכן בתיבת ההודעות שלך לאישור ושליחה.", ccSentErr: "לא ניתן לשלוח את קישור החתימה לשיחה: "
                 },
                 en: {
                     title: "Send for signature",
@@ -263,7 +264,8 @@
                     recipientNoEmail: "The recipient resolved from the record has no email address, which is required to send by email. Add an email to the contact or change the send channel in settings.",
                     recipientNoPhone: "The recipient resolved from the record has no phone number, which is required to send by SMS/WhatsApp. Add a phone to the contact or change the send channel in settings.",
                     idLabel: "ID: ", sentOk: "Request created and queued for processing.", sentErr: "Could not create the request: ",
-                    realtimeLabel: "Real-time mode", realtimeDesc: "Send the document during a live call with the customer and wait for the result in a floating panel — with live progress and an option to approve or reject."
+                    realtimeLabel: "Real-time mode", realtimeDesc: "Send the document during a live call with the customer and wait for the result in a floating panel — with live progress and an option to approve or reject.",
+                    ccSending: "Generating the signing link and sending it to the live conversation...", ccSentOk: "The signing link was sent to the conversation.", ccReviewOk: "The signing link is ready in your message box to review and send.", ccSentErr: "Could not send the signing link to the conversation: "
                 }
             };
 
@@ -311,8 +313,28 @@
                 return null;
             }
 
+            // Walk the frame chain (self -> parent -> ... -> top) and return the first
+            // window for which pick(win) is truthy. The wizard runs in a side pane
+            // (possibly nested), so the Omnichannel client API lives further up.
+            function probeFrames(pick) {
+                var win = window;
+                for (var i = 0; i < 8 && win; i++) {
+                    try { var v = pick(win); if (v) return v; } catch (e) { /* cross-origin */ }
+                    if (win === win.parent) break;
+                    win = win.parent;
+                }
+                try { return pick(window.top) || null; } catch (e) { return null; }
+            }
+
+            // The Omnichannel client API is injected on the app's top window.
+            function getOmnichannel() {
+                return probeFrames(function (w) {
+                    return (w.Microsoft && w.Microsoft.Omnichannel) ? w.Microsoft.Omnichannel : null;
+                });
+            }
+
             function parseContext() {
-                var ctx = { entityName: "", recordId: "", recordName: "", uilang: "", paneId: "" };
+                var ctx = { entityName: "", recordId: "", recordName: "", uilang: "", paneId: "", ccConversationId: "", ccChannel: "" };
                 try {
                     var raw = new URLSearchParams(window.location.search).get("data") || "";
                     var parts = new URLSearchParams(raw);
@@ -321,6 +343,9 @@
                     ctx.recordName = parts.get("recordName") || "";
                     ctx.uilang = parts.get("uilang") || "";
                     ctx.paneId = parts.get("paneId") || "";
+                    // Contact Center live-conversation context (set by the CC launcher).
+                    ctx.ccConversationId = (parts.get("ccconversationid") || "").replace(/[{}]/g, "");
+                    ctx.ccChannel = parts.get("ccchannel") || "";
                 } catch (e) { }
                 return ctx;
             }
@@ -350,6 +375,7 @@
                 // the feature is treated as off (primary channel = email).
                 this.settings = {
                     primaryChannel: "email", multiChannel: false, allowPreview: false, realtimeEnabled: false,
+                    ccAgentReview: true,
                     allow: { email: false, sms: false, whatsapp: false },
                     method: { email: null, sms: null, whatsapp: null },
                     journey: { email: "", sms: "", whatsapp: "" },
@@ -384,6 +410,7 @@
             Wizard.prototype.loadSettings = function () {
                 if (!this.xrm) return Promise.resolve(null);
                 var q = "?$select=alex_easydochannel,alex_multichannelenabled,alex_allowpreview,alex_realtimeenabled,alex_allowemail,alex_allowsms,alex_allowwhatsapp," +
+                    "alex_ccagentreview," +
                     "alex_emailmethod,alex_emailjourneyname,_alex_emailflowid_value," +
                     "alex_smsmethod,alex_smsjourneyname,_alex_smsflowid_value," +
                     "alex_whatsappmethod,alex_whatsappjourneyname,_alex_whatsappflowid_value&$top=1";
@@ -406,6 +433,8 @@
                         multiChannel: row.alex_multichannelenabled === true,
                         allowPreview: row.alex_allowpreview === true,
                         realtimeEnabled: row.alex_realtimeenabled === true,
+                        // CC: when on, drop the link in the agent sendbox to review; when off, send it directly.
+                        ccAgentReview: row.alex_ccagentreview === true,
                         allow: {
                             email: row.alex_allowemail === true,
                             sms: row.alex_allowsms === true,
@@ -1244,6 +1273,15 @@
                             self.openRealtime(rid);
                             return;
                         }
+                        // Contact Center send: the document was sent from a live
+                        // conversation. Wait for the Send flow to store the signing link
+                        // (alex_signinglink), then push it into the live channel so the
+                        // customer gets it in the same thread instead of a separate notify.
+                        if (self.ctx.ccConversationId) {
+                            var ccRid = res && res.id ? res.id.replace(/[{}]/g, "") : null;
+                            self.distributeToConversation(ccRid);
+                            return;
+                        }
                         window.setTimeout(function () { self.closePane(); }, 1100);
                     },
                     function (err) {
@@ -1319,8 +1357,77 @@
                 );
             };
 
-            // Build the preview screen: a busy spinner while rendering, then a card
-            // that opens the easydo viewer in a new tab (easydo blocks iframe framing),
+            // Contact Center distribution: poll the just-created request until the
+            // Send flow stores the easydo signing link (alex_signinglink), then push
+            // that link into the live conversation via the Omnichannel client API.
+            // toSendBox follows the alex_ccagentreview setting: when on, the link lands
+            // in the agent sendbox for review; when off, it is sent straight to the
+            // customer. The wizard keeps the conversation id from its launch context,
+            // so no field has to be stored on the request for this to work.
+            Wizard.prototype.distributeToConversation = function (requestId) {
+                var t = DICT[this.lang];
+                if (!requestId || !this.xrm) { this.closePane(); return; }
+                this.toast(true, t.ccSending);
+                this.pollSigningLink(requestId, 0);
+            };
+
+            Wizard.prototype.pollSigningLink = function (requestId, attempt) {
+                var self = this;
+                var t = DICT[this.lang];
+                if (attempt > 40) { // ~2 minutes at 3s
+                    self.toast(false, t.ccSentErr + t.previewUnavailable);
+                    window.setTimeout(function () { self.closePane(); }, 2000);
+                    return;
+                }
+                var sel = "?$select=alex_signinglink,alex_status";
+                this.xrm.WebApi.retrieveRecord("alex_signaturerequest", requestId, sel).then(
+                    function (rec) {
+                        // Failed status (626210008) aborts the wait.
+                        if (rec && rec.alex_status === 626210008) {
+                            self.toast(false, t.ccSentErr + t.previewUnavailable);
+                            window.setTimeout(function () { self.closePane(); }, 2000);
+                            return;
+                        }
+                        if (rec && rec.alex_signinglink) {
+                            self.pushLinkToConversation(rec.alex_signinglink);
+                            return;
+                        }
+                        window.setTimeout(function () { self.pollSigningLink(requestId, attempt + 1); }, 3000);
+                    },
+                    function () {
+                        window.setTimeout(function () { self.pollSigningLink(requestId, attempt + 1); }, 3000);
+                    }
+                );
+            };
+
+            Wizard.prototype.pushLinkToConversation = function (link) {
+                var self = this;
+                var t = DICT[this.lang];
+                var oc = getOmnichannel();
+                var cid = this.ctx.ccConversationId;
+                // ccAgentReview on => land in the agent sendbox (review); off => send directly.
+                var toSendBox = this.settings.ccAgentReview !== false;
+                if (!oc || !oc.sendMessageToConversation || !cid) {
+                    self.toast(false, t.ccSentErr);
+                    window.setTimeout(function () { self.closePane(); }, 2000);
+                    return;
+                }
+                try {
+                    Promise.resolve(oc.sendMessageToConversation(link, toSendBox, cid)).then(
+                        function () {
+                            self.toast(true, toSendBox ? t.ccReviewOk : t.ccSentOk);
+                            window.setTimeout(function () { self.closePane(); }, 1400);
+                        },
+                        function (err) {
+                            self.toast(false, t.ccSentErr + (err && err.message ? err.message : ""));
+                            window.setTimeout(function () { self.closePane(); }, 2500);
+                        }
+                    );
+                } catch (e) {
+                    self.toast(false, t.ccSentErr + (e && e.message ? e.message : ""));
+                    window.setTimeout(function () { self.closePane(); }, 2500);
+                }
+            };
             // plus Approve/Back actions.
             Wizard.prototype.buildPreview = function (t) {
                 var self = this;
