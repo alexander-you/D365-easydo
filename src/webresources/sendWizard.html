@@ -248,6 +248,7 @@
                     ccWatchTitle: "מעקב חתימה בזמן אמת", ccWatchHint: "הקישור נשלח ללקוח בשיחה. עקבו אחר ההתקדמות כאן בזמן שאתם ממשיכים לשוחח.",
                     stSent: "נשלח", stDelivered: "נמסר", stViewed: "נצפה", stCompleted: "הושלם",
                     ccWatchDoneT: "המסמך נחתם", ccWatchDoneH: "הלקוח השלים את החתימה.",
+                    ccWatchOpenDoc: "פתחו את המסמך החתום", ccWatchDocHint: "המסמך החתום נשמר גם כצרופה על בקשת החתימה.", ccWatchDocLoading: "טוען את המסמך החתום...",
                     ccWatchDeclinedT: "החתימה נדחתה", ccWatchDeclinedH: "הלקוח דחה את בקשת החתימה.",
                     ccWatchErrT: "המעקב נעצר", ccWatchErrH: "לא ניתן להמשיך לעקוב אחר סטטוס הבקשה. הקישור עדיין נשלח ללקוח.",
                     watchClose: "סגירה"
@@ -301,6 +302,7 @@
                     ccWatchTitle: "Real-time signing tracker", ccWatchHint: "The link was sent to the customer in the conversation. Track progress here while you keep chatting.",
                     stSent: "Sent", stDelivered: "Delivered", stViewed: "Viewed", stCompleted: "Completed",
                     ccWatchDoneT: "Document signed", ccWatchDoneH: "The customer completed the signature.",
+                    ccWatchOpenDoc: "Open the signed document", ccWatchDocHint: "The signed copy is also attached to the signature request.", ccWatchDocLoading: "Loading the signed document...",
                     ccWatchDeclinedT: "Signature declined", ccWatchDeclinedH: "The customer declined the signing request.",
                     ccWatchErrT: "Tracking stopped", ccWatchErrH: "Could not keep tracking the request status. The link was still sent to the customer.",
                     watchClose: "Close"
@@ -407,6 +409,7 @@
                 this.watchRequestId = null;
                 this.watchStatus = 0;
                 this.watchDoneKind = null;
+                this.watchDocUrl = null;
                 this.demo = false;
                 this.submitted = false;
                 this.fields = [];
@@ -1481,7 +1484,7 @@
                         if (self.watchState !== "watching") return;
                         var s = (rec && (rec.alex_status === 0 || rec.alex_status)) ? rec.alex_status : self.watchStatus;
                         self.watchStatus = s;
-                        if (s === 626210006) { self.watchState = "done"; self.watchDoneKind = "completed"; self.render(); return; }
+                        if (s === 626210006) { self.watchState = "done"; self.watchDoneKind = "completed"; self.watchDocUrl = null; self.render(); self.loadSignedDoc(0); return; }
                         if (s === 626210007) { self.watchState = "done"; self.watchDoneKind = "declined"; self.render(); return; }
                         if (s === 626210008) { self.watchState = "error"; self.render(); return; }
                         self.render();
@@ -1489,6 +1492,43 @@
                     },
                     function () { window.setTimeout(function () { self.pollWatch(attempt + 1); }, 3000); }
                 );
+            };
+
+            // The dedicated poll flow attaches the signed PDF as a note (annotation,
+            // isdocument) on the request once the customer completes. Fetch it so the
+            // agent can open the signed copy straight from the tracker.
+            Wizard.prototype.loadSignedDoc = function (attempt) {
+                var self = this;
+                attempt = attempt || 0;
+                if (this.watchState !== "done" || this.watchDoneKind !== "completed" || !this.watchRequestId || !this.xrm) return;
+                var q = "?$select=annotationid,documentbody,mimetype,filename&$filter=_objectid_value eq " +
+                    this.watchRequestId + " and isdocument eq true and mimetype eq 'application/pdf'&$orderby=createdon desc&$top=1";
+                this.xrm.WebApi.retrieveMultipleRecords("annotation", q).then(
+                    function (res) {
+                        if (self.watchState !== "done") return;
+                        if (res && res.entities && res.entities.length && res.entities[0].documentbody) {
+                            self.watchDocUrl = self.toBlobUrl(res.entities[0].documentbody, "application/pdf");
+                            self.render();
+                        } else if (attempt < 12) {
+                            window.setTimeout(function () { self.loadSignedDoc(attempt + 1); }, 2000);
+                        }
+                    },
+                    function () {
+                        if (self.watchState === "done" && attempt < 12) {
+                            window.setTimeout(function () { self.loadSignedDoc(attempt + 1); }, 2000);
+                        }
+                    }
+                );
+            };
+
+            Wizard.prototype.toBlobUrl = function (b64, mime) {
+                try {
+                    var bin = atob(b64);
+                    var len = bin.length;
+                    var bytes = new Uint8Array(len);
+                    for (var i = 0; i < len; i++) { bytes[i] = bin.charCodeAt(i); }
+                    return URL.createObjectURL(new Blob([bytes], { type: mime }));
+                } catch (e) { return null; }
             };
 
             // The compact 4-stage progress rail (Sent -> Delivered -> Viewed -> Completed).
@@ -1528,6 +1568,21 @@
                         el("div", { "class": "edo-wz-preview-busy-title", text: ok ? t.ccWatchDoneT : t.ccWatchDeclinedT }),
                         el("div", { text: ok ? t.ccWatchDoneH : t.ccWatchDeclinedH })
                     ]));
+                    if (ok) {
+                        if (this.watchDocUrl) {
+                            var openDoc = el("button", { "class": "edo-wz-btn primary", text: t.ccWatchOpenDoc });
+                            openDoc.onclick = function () { try { window.open(self.watchDocUrl, "_blank", "noopener"); } catch (e) { } };
+                            wrap.appendChild(el("div", { "class": "edo-wz-preview-open" }, [
+                                openDoc,
+                                el("div", { "class": "edo-wz-step-hint", text: t.ccWatchDocHint })
+                            ]));
+                        } else {
+                            wrap.appendChild(el("div", { "class": "edo-wz-preview-open" }, [
+                                el("div", { "class": "edo-wz-spin" }),
+                                el("div", { "class": "edo-wz-step-hint", text: t.ccWatchDocLoading })
+                            ]));
+                        }
+                    }
                 } else if (this.watchState === "error") {
                     wrap.appendChild(el("div", { "class": "edo-wz-preview-busy" }, [
                         el("div", { "class": "edo-wz-watch-icon warn", text: "\u2715" }),
