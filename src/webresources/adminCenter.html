@@ -656,7 +656,7 @@
           <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="step-body"><div class="step-body-inner">
-          <div class="step-desc">שלוש זרימות האוטומציה שמפעילות שליחה, סנכרון תבניות וקריאת תוצאות.</div>
+          <div class="step-desc">ארבע זרימות האוטומציה שמפעילות שליחה, סנכרון תבניות, קריאת תוצאות וחתימה בזמן אמת.</div>
           <div class="checklist" id="step2Checks"></div>
           <div class="step-foot">
             <button class="ghost-btn primary" id="enableAllBtn"><span>הפעל הכל</span></button>
@@ -769,6 +769,14 @@
             <div class="gs-desc">כאשר מופעל, אשף השליחה מאפשר למשתמש לצפות במסמך החתימה המעובד (עם הנתונים שמולאו) לפני שליחתו בפועל לחתימה.</div>
           </div>
           <button class="switch" id="swAllowPreview" role="switch" aria-label="תצוגה מקדימה לפני שליחה"></button>
+        </div>
+        <!-- Real-time mode (optional). When on, the agent can send a document live and wait for the signed result in a floating modal. -->
+        <div class="gs-master">
+          <div class="gs-main">
+            <div class="gs-name">מצב זמן אמת</div>
+            <div class="gs-desc">כאשר מופעל, הנציג יכול לשלוח מסמך תוך כדי שיחה עם הלקוח ולהמתין לקבלת המסמך החתום בחלון צף בזמן אמת — עם התקדמות חיה ואפשרות לאשר או לדחות ולשלוח שוב.</div>
+          </div>
+          <button class="switch" id="swRealtime" role="switch" aria-label="מצב זמן אמת"></button>
         </div>
         <!-- Additional channels (declarative, distributed via CIJ / Flow) -->
         <div class="gs-master">
@@ -900,7 +908,8 @@
       var FLOWS = [
         { id: "0fc45c36-f96a-f111-ab0d-000d3a66fdf4", he: "קריאת תוצאות חתימה" },
         { id: "c7533576-826a-f111-ab0c-7ced8d72428a", he: "סנכרון תבניות easydo" },
-        { id: "50007ad1-876a-f111-ab0c-7ced8d72428a", he: "שליחת בקשת חתימה" }
+        { id: "50007ad1-876a-f111-ab0c-7ced8d72428a", he: "שליחת בקשת חתימה" },
+        { id: "bd967ede-ae6d-f111-ab0e-7ced8d726840", he: "חתימה בזמן אמת" }
       ];
 
       // ---- Xrm + helpers ----
@@ -1215,7 +1224,7 @@
       function numOrNull(v) { return (v === 0 || v) ? v : null; }
       function freshSettings() {
         return {
-          id: null, primaryChannel: "email", multiChannel: false, allowPreview: false,
+          id: null, primaryChannel: "email", multiChannel: false, allowPreview: false, realtimeEnabled: false,
           allow: { email: false, sms: false, whatsapp: false },
           method: { email: null, sms: null, whatsapp: null },
           journey: { email: "", sms: "", whatsapp: "" },
@@ -1233,7 +1242,7 @@
       }
 
       function loadSettings() {
-        var q = "?$select=alex_easydosettingsid,alex_easydochannel,alex_multichannelenabled,alex_allowpreview," +
+        var q = "?$select=alex_easydosettingsid,alex_easydochannel,alex_multichannelenabled,alex_allowpreview,alex_realtimeenabled," +
           "alex_allowemail,alex_allowsms,alex_allowwhatsapp," +
           "alex_emailmethod,alex_emailjourneyname,_alex_emailflowid_value," +
           "alex_smsmethod,alex_smsjourneyname,_alex_smsflowid_value," +
@@ -1250,6 +1259,7 @@
               primaryChannel: pc || "email",
               multiChannel: e.alex_multichannelenabled === true,
               allowPreview: e.alex_allowpreview === true,
+              realtimeEnabled: e.alex_realtimeenabled === true,
               allow: {
                 email: e.alex_allowemail === true,
                 sms: e.alex_allowsms === true,
@@ -1300,6 +1310,7 @@
           alex_easydochannel: CH_OPT[s.primaryChannel],
           alex_multichannelenabled: s.multiChannel,
           alex_allowpreview: s.allowPreview === true,
+          alex_realtimeenabled: s.realtimeEnabled === true,
           alex_allowemail: s.allow.email,
           alex_allowsms: s.allow.sms,
           alex_allowwhatsapp: s.allow.whatsapp,
@@ -1357,6 +1368,15 @@
       function toggleAllowPreview() {
         var s = currentSettings();
         s.allowPreview = !s.allowPreview;
+        state.settings = s;
+        saveSettings();
+      }
+
+      // Real-time mode master switch. When on, the wizard offers a per-send
+      // "real-time" option and the agent waits for the signed result live.
+      function toggleRealtime() {
+        var s = currentSettings();
+        s.realtimeEnabled = !s.realtimeEnabled;
         state.settings = s;
         saveSettings();
       }
@@ -1438,6 +1458,7 @@
         var s = currentSettings();
         renderPrimary();
         setSwitch("swAllowPreview", s.allowPreview, false);
+        setSwitch("swRealtime", s.realtimeEnabled, false);
         setSwitch("swMultiChannel", s.multiChannel, false);
         // Additional channels are disabled until the master toggle is on.
         var locked = !s.multiChannel;
@@ -1837,6 +1858,7 @@
         if (btn && btn.getAttribute("data-ch")) setPrimary(btn.getAttribute("data-ch"));
       });
       $("swAllowPreview").addEventListener("click", toggleAllowPreview);
+      $("swRealtime").addEventListener("click", toggleRealtime);
       $("swMultiChannel").addEventListener("click", toggleMultiChannel);
       $("swEmail").addEventListener("click", function () { toggleChannel("email"); });
       $("swSms").addEventListener("click", function () { toggleChannel("sms"); });

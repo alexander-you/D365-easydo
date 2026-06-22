@@ -61,7 +61,7 @@
             "parameters": {
               "entityName": "alex_signaturerequests",
               "$select": "alex_signaturerequestid,alex_externalformid,alex_name,alex_status",
-              "$filter": "(alex_status eq 626210002 or alex_status eq 626210003 or alex_status eq 626210004 or alex_status eq 626210005) and alex_externalformid ne null"
+              "$filter": "(alex_status eq 626210002 or alex_status eq 626210003 or alex_status eq 626210004 or alex_status eq 626210005) and alex_externalformid ne null and alex_realtimesessionactive ne true"
             },
             "authentication": "@parameters('$authentication')"
           }

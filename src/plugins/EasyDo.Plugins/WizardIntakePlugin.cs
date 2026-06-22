@@ -109,6 +109,11 @@ namespace EasyDo.Plugins
 
             target["alex_isdraft"] = p.IsDraft;
 
+            // Real-time mode flag (per-send choice in the wizard). When set, the send
+            // flow marks the session active so the dedicated poll flow runs and the
+            // agent waits for the signed document live.
+            target["alex_isrealtime"] = p.IsRealtime;
+
             target["alex_language"] = new OptionSetValue(
                 string.Equals(p.Language, "he", StringComparison.OrdinalIgnoreCase) ? LanguageHebrew : LanguageEnglish);
 
@@ -242,6 +247,7 @@ namespace EasyDo.Plugins
                 LaunchRecordId = Text(payloadNode, "launchRecordId"),
                 RelatedContactId = Text(payloadNode, "relatedContactId"),
                 IsDraft = string.Equals(Text(payloadNode, "isDraft"), "true", StringComparison.OrdinalIgnoreCase),
+                IsRealtime = string.Equals(Text(payloadNode, "isRealtime"), "true", StringComparison.OrdinalIgnoreCase),
                 Recipients = new List<WizardRecipient>(),
                 FieldValues = new List<WizardFieldValue>()
             };
@@ -372,6 +378,7 @@ namespace EasyDo.Plugins
         {
             public string TemplateExternalId;
             public bool IsDraft;
+            public bool IsRealtime;
             public string Language;
             public string PrimaryChannel;
             public string LaunchEntityName;

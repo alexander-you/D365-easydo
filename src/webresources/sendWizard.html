@@ -220,7 +220,8 @@
                     needRecipient: "הוסיפו לפחות נמען אחד עם דוא\"ל תקין.", needRecipientPhone: "הוסיפו לפחות נמען אחד עם מספר טלפון תקין.", demoBadge: "מצב הדגמה",
                     recipientNoEmail: "לנמען שנפתר מהרשומה אין כתובת דוא\"ל, הנדרשת לשליחה בדוא\"ל. הוסיפו דוא\"ל לאיש הקשר או שנו את ערוץ השליחה בהגדרות.",
                     recipientNoPhone: "לנמען שנפתר מהרשומה אין מספר טלפון, הנדרש לשליחה ב-SMS/וואטסאפ. הוסיפו טלפון לאיש הקשר או שנו את ערוץ השליחה בהגדרות.",
-                    idLabel: "מזהה: ", sentOk: "הבקשה נוצרה ונשלחה לעיבוד.", sentErr: "אירעה שגיאה ביצירת הבקשה: "
+                    idLabel: "מזהה: ", sentOk: "הבקשה נוצרה ונשלחה לעיבוד.", sentErr: "אירעה שגיאה ביצירת הבקשה: ",
+                    realtimeLabel: "מצב זמן אמת", realtimeDesc: "שלחו את המסמך תוך כדי שיחה עם הלקוח והמתינו לתוצאה בחלון צף — עם התקדמות חיה ואפשרות לאשר או לדחות."
                 },
                 en: {
                     title: "Send for signature",
@@ -261,7 +262,8 @@
                     needRecipient: "Add at least one recipient with a valid email.", needRecipientPhone: "Add at least one recipient with a valid phone number.", demoBadge: "Demo mode",
                     recipientNoEmail: "The recipient resolved from the record has no email address, which is required to send by email. Add an email to the contact or change the send channel in settings.",
                     recipientNoPhone: "The recipient resolved from the record has no phone number, which is required to send by SMS/WhatsApp. Add a phone to the contact or change the send channel in settings.",
-                    idLabel: "ID: ", sentOk: "Request created and queued for processing.", sentErr: "Could not create the request: "
+                    idLabel: "ID: ", sentOk: "Request created and queued for processing.", sentErr: "Could not create the request: ",
+                    realtimeLabel: "Real-time mode", realtimeDesc: "Send the document during a live call with the customer and wait for the result in a floating panel — with live progress and an option to approve or reject."
                 }
             };
 
@@ -332,6 +334,7 @@
                 this.selectedTemplateId = "";
                 this.recipients = [];
                 this.isDraft = false;
+                this.isRealtime = false;
                 this.previewState = null; // null | "building" | "ready" | "error"
                 this.previewRequestId = null;
                 this.previewUrl = null;
@@ -346,7 +349,7 @@
                 // Global send settings (loaded from alex_easydosettings). Until loaded
                 // the feature is treated as off (primary channel = email).
                 this.settings = {
-                    primaryChannel: "email", multiChannel: false, allowPreview: false,
+                    primaryChannel: "email", multiChannel: false, allowPreview: false, realtimeEnabled: false,
                     allow: { email: false, sms: false, whatsapp: false },
                     method: { email: null, sms: null, whatsapp: null },
                     journey: { email: "", sms: "", whatsapp: "" },
@@ -380,7 +383,7 @@
             // plus the additional channels and their distribution declarations.
             Wizard.prototype.loadSettings = function () {
                 if (!this.xrm) return Promise.resolve(null);
-                var q = "?$select=alex_easydochannel,alex_multichannelenabled,alex_allowpreview,alex_allowemail,alex_allowsms,alex_allowwhatsapp," +
+                var q = "?$select=alex_easydochannel,alex_multichannelenabled,alex_allowpreview,alex_realtimeenabled,alex_allowemail,alex_allowsms,alex_allowwhatsapp," +
                     "alex_emailmethod,alex_emailjourneyname,_alex_emailflowid_value," +
                     "alex_smsmethod,alex_smsjourneyname,_alex_smsflowid_value," +
                     "alex_whatsappmethod,alex_whatsappjourneyname,_alex_whatsappflowid_value&$top=1";
@@ -402,6 +405,7 @@
                         primaryChannel: pc || "email",
                         multiChannel: row.alex_multichannelenabled === true,
                         allowPreview: row.alex_allowpreview === true,
+                        realtimeEnabled: row.alex_realtimeenabled === true,
                         allow: {
                             email: row.alex_allowemail === true,
                             sms: row.alex_allowsms === true,
@@ -1051,8 +1055,23 @@
                     addRow(t.reviewContext, this.ctx.recordName || this.ctx.entityName);
                 }
                 wrap.appendChild(el("div", { "class": "edo-wz-review" }, rows));
+                // Real-time mode (per-send), only when the org enabled it and this is
+                // a direct send (not a preview draft). The agent waits live for the
+                // signed document in a floating panel after sending.
+                if (this.settings && this.settings.realtimeEnabled && !this.isDraft) {
+                    var on = !!this.isRealtime;
+                    var box = el("div", { "class": "edo-wz-chk" + (on ? " on" : "") }, [
+                        el("div", { "class": "edo-wz-chk-box" }),
+                        el("div", { "class": "edo-wz-chk-label", text: t.realtimeLabel })
+                    ]);
+                    box.onclick = function () { self.isRealtime = !self.isRealtime; self.render(); };
+                    box.style.marginTop = "14px";
+                    wrap.appendChild(box);
+                    wrap.appendChild(el("div", { text: t.realtimeDesc, style: "margin:6px 2px 0; font-size:12px; line-height:1.5; color: var(--edo-sub);" }));
+                }
                 return wrap;
             };
+
 
             Wizard.prototype.buildFooter = function (t) {
                 var self = this;
@@ -1176,6 +1195,7 @@
                     templateId: this.demo ? "" : (tpl ? tpl.id : ""),
                     templateExternalId: tpl ? tpl.externalId : "",
                     isDraft: this.isDraft,
+                    isRealtime: (!this.isDraft && this.isRealtime),
                     language: this.lang,
                     recipients: recipients,
                     fieldValues: fieldValues,
@@ -1217,6 +1237,13 @@
                             return;
                         }
                         self.toast(true, t.sentOk);
+                        // Real-time send: open the live signing panel and let the agent
+                        // wait for the signed document, then close the wizard pane.
+                        if (self.isRealtime) {
+                            var rid = res && res.id ? res.id.replace(/[{}]/g, "") : null;
+                            self.openRealtime(rid);
+                            return;
+                        }
                         window.setTimeout(function () { self.closePane(); }, 1100);
                     },
                     function (err) {
@@ -1225,6 +1252,33 @@
                         self.render();
                     }
                 );
+            };
+
+            // Open the live real-time signing panel (a separate web resource) as a
+            // centered modal dialog, passing the request id, then close the wizard.
+            Wizard.prototype.openRealtime = function (requestId) {
+                var self = this;
+                var t = DICT[this.lang];
+                var done = function () { window.setTimeout(function () { self.closePane(); }, 600); };
+                if (!requestId || !this.xrm || !this.xrm.Navigation || !this.xrm.Navigation.navigateTo) {
+                    done();
+                    return;
+                }
+                var pageInput = {
+                    pageType: "webresource",
+                    webresourceName: "alex_/html/realtimeSession.html",
+                    data: "requestId=" + encodeURIComponent(requestId) + "&uilang=" + encodeURIComponent(this.lang)
+                };
+                var navOptions = {
+                    target: 2, position: 1,
+                    width: { value: 72, unit: "%" },
+                    height: { value: 88, unit: "%" },
+                    title: t.realtimeLabel
+                };
+                try {
+                    this.xrm.Navigation.navigateTo(pageInput, navOptions).then(function () { }, function () { });
+                } catch (e) { /* ignore */ }
+                done();
             };
 
             // Poll the just-created request until the Send flow's preview branch has

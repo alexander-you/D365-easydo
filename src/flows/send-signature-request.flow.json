@@ -552,7 +552,8 @@
                             "item/alex_status": 626210002,
                             "item/alex_externalformid": "@string(outputs('Send_the_template_for_signature')?['body/id'])",
                             "item/alex_signinglink": "@first(outputs('Send_the_template_for_signature')?['body/assignees'])?['fill_url']",
-                            "item/alex_senton": "@utcNow()"
+                            "item/alex_senton": "@utcNow()",
+                            "item/alex_realtimesessionactive": "@coalesce(triggerOutputs()?['body/alex_isrealtime'], false)"
                           },
                           "authentication": "@parameters('$authentication')"
                         }

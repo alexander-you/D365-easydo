@@ -4,6 +4,17 @@
 
 All notable changes to this project are documented here.
 
+## Backlog | לטיפול בהמשך
+
+- **Abandoned preview cleanup | ניקוי תצוגות מקדימות שננטשו.** When a user generates a
+  preview but decides **not** to send, the signature request stays in **Draft**
+  (`alex_status=626210000`, `alex_ispreviewgenerated=true`, `alex_previewformid`/
+  `alex_previewurl` set) and the easydo draft form (status `incomplete`) is left
+  **orphaned**. Need a cleanup path — e.g. a scheduled flow that deletes easydo draft
+  forms (`DeleteForm`) for requests still in Draft with a generated preview older than
+  N days and clears the preview columns, and/or a "discard preview" action in the
+  wizard that calls `DeleteForm` and resets the request. Not yet implemented.
+
 ## [Unreleased] — signed PDF on the primary record, smart last-viewed & per-table lookups (2026-06-21)
 
 ### Added

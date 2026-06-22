@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<!--
+  realtimeSession.html  -  easydo Real-Time Signing panel
+  Opened by the Send Wizard (navigateTo center dialog) right after a real-time
+  send. It polls the signature request (Dataverse only - never easydo/token)
+  and shows live progress (Sent -> Delivered -> Viewed -> Completed). When the
+  signed document returns, the dedicated poll flow has already written the
+  values, marked the request Completed and attached a PDF copy on the request
+  itself; this panel renders that PDF and lets the agent Approve or Reject.
+  Reject -> "send again?" Yes resends a new form; No closes with an audit flag.
+  ES5-only (no arrow/const/let) for broad model-driven app compatibility.
+-->
+<html lang="he">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>easydo</title>
+    <style>
+        :root {
+            --edo-accent: #4b2e83;
+            --edo-accent-2: #6b4bb3;
+            --edo-ink: #1b1b2b;
+            --edo-sub: #6b6b80;
+            --edo-line: #e3e3ee;
+            --edo-ok: #2e8b57;
+            --edo-warn: #c0392b;
+            --edo-bg: #f5f5fa;
+            --edo-radius: 12px;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0; padding: 0; height: 100%;
+            font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+            color: var(--edo-ink); background: #fff;
+        }
+
+        .edo-rt {
+            display: flex; flex-direction: column; height: 100%; min-height: 0;
+        }
+
+        .edo-rt-head {
+            padding: 16px 22px; border-bottom: 1px solid var(--edo-line);
+            background: linear-gradient(135deg, var(--edo-accent), var(--edo-accent-2));
+            color: #fff;
+        }
+        .edo-rt-title { font-size: 17px; font-weight: 700; }
+        .edo-rt-sub { font-size: 12.5px; opacity: 0.92; margin-top: 3px; }
+
+        /* progress rail */
+        .edo-rt-rail { display: flex; align-items: flex-start; gap: 0; padding: 18px 22px 6px; }
+        .edo-rt-node { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; position: relative; text-align: center; }
+        .edo-rt-dot {
+            width: 26px; height: 26px; border-radius: 50%; background: #fff;
+            border: 2px solid var(--edo-line); color: var(--edo-sub);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 700; z-index: 1;
+        }
+        .edo-rt-node.done .edo-rt-dot { background: var(--edo-ok); border-color: var(--edo-ok); color: #fff; }
+        .edo-rt-node.active .edo-rt-dot { background: var(--edo-accent); border-color: var(--edo-accent); color: #fff; box-shadow: 0 0 0 4px rgba(75, 46, 131, 0.16); }
+        .edo-rt-line { position: absolute; top: 13px; height: 2px; background: var(--edo-line); width: 100%; left: -50%; z-index: 0; }
+        .edo-rt-node.done .edo-rt-line, .edo-rt-node.active .edo-rt-line { background: var(--edo-ok); }
+        .edo-rt-node:first-child .edo-rt-line { display: none; }
+        .edo-rt-label { font-size: 11.5px; margin-top: 6px; color: var(--edo-sub); max-width: 92px; }
+        .edo-rt-node.done .edo-rt-label, .edo-rt-node.active .edo-rt-label { color: var(--edo-ink); font-weight: 600; }
+
+        .edo-rt-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 8px 22px 0; }
+
+        .edo-rt-wait { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; color: var(--edo-sub); }
+        .edo-rt-spin { width: 40px; height: 40px; border: 4px solid var(--edo-line); border-top-color: var(--edo-accent); border-radius: 50%; animation: edo-spin 0.85s linear infinite; }
+        @keyframes edo-spin { to { transform: rotate(360deg); } }
+        .edo-rt-wait-title { font-size: 15px; font-weight: 600; color: var(--edo-ink); }
+        .edo-rt-wait-hint { font-size: 12.5px; max-width: 360px; line-height: 1.6; }
+
+        .edo-rt-doc { flex: 1 1 auto; min-height: 0; border: 1px solid var(--edo-line); border-radius: 10px; overflow: hidden; background: var(--edo-bg); }
+        .edo-rt-doc object, .edo-rt-doc iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+        .edo-rt-foot { padding: 14px 22px; border-top: 1px solid var(--edo-line); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .edo-rt-foot-msg { font-size: 12.5px; color: var(--edo-sub); }
+        .edo-rt-actions { display: flex; gap: 10px; }
+
+        .edo-btn {
+            appearance: none; border: 1px solid var(--edo-line); background: #fff; color: var(--edo-ink);
+            border-radius: 8px; padding: 9px 18px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+            font-family: inherit; transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+        }
+        .edo-btn:hover { background: #f1f1f7; }
+        .edo-btn.primary { background: var(--edo-ok); border-color: var(--edo-ok); color: #fff; }
+        .edo-btn.primary:hover { background: #25734a; }
+        .edo-btn.danger { background: #fff; border-color: var(--edo-warn); color: var(--edo-warn); }
+        .edo-btn.danger:hover { background: #fdecea; }
+        .edo-btn.disabled { opacity: 0.5; pointer-events: none; }
+
+        .edo-rt-done { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 24px; }
+        .edo-rt-done-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #fff; }
+        .edo-rt-done-icon.ok { background: var(--edo-ok); }
+        .edo-rt-done-icon.warn { background: var(--edo-warn); }
+        .edo-rt-done-title { font-size: 16px; font-weight: 700; }
+        .edo-rt-done-hint { font-size: 13px; color: var(--edo-sub); max-width: 380px; line-height: 1.6; }
+
+        .edo-rt-error { color: var(--edo-warn); font-size: 13px; padding: 10px 0; }
+    </style>
+</head>
+
+<body>
+    <div class="edo-rt" id="edo-root"></div>
+
+    <script type="text/javascript">
+        (function () {
+            "use strict";
+
+            // ----- option set codes (alex_signaturestatus) -----
+            var ST_READY = 626210001, ST_SENT = 626210002, ST_DELIVERED = 626210003,
+                ST_VIEWED = 626210004, ST_INPROGRESS = 626210005, ST_COMPLETED = 626210006,
+                ST_DECLINED = 626210007;
+
+            var DICT = {
+                he: {
+                    title: "\u05d7\u05ea\u05d9\u05de\u05d4 \u05d1\u05d6\u05de\u05df \u05d0\u05de\u05ea",
+                    sub: "\u05d4\u05de\u05e1\u05de\u05da \u05e0\u05e9\u05dc\u05d7 \u05dc\u05dc\u05e7\u05d5\u05d7. \u05de\u05e2\u05e7\u05d1 \u05d0\u05d7\u05e8 \u05d4\u05d4\u05ea\u05e7\u05d3\u05de\u05d5\u05ea \u05d1\u05d6\u05de\u05df \u05d0\u05de\u05ea\u2026",
+                    stSent: "\u05e0\u05e9\u05dc\u05d7", stDelivered: "\u05e0\u05de\u05e1\u05e8", stViewed: "\u05e0\u05e6\u05e4\u05d4", stCompleted: "\u05d4\u05d5\u05e9\u05dc\u05dd",
+                    waitTitle: "\u05de\u05de\u05ea\u05d9\u05df \u05dc\u05de\u05e1\u05de\u05da \u05d4\u05d7\u05ea\u05d5\u05dd\u2026",
+                    waitHint: "\u05d4\u05de\u05e1\u05de\u05da \u05d9\u05d5\u05e4\u05d9\u05e2 \u05db\u05d0\u05df \u05d0\u05d5\u05d8\u05d5\u05de\u05d8\u05d9\u05ea \u05d1\u05e8\u05d2\u05e2 \u05e9\u05d4\u05dc\u05e7\u05d5\u05d7 \u05d9\u05e9\u05dc\u05d9\u05dd \u05d0\u05ea \u05d4\u05d7\u05ea\u05d9\u05de\u05d4.",
+                    docHint: "\u05d4\u05de\u05e1\u05de\u05da \u05d4\u05d7\u05ea\u05d5\u05dd \u05d4\u05ea\u05e7\u05d1\u05dc. \u05d1\u05d3\u05e7\u05d5 \u05d5\u05d0\u05e9\u05e8\u05d5 \u05d0\u05d5 \u05d3\u05d7\u05d5.",
+                    approve: "\u05d0\u05e9\u05e8", reject: "\u05d3\u05d7\u05d4",
+                    resendQ: "\u05d4\u05d0\u05dd \u05dc\u05e9\u05dc\u05d5\u05d7 \u05d0\u05ea \u05d4\u05de\u05e1\u05de\u05da \u05e9\u05d5\u05d1?",
+                    yes: "\u05db\u05df, \u05e9\u05dc\u05d7 \u05e9\u05d5\u05d1", no: "\u05dc\u05d0, \u05e1\u05d2\u05d5\u05e8",
+                    close: "\u05e1\u05d2\u05d9\u05e8\u05d4",
+                    doneApproveT: "\u05d4\u05de\u05e1\u05de\u05da \u05d0\u05d5\u05e9\u05e8",
+                    doneApproveH: "\u05d4\u05de\u05e1\u05de\u05da \u05d4\u05d7\u05ea\u05d5\u05dd \u05e0\u05e9\u05de\u05e8 \u05d1\u05e8\u05e9\u05d5\u05de\u05d4. \u05e0\u05d9\u05ea\u05df \u05dc\u05e1\u05d2\u05d5\u05e8 \u05d7\u05dc\u05d5\u05df \u05d6\u05d4.",
+                    doneRejectT: "\u05d4\u05de\u05e1\u05de\u05da \u05e0\u05d3\u05d7\u05d4 \u05e2\u05dc \u05d9\u05d3\u05d9 \u05d4\u05e0\u05e6\u05d9\u05d2",
+                    doneRejectH: "\u05d4\u05e1\u05e9\u05df \u05e0\u05e1\u05d2\u05e8. \u05e0\u05d9\u05ea\u05df \u05dc\u05e1\u05d2\u05d5\u05e8 \u05d7\u05dc\u05d5\u05df \u05d6\u05d4.",
+                    resendingT: "\u05e9\u05d5\u05dc\u05d7 \u05de\u05d7\u05d3\u05e9\u2026",
+                    resendingH: "\u05e0\u05d5\u05e6\u05e8 \u05de\u05e1\u05de\u05da \u05d7\u05d3\u05e9 \u05dc\u05d7\u05ea\u05d9\u05de\u05d4. \u05d4\u05de\u05e2\u05e7\u05d1 \u05d9\u05ea\u05d7\u05d3\u05e9 \u05d1\u05e8\u05d2\u05e2.",
+                    errLoad: "\u05d8\u05e2\u05d9\u05e0\u05ea \u05d4\u05de\u05e1\u05de\u05da \u05e0\u05db\u05e9\u05dc\u05d4.",
+                    errNoCtx: "\u05dc\u05d0 \u05e0\u05de\u05e6\u05d0 \u05d4\u05e7\u05e9\u05e8 \u05d4\u05d1\u05e7\u05e9\u05d4.",
+                    declined: "\u05d4\u05dc\u05e7\u05d5\u05d7 \u05d3\u05d7\u05d4 \u05d0\u05ea \u05d4\u05d7\u05ea\u05d9\u05de\u05d4."
+                },
+                en: {
+                    title: "Real-time signing",
+                    sub: "The document was sent to the customer. Tracking progress live\u2026",
+                    stSent: "Sent", stDelivered: "Delivered", stViewed: "Viewed", stCompleted: "Completed",
+                    waitTitle: "Waiting for the signed document\u2026",
+                    waitHint: "The document will appear here automatically once the customer completes the signature.",
+                    docHint: "The signed document arrived. Review and approve or reject.",
+                    approve: "Approve", reject: "Reject",
+                    resendQ: "Send the document again?",
+                    yes: "Yes, send again", no: "No, close",
+                    close: "Close",
+                    doneApproveT: "Document approved",
+                    doneApproveH: "The signed document is saved on the record. You may close this window.",
+                    doneRejectT: "Rejected by agent",
+                    doneRejectH: "The session is closed. You may close this window.",
+                    resendingT: "Sending again\u2026",
+                    resendingH: "A new document was created for signature. Tracking will refresh shortly.",
+                    errLoad: "Loading the document failed.",
+                    errNoCtx: "Request context was not found.",
+                    declined: "The customer declined the signature."
+                }
+            };
+
+            function getXrm() {
+                try { if (window.Xrm && window.Xrm.WebApi) return window.Xrm; } catch (e) { }
+                try { if (window.parent && window.parent.Xrm && window.parent.Xrm.WebApi) return window.parent.Xrm; } catch (e) { }
+                return null;
+            }
+
+            function parseCtx() {
+                var ctx = { requestId: "", uilang: "" };
+                try {
+                    var raw = new URLSearchParams(window.location.search).get("data") || "";
+                    var parts = new URLSearchParams(raw);
+                    ctx.requestId = (parts.get("requestId") || "").replace(/[{}]/g, "");
+                    ctx.uilang = parts.get("uilang") || "";
+                } catch (e) { }
+                return ctx;
+            }
+
+            function el(tag, attrs, kids) {
+                var n = document.createElement(tag);
+                if (attrs) {
+                    for (var k in attrs) {
+                        if (!attrs.hasOwnProperty(k)) continue;
+                        if (k === "text") n.textContent = attrs[k];
+                        else if (k === "class") n.className = attrs[k];
+                        else if (k === "html") n.innerHTML = attrs[k];
+                        else n.setAttribute(k, attrs[k]);
+                    }
+                }
+                if (kids) { for (var i = 0; i < kids.length; i++) { if (kids[i]) n.appendChild(kids[i]); } }
+                return n;
+            }
+
+            function Panel() {
+                this.ctx = parseCtx();
+                this.xrm = getXrm();
+                this.lang = this.ctx.uilang === "en" ? "en" : "he";
+                this.status = ST_SENT;
+                this.phase = "waiting"; // waiting | review | resendPrompt | done
+                this.docUrl = null;
+                this.error = "";
+                this.doneKind = ""; // approve | reject
+                this.timer = null;
+                this.busy = false;
+            }
+
+            Panel.prototype.start = function () {
+                document.documentElement.setAttribute("dir", this.lang === "he" ? "rtl" : "ltr");
+                document.documentElement.setAttribute("lang", this.lang);
+                if (!this.ctx.requestId || !this.xrm) {
+                    this.error = DICT[this.lang].errNoCtx;
+                    this.render();
+                    return;
+                }
+                this.render();
+                this.refresh();
+                this.startPolling();
+            };
+
+            Panel.prototype.startPolling = function () {
+                var self = this;
+                this.stopPolling();
+                this.timer = window.setInterval(function () { self.refresh(); }, 4000);
+            };
+            Panel.prototype.stopPolling = function () {
+                if (this.timer) { window.clearInterval(this.timer); this.timer = null; }
+            };
+
+            // Poll Dataverse only (the dedicated flow updates status + attaches the PDF).
+            Panel.prototype.refresh = function () {
+                var self = this;
+                if (this.phase === "done" || this.phase === "resendPrompt") return;
+                var sel = "?$select=alex_status,alex_senton,alex_lastviewedon,alex_completedon,alex_externalformid,alex_realtimesessionactive";
+                this.xrm.WebApi.retrieveRecord("alex_signaturerequest", this.ctx.requestId, sel).then(
+                    function (rec) {
+                        self.status = (rec.alex_status === 0 || rec.alex_status) ? rec.alex_status : self.status;
+                        if (self.status === ST_DECLINED) {
+                            self.stopPolling();
+                            self.error = DICT[self.lang].declined;
+                            self.phase = "waiting";
+                            self.render();
+                            return;
+                        }
+                        if (self.status === ST_COMPLETED) {
+                            self.stopPolling();
+                            if (self.phase === "waiting") { self.loadDocument(); }
+                            return;
+                        }
+                        if (self.phase === "waiting") { self.render(); }
+                    },
+                    function () { /* transient; keep polling */ }
+                );
+            };
+
+            // The poll flow attached a PDF copy on the request (annotation, isdocument).
+            // The flow sets status=Completed a few actions before creating that
+            // annotation, so retry a few times to avoid a harmless race.
+            Panel.prototype.loadDocument = function (attempt) {
+                var self = this;
+                attempt = attempt || 0;
+                var q = "?$select=annotationid,documentbody,mimetype,filename&$filter=_objectid_value eq " +
+                    this.ctx.requestId + " and isdocument eq true and mimetype eq 'application/pdf'&$orderby=createdon desc&$top=1";
+                this.xrm.WebApi.retrieveMultipleRecords("annotation", q).then(
+                    function (res) {
+                        if (res && res.entities && res.entities.length && res.entities[0].documentbody) {
+                            self.docUrl = self.toBlobUrl(res.entities[0].documentbody, "application/pdf");
+                            self.phase = "review";
+                            self.render();
+                        } else if (attempt < 10) {
+                            window.setTimeout(function () { self.loadDocument(attempt + 1); }, 2000);
+                        } else {
+                            self.docUrl = null;
+                            self.error = DICT[self.lang].errLoad;
+                            self.phase = "review";
+                            self.render();
+                        }
+                    },
+                    function () {
+                        if (attempt < 10) {
+                            window.setTimeout(function () { self.loadDocument(attempt + 1); }, 2000);
+                        } else {
+                            self.docUrl = null;
+                            self.error = DICT[self.lang].errLoad;
+                            self.phase = "review";
+                            self.render();
+                        }
+                    }
+                );
+            };
+
+            Panel.prototype.toBlobUrl = function (b64, mime) {
+                try {
+                    var bin = atob(b64);
+                    var len = bin.length;
+                    var bytes = new Uint8Array(len);
+                    for (var i = 0; i < len; i++) { bytes[i] = bin.charCodeAt(i); }
+                    var blob = new Blob([bytes], { type: mime });
+                    return URL.createObjectURL(blob);
+                } catch (e) { return "data:" + mime + ";base64," + b64; }
+            };
+
+            // ----- agent actions -----
+            Panel.prototype.approve = function () {
+                var self = this;
+                if (this.busy) return;
+                this.busy = true;
+                this.xrm.WebApi.updateRecord("alex_signaturerequest", this.ctx.requestId, {
+                    alex_realtimesessionactive: false
+                }).then(finish, finish);
+                function finish() { self.busy = false; self.doneKind = "approve"; self.phase = "done"; self.render(); }
+            };
+
+            Panel.prototype.askResend = function () {
+                this.phase = "resendPrompt";
+                this.render();
+            };
+
+            // Reject -> No: keep the completed document, flag it as rejected by the agent.
+            Panel.prototype.rejectClose = function () {
+                var self = this;
+                if (this.busy) return;
+                this.busy = true;
+                this.xrm.WebApi.updateRecord("alex_signaturerequest", this.ctx.requestId, {
+                    alex_agentrejected: true,
+                    alex_agentrejectedon: new Date().toISOString(),
+                    alex_realtimesessionactive: false
+                }).then(finish, finish);
+                function finish() { self.busy = false; self.doneKind = "reject"; self.phase = "done"; self.render(); }
+            };
+
+            // Reject -> Yes: create a NEW form for signature (do not cancel the old one).
+            // Clearing the external form id lets the send flow's "already sent" guard
+            // pass; flipping to Ready-to-Send re-fires the send + real-time poll flows.
+            Panel.prototype.resend = function () {
+                var self = this;
+                if (this.busy) return;
+                this.busy = true;
+                this.xrm.WebApi.updateRecord("alex_signaturerequest", this.ctx.requestId, {
+                    alex_externalformid: null,
+                    alex_signinglink: null,
+                    alex_isrealtime: true,
+                    alex_agentrejected: false,
+                    alex_realtimesessionactive: false,
+                    alex_status: ST_READY
+                }).then(done, done);
+                function done() {
+                    self.busy = false;
+                    self.status = ST_SENT;
+                    self.docUrl = null;
+                    self.error = "";
+                    self.phase = "waiting";
+                    self.render();
+                    self.startPolling();
+                }
+            };
+
+            Panel.prototype.closeSelf = function () {
+                this.stopPolling();
+                // Best-effort close of the host dialog; otherwise the native X remains.
+                try { if (window.close) window.close(); } catch (e) { }
+                try {
+                    var X = this.xrm || getXrm();
+                    if (X && X.App && X.App.sidePanes && X.App.sidePanes.getSelectedPane) {
+                        var p = X.App.sidePanes.getSelectedPane();
+                        if (p && p.close) p.close();
+                    }
+                } catch (e) { }
+            };
+
+            // ----- rendering -----
+            Panel.prototype.rail = function (t) {
+                var self = this;
+                var stages = [
+                    { code: ST_SENT, label: t.stSent },
+                    { code: ST_DELIVERED, label: t.stDelivered },
+                    { code: ST_VIEWED, label: t.stViewed },
+                    { code: ST_COMPLETED, label: t.stCompleted }
+                ];
+                var rail = el("div", { "class": "edo-rt-rail" });
+                stages.forEach(function (s, i) {
+                    var isDone = self.status >= s.code && (self.status !== s.code || s.code === ST_COMPLETED);
+                    var active = self.status === s.code && s.code !== ST_COMPLETED;
+                    var cls = "edo-rt-node" + (isDone ? " done" : (active ? " active" : ""));
+                    var node = el("div", { "class": cls }, [
+                        el("div", { "class": "edo-rt-line" }),
+                        el("div", { "class": "edo-rt-dot", text: isDone && !active ? "\u2713" : String(i + 1) }),
+                        el("div", { "class": "edo-rt-label", text: s.label })
+                    ]);
+                    rail.appendChild(node);
+                });
+                return rail;
+            };
+
+            Panel.prototype.render = function () {
+                var t = DICT[this.lang];
+                var root = document.getElementById("edo-root");
+                root.innerHTML = "";
+
+                var head = el("div", { "class": "edo-rt-head" }, [
+                    el("div", { "class": "edo-rt-title", text: t.title }),
+                    el("div", { "class": "edo-rt-sub", text: t.sub })
+                ]);
+                root.appendChild(head);
+
+                if (this.phase !== "done") { root.appendChild(this.rail(t)); }
+
+                var body = el("div", { "class": "edo-rt-body" });
+
+                if (this.phase === "done") {
+                    var ok = this.doneKind === "approve";
+                    body.appendChild(el("div", { "class": "edo-rt-done" }, [
+                        el("div", { "class": "edo-rt-done-icon " + (ok ? "ok" : "warn"), text: ok ? "\u2713" : "\u2715" }),
+                        el("div", { "class": "edo-rt-done-title", text: ok ? t.doneApproveT : t.doneRejectT }),
+                        el("div", { "class": "edo-rt-done-hint", text: ok ? t.doneApproveH : t.doneRejectH })
+                    ]));
+                } else if (this.phase === "review") {
+                    if (this.docUrl) {
+                        var holder = el("div", { "class": "edo-rt-doc" });
+                        holder.appendChild(el("object", { data: this.docUrl, type: "application/pdf" }, [
+                            el("iframe", { src: this.docUrl, title: "PDF" })
+                        ]));
+                        body.appendChild(holder);
+                    } else {
+                        body.appendChild(el("div", { "class": "edo-rt-error", text: this.error || t.errLoad }));
+                    }
+                } else {
+                    // waiting
+                    var wait = el("div", { "class": "edo-rt-wait" }, [
+                        el("div", { "class": "edo-rt-spin" }),
+                        el("div", { "class": "edo-rt-wait-title", text: this.error ? this.error : t.waitTitle }),
+                        el("div", { "class": "edo-rt-wait-hint", text: t.waitHint })
+                    ]);
+                    body.appendChild(wait);
+                }
+                root.appendChild(body);
+
+                root.appendChild(this.foot(t));
+            };
+
+            Panel.prototype.foot = function (t) {
+                var self = this;
+                var actions = el("div", { "class": "edo-rt-actions" });
+                var msg = el("div", { "class": "edo-rt-foot-msg", text: "" });
+
+                if (this.phase === "review") {
+                    msg.textContent = t.docHint;
+                    var rej = el("button", { "class": "edo-btn danger", text: t.reject });
+                    rej.onclick = function () { self.askResend(); };
+                    var app = el("button", { "class": "edo-btn primary" + (this.busy ? " disabled" : ""), text: t.approve });
+                    app.onclick = function () { self.approve(); };
+                    actions.appendChild(rej);
+                    actions.appendChild(app);
+                } else if (this.phase === "resendPrompt") {
+                    msg.textContent = t.resendQ;
+                    var no = el("button", { "class": "edo-btn", text: t.no });
+                    no.onclick = function () { self.rejectClose(); };
+                    var yes = el("button", { "class": "edo-btn primary" + (this.busy ? " disabled" : ""), text: t.yes });
+                    yes.onclick = function () { self.resend(); };
+                    actions.appendChild(no);
+                    actions.appendChild(yes);
+                } else if (this.phase === "done") {
+                    var close = el("button", { "class": "edo-btn", text: t.close });
+                    close.onclick = function () { self.closeSelf(); };
+                    actions.appendChild(close);
+                }
+
+                return el("div", { "class": "edo-rt-foot" }, [msg, actions]);
+            };
+
+            function boot() {
+                var p = new Panel();
+                window.__edoRealtime = p;
+                p.start();
+            }
+
+            if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", boot);
+            } else { boot(); }
+        })();
+    </script>
+</body>
+
+</html>
