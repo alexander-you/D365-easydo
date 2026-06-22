@@ -1425,6 +1425,12 @@
         state.settings = s;
         renderSettings();
         renderSettingsSummary();
+        // The Contact Center switches live in their own drawer and are painted by
+        // renderCc()/renderCcSummary(), so refresh those too — otherwise toggling
+        // a CC switch would not reflect visually. The render helpers null-guard
+        // every element, so calling them while the drawer is closed is harmless.
+        renderCc();
+        renderCcSummary();
         return p.then(function () { toast("ההגדרות נשמרו"); }, function () {
           toast("שמירת ההגדרות נכשלה");
         });
