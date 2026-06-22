@@ -173,6 +173,20 @@
         .edo-wz-preview-busy-title { font-weight: 600; color: var(--edo-ink); font-size: 14px; }
         .edo-wz-preview-open { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 24px; }
 
+        .edo-wz-rt-rail { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; padding: 22px 8px 10px; }
+        .edo-wz-rt-node { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; }
+        .edo-wz-rt-node::before { content: ""; position: absolute; top: 13px; inset-inline-start: -50%; width: 100%; height: 2px; background: var(--edo-line); z-index: 0; }
+        .edo-wz-rt-node:first-child::before { display: none; }
+        .edo-wz-rt-node.done::before { background: var(--edo-accent); }
+        .edo-wz-rt-dot { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--edo-line); background: #fff; color: var(--edo-sub); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; position: relative; z-index: 1; }
+        .edo-wz-rt-node.active .edo-wz-rt-dot { border-color: var(--edo-accent); color: var(--edo-accent); box-shadow: 0 0 0 4px rgba(91, 60, 196, 0.14); }
+        .edo-wz-rt-node.done .edo-wz-rt-dot { border-color: var(--edo-accent); background: var(--edo-accent); color: #fff; }
+        .edo-wz-rt-label { font-size: 12px; color: var(--edo-sub); text-align: center; }
+        .edo-wz-rt-node.active .edo-wz-rt-label, .edo-wz-rt-node.done .edo-wz-rt-label { color: var(--edo-ink); font-weight: 600; }
+        .edo-wz-watch-icon { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: #fff; }
+        .edo-wz-watch-icon.ok { background: #1c9e5e; }
+        .edo-wz-watch-icon.warn { background: #c0392b; }
+
         .edo-wz-toast { position: absolute; inset-inline: 24px; bottom: 74px; padding: 11px 14px; border-radius: 10px; font-size: 13px; font-weight: 550; box-shadow: var(--edo-shadow); display: none; }
         .edo-wz-toast.ok { background: #e9f8ef; color: #176c45; border: 1px solid #bce6cf; }
         .edo-wz-toast.bad { background: #fdeef1; color: #97233a; border: 1px solid #f3c9d2; }
@@ -230,7 +244,13 @@
                     ccSending: "מייצר קישור חתימה ושולח לשיחה החיה...", ccSentOk: "קישור החתימה נשלח לשיחה.", ccReviewOk: "קישור החתימה הוכן בתיבת ההודעות שלך לאישור ושליחה.", ccSentErr: "לא ניתן לשלוח את קישור החתימה לשיחה: ",
                     ccBanner: "אתם בשיחה חיה עם הלקוח. קישור החתימה נוצר אוטומטית ונשלח ישירות לשיחה הפעילה (צ'אט/וואטסאפ) \u2014 אין צורך לבחור ערוץ.",
                     ccLiveChannel: "שיחה חיה", ccLivePrimary: "ערוץ מרכזי", ccModeNote: "שליחה אוטומטית לשיחה החיה",
-                    ccBackupHint: "הקישור נשלח תמיד דרך השיחה החיה. ערוצים נוספים הם גיבוי בלבד (התראת easydo)."
+                    ccBackupHint: "הקישור נשלח תמיד דרך השיחה החיה. ערוצים נוספים הם גיבוי בלבד (התראת easydo).",
+                    ccWatchTitle: "מעקב חתימה בזמן אמת", ccWatchHint: "הקישור נשלח ללקוח בשיחה. עקבו אחר ההתקדמות כאן בזמן שאתם ממשיכים לשוחח.",
+                    stSent: "נשלח", stDelivered: "נמסר", stViewed: "נצפה", stCompleted: "הושלם",
+                    ccWatchDoneT: "המסמך נחתם", ccWatchDoneH: "הלקוח השלים את החתימה.",
+                    ccWatchDeclinedT: "החתימה נדחתה", ccWatchDeclinedH: "הלקוח דחה את בקשת החתימה.",
+                    ccWatchErrT: "המעקב נעצר", ccWatchErrH: "לא ניתן להמשיך לעקוב אחר סטטוס הבקשה. הקישור עדיין נשלח ללקוח.",
+                    watchClose: "סגירה"
                 },
                 en: {
                     title: "Send for signature",
@@ -277,7 +297,13 @@
                     ccSending: "Generating the signing link and sending it to the live conversation...", ccSentOk: "The signing link was sent to the conversation.", ccReviewOk: "The signing link is ready in your message box to review and send.", ccSentErr: "Could not send the signing link to the conversation: ",
                     ccBanner: "You are in a live conversation with the customer. The signing link is generated automatically and sent straight to the active conversation (chat/WhatsApp) \u2014 no need to pick a channel.",
                     ccLiveChannel: "Live conversation", ccLivePrimary: "Primary channel", ccModeNote: "Auto-send to the live conversation",
-                    ccBackupHint: "The link is always delivered over the live conversation. Additional channels are backup only (easydo notification)."
+                    ccBackupHint: "The link is always delivered over the live conversation. Additional channels are backup only (easydo notification).",
+                    ccWatchTitle: "Real-time signing tracker", ccWatchHint: "The link was sent to the customer in the conversation. Track progress here while you keep chatting.",
+                    stSent: "Sent", stDelivered: "Delivered", stViewed: "Viewed", stCompleted: "Completed",
+                    ccWatchDoneT: "Document signed", ccWatchDoneH: "The customer completed the signature.",
+                    ccWatchDeclinedT: "Signature declined", ccWatchDeclinedH: "The customer declined the signing request.",
+                    ccWatchErrT: "Tracking stopped", ccWatchErrH: "Could not keep tracking the request status. The link was still sent to the customer.",
+                    watchClose: "Close"
                 }
             };
 
@@ -377,6 +403,10 @@
                 this.previewUrl = null;
                 this.previewOpened = false;
                 this.previewError = "";
+                this.watchState = null; // null | "watching" | "done" | "error" (CC real-time, inline in the pane)
+                this.watchRequestId = null;
+                this.watchStatus = 0;
+                this.watchDoneKind = null;
                 this.demo = false;
                 this.submitted = false;
                 this.fields = [];
@@ -765,6 +795,13 @@
                 // Document preview takes over the body once requested.
                 if (this.previewState) {
                     this.root.appendChild(this.buildPreview(t));
+                    if (this._toast) this.root.appendChild(this._toast);
+                    return;
+                }
+                // CC real-time tracker takes over the pane body (it stays in the side
+                // pane so the agent keeps using the live conversation in the center).
+                if (this.watchState) {
+                    this.root.appendChild(this.buildWatch(t));
                     if (this._toast) this.root.appendChild(this._toast);
                     return;
                 }
@@ -1422,6 +1459,96 @@
                 );
             };
 
+            // CC real-time tracking, rendered inline in this side pane so the agent
+            // keeps full use of the live conversation. Polls the request status and
+            // advances a compact stepper until the customer signs (or declines).
+            Wizard.prototype.startWatch = function (requestId) {
+                this.watchRequestId = requestId;
+                this.watchStatus = 626210002; // Sent
+                this.watchState = "watching";
+                this.watchDoneKind = null;
+                this.render();
+                this.pollWatch(0);
+            };
+
+            Wizard.prototype.pollWatch = function (attempt) {
+                var self = this;
+                if (this.watchState !== "watching" || !this.watchRequestId || !this.xrm) return;
+                if (attempt > 200) return; // ~10 min; stop polling, keep the last state on screen
+                var sel = "?$select=alex_status";
+                this.xrm.WebApi.retrieveRecord("alex_signaturerequest", this.watchRequestId, sel).then(
+                    function (rec) {
+                        if (self.watchState !== "watching") return;
+                        var s = (rec && (rec.alex_status === 0 || rec.alex_status)) ? rec.alex_status : self.watchStatus;
+                        self.watchStatus = s;
+                        if (s === 626210006) { self.watchState = "done"; self.watchDoneKind = "completed"; self.render(); return; }
+                        if (s === 626210007) { self.watchState = "done"; self.watchDoneKind = "declined"; self.render(); return; }
+                        if (s === 626210008) { self.watchState = "error"; self.render(); return; }
+                        self.render();
+                        window.setTimeout(function () { self.pollWatch(attempt + 1); }, 3000);
+                    },
+                    function () { window.setTimeout(function () { self.pollWatch(attempt + 1); }, 3000); }
+                );
+            };
+
+            // The compact 4-stage progress rail (Sent -> Delivered -> Viewed -> Completed).
+            Wizard.prototype.buildWatchRail = function (t) {
+                var self = this;
+                var ST_SENT = 626210002, ST_DELIVERED = 626210003, ST_VIEWED = 626210004, ST_COMPLETED = 626210006;
+                var stages = [
+                    { code: ST_SENT, label: t.stSent },
+                    { code: ST_DELIVERED, label: t.stDelivered },
+                    { code: ST_VIEWED, label: t.stViewed },
+                    { code: ST_COMPLETED, label: t.stCompleted }
+                ];
+                var rail = el("div", { "class": "edo-wz-rt-rail" });
+                stages.forEach(function (s, i) {
+                    var isDone = self.watchStatus >= s.code && (self.watchStatus !== s.code || s.code === ST_COMPLETED);
+                    var active = self.watchStatus === s.code && s.code !== ST_COMPLETED;
+                    var cls = "edo-wz-rt-node" + (isDone ? " done" : (active ? " active" : ""));
+                    rail.appendChild(el("div", { "class": cls }, [
+                        el("div", { "class": "edo-wz-rt-dot", text: (isDone && !active) ? "\u2713" : String(i + 1) }),
+                        el("div", { "class": "edo-wz-rt-label", text: s.label })
+                    ]));
+                });
+                return rail;
+            };
+
+            Wizard.prototype.buildWatch = function (t) {
+                var self = this;
+                var wrap = el("div", { "class": "edo-wz-preview" });
+                wrap.appendChild(el("div", { "class": "edo-wz-step-head" }, [
+                    el("div", { "class": "edo-wz-step-title", text: t.ccWatchTitle }),
+                    el("div", { "class": "edo-wz-step-hint", text: t.ccWatchHint })
+                ]));
+                if (this.watchState === "done") {
+                    var ok = this.watchDoneKind === "completed";
+                    wrap.appendChild(el("div", { "class": "edo-wz-preview-busy" }, [
+                        el("div", { "class": "edo-wz-watch-icon " + (ok ? "ok" : "warn"), text: ok ? "\u2713" : "\u2715" }),
+                        el("div", { "class": "edo-wz-preview-busy-title", text: ok ? t.ccWatchDoneT : t.ccWatchDeclinedT }),
+                        el("div", { text: ok ? t.ccWatchDoneH : t.ccWatchDeclinedH })
+                    ]));
+                } else if (this.watchState === "error") {
+                    wrap.appendChild(el("div", { "class": "edo-wz-preview-busy" }, [
+                        el("div", { "class": "edo-wz-watch-icon warn", text: "\u2715" }),
+                        el("div", { "class": "edo-wz-preview-busy-title", text: t.ccWatchErrT }),
+                        el("div", { text: t.ccWatchErrH })
+                    ]));
+                } else {
+                    wrap.appendChild(this.buildWatchRail(t));
+                    wrap.appendChild(el("div", { "class": "edo-wz-preview-busy" }, [
+                        el("div", { "class": "edo-wz-spin" })
+                    ]));
+                }
+                var close = el("button", { "class": "edo-wz-btn primary", text: t.watchClose });
+                close.onclick = function () { self.closePane(); };
+                wrap.appendChild(el("div", { "class": "edo-wz-footer" }, [
+                    el("div", { "class": "edo-wz-foot-start" }, []),
+                    el("div", { "class": "edo-wz-foot-nav" }, [close])
+                ]));
+                return wrap;
+            };
+
             // Open the live real-time signing panel (a separate web resource) as a
             // centered modal dialog, passing the request id, then close the wizard.
             Wizard.prototype.openRealtime = function (requestId) {
@@ -1550,10 +1677,11 @@
                 var cid = this.ctx.ccConversationId;
                 // ccAgentReview on => land in the agent sendbox (review); off => send directly.
                 var toSendBox = this.settings.ccAgentReview !== false;
-                // After the link is in the conversation, optionally open the real-time
-                // result panel so the agent watches the signing live; otherwise close.
+                // After the link is in the conversation, optionally track the signing
+                // live inside this side pane (never a blocking modal, so the agent can
+                // keep chatting); otherwise close.
                 var finish = function () {
-                    if (self.isRealtime && requestId) { self.openRealtime(requestId); return; }
+                    if (self.isRealtime && requestId) { self.startWatch(requestId); return; }
                     window.setTimeout(function () { self.closePane(); }, 1400);
                 };
                 if (!oc || !oc.sendMessageToConversation || !cid) {
