@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest>
+  <control namespace="EasyDo" constructor="EasyDoDocumentsGrid" version="0.1.0"
+           display-name-key="EasyDoDocumentsGrid_Display"
+           description-key="EasyDoDocumentsGrid_Desc"
+           control-type="standard">
+    <external-service-usage enabled="false">
+    </external-service-usage>
+
+    <!-- The grid binds to a sub-grid (relationship view) of alex_signaturerequest.
+         The host record filtering is handled by the sub-grid relationship, so the
+         control just renders the related records as elegant chip-filtered cards. -->
+    <data-set name="records" display-name-key="Records_Display">
+    </data-set>
+
+    <!-- Language override: auto (follow user UI), en, or he. -->
+    <property name="language" display-name-key="Language_Display" description-key="Language_Desc"
+              of-type="Enum" usage="input" required="false" default-value="auto">
+      <value name="auto" display-name-key="Language_Auto">auto</value>
+      <value name="en" display-name-key="Language_En">en</value>
+      <value name="he" display-name-key="Language_He">he</value>
+    </property>
+
+    <resources>
+      <code path="index.ts" order="1" />
+      <css path="css/EasyDoDocumentsGrid.css" order="1" />
+    </resources>
+
+    <feature-usage>
+      <uses-feature name="Utility" required="true" />
+      <uses-feature name="WebAPI" required="false" />
+    </feature-usage>
+  </control>
+</manifest>

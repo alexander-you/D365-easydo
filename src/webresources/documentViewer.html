@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>easydo Document Viewer</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-2: #f5f5f7;
+      --ink: #1d1d1f;
+      --sub: #6e6e73;
+      --line: #e8e8ed;
+      --blue: #0071e3;
+      --blue-press: #0058b0;
+      --ok: #1d9d57;
+      --ok-bg: #e6f6ec;
+      --bad: #d93025;
+      --bad-bg: #fdecea;
+      --warn: #b4690e;
+      --warn-bg: #fbf0df;
+      --info: #0071e3;
+      --info-bg: #e7f1fd;
+      --muted: #6e6e73;
+      --muted-bg: #eeeef0;
+      --shadow: 0 2px 12px rgba(0,0,0,.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    .viewer { padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+    .loading { display: flex; justify-content: center; align-items: center; padding: 60px; }
+    .spin {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 3px solid var(--line); border-top-color: var(--blue);
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Header */
+    .v-head { display: flex; align-items: flex-start; gap: 14px; }
+    .v-icon {
+      width: 48px; height: 48px; border-radius: 12px; flex: none;
+      background: var(--bg-2); display: flex; align-items: center; justify-content: center;
+    }
+    .v-icon svg { width: 24px; height: 24px; color: var(--blue); }
+    .v-title-wrap { flex: 1; min-width: 0; }
+    .v-title {
+      font-size: 18px; font-weight: 700; letter-spacing: -0.01em;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .v-template { font-size: 13px; color: var(--sub); margin-top: 2px; }
+
+    /* Badge */
+    .badge {
+      display: inline-block; font-size: 12px; font-weight: 600;
+      padding: 5px 12px; border-radius: 999px; white-space: nowrap;
+    }
+    .badge.ok { color: var(--ok); background: var(--ok-bg); }
+    .badge.bad { color: var(--bad); background: var(--bad-bg); }
+    .badge.warn { color: var(--warn); background: var(--warn-bg); }
+    .badge.info { color: var(--info); background: var(--info-bg); }
+    .badge.muted { color: var(--muted); background: var(--muted-bg); }
+
+    /* Meta grid */
+    .v-meta {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px; background: var(--bg-2); border-radius: 14px; padding: 14px 16px;
+    }
+    .meta-item {}
+    .meta-lbl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; color: var(--sub); }
+    .meta-val { font-size: 14px; margin-top: 2px; }
+
+    /* PDF section */
+    .v-pdf-section { display: flex; flex-direction: column; gap: 10px; }
+    .v-pdf-title { font-size: 14px; font-weight: 600; }
+    .v-pdf-frame {
+      border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+      background: var(--bg-2); min-height: 300px;
+    }
+    .v-pdf-frame iframe { width: 100%; height: 400px; border: 0; }
+    .v-pdf-empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 40px 20px; color: var(--sub); text-align: center;
+    }
+    .v-pdf-empty-icon { font-size: 36px; margin-bottom: 10px; opacity: .5; }
+    .v-pdf-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn-pdf {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--line); background: var(--bg);
+      color: var(--ink); transition: background .15s, border-color .15s;
+    }
+    .btn-pdf:hover { background: var(--bg-2); }
+    .btn-pdf svg { width: 16px; height: 16px; }
+
+    /* Send copy section */
+    .v-copy-section {
+      border-top: 1px solid var(--line); padding-top: 18px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .v-copy-title { font-size: 14px; font-weight: 600; }
+    .v-copy-desc { font-size: 12.5px; color: var(--sub); }
+    .v-copy-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn-copy {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 18px; border-radius: 12px; font-size: 13.5px; font-weight: 600;
+      cursor: pointer; border: 1px solid transparent; color: #fff;
+      transition: filter .15s, transform .08s;
+    }
+    .btn-copy:hover { filter: brightness(1.08); }
+    .btn-copy:active { transform: scale(.97); }
+    .btn-copy:disabled { opacity: .5; cursor: default; transform: none; }
+    .btn-copy svg { width: 18px; height: 18px; }
+    .btn-copy.sms { background: #5856d6; }
+    .btn-copy.email { background: #ff9500; }
+    .btn-copy.whatsapp { background: #25d366; }
+
+    .toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: var(--ink); color: #fff; padding: 10px 20px; border-radius: 10px;
+      font-size: 13px; font-weight: 500; box-shadow: var(--shadow);
+      opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 100;
+    }
+    .toast.show { opacity: 1; }
+
+    .error-box {
+      background: var(--bad-bg); color: var(--bad); padding: 16px; border-radius: 12px;
+      text-align: center; font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="viewer" id="viewer">
+    <div class="loading"><span class="spin"></span></div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    "use strict";
+
+    var SVG_DOC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
+    var SVG_DOWNLOAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+    var SVG_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+    var SVG_SMS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+    var SVG_EMAIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>';
+    var SVG_WHATSAPP = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
+
+    var STATUS_MAP = {
+      626210000: { cls: "muted", he: "טיוטא", en: "Draft" },
+      626210001: { cls: "info", he: "מוכן לשליחה", en: "Ready to Send" },
+      626210002: { cls: "info", he: "נשלח", en: "Sent" },
+      626210003: { cls: "info", he: "נמסר", en: "Delivered" },
+      626210004: { cls: "info", he: "נצפה", en: "Viewed" },
+      626210005: { cls: "info", he: "בתהליך", en: "In Progress" },
+      626210006: { cls: "ok", he: "הושלם", en: "Completed" },
+      626210007: { cls: "bad", he: "נדחה", en: "Declined" },
+      626210008: { cls: "bad", he: "נכשל", en: "Failed" },
+      626210009: { cls: "muted", he: "בוטל", en: "Cancelled" },
+      626210010: { cls: "warn", he: "פג תוקף", en: "Expired" },
+      626210011: { cls: "warn", he: "ממתין לניסיון חוזר", en: "Pending Retry" }
+    };
+
+    var requestId = null;
+    var requestData = null;
+    var noteData = null;
+    var lang = "he";
+
+    function $(id) { return document.getElementById(id); }
+
+    function getXrm() {
+      if (window.Xrm) return window.Xrm;
+      if (window.parent && window.parent.Xrm) return window.parent.Xrm;
+      return null;
+    }
+
+    function clientUrl() {
+      var xrm = getXrm();
+      var url;
+      if (xrm && xrm.Utility && xrm.Utility.getGlobalContext) {
+        url = xrm.Utility.getGlobalContext().getClientUrl();
+      } else if (xrm && xrm.Page && xrm.Page.context) {
+        url = xrm.Page.context.getClientUrl();
+      } else {
+        // Fallback: extract from current URL
+        var match = window.location.href.match(/^(https:\/\/[^\/]+)/);
+        url = match ? match[1] : window.location.origin;
+      }
+      console.log("documentViewer: clientUrl =", url);
+      return url;
+    }
+
+    function apiGet(path) {
+      var url = clientUrl() + "/api/data/v9.2/" + path;
+      console.log("documentViewer: apiGet URL =", url);
+      return fetch(url, {
+        headers: { Accept: "application/json", "OData-MaxVersion": "4.0", "OData-Version": "4.0" },
+        credentials: "include"
+      }).then(function (r) {
+        console.log("documentViewer: apiGet response status =", r.status);
+        if (!r.ok) {
+          return r.text().then(function (t) {
+            console.error("documentViewer: apiGet error body =", t);
+            throw new Error("API error " + r.status + ": " + t);
+          });
+        }
+        return r.json();
+      });
+    }
+
+    function apiPatch(path, body) {
+      return fetch(clientUrl() + "/api/data/v9.2/" + path, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json", Accept: "application/json",
+          "OData-MaxVersion": "4.0", "OData-Version": "4.0"
+        },
+        credentials: "include",
+        body: JSON.stringify(body)
+      }).then(function (r) {
+        if (!r.ok) return r.text().then(function (t) { throw new Error(t); });
+      });
+    }
+
+    function toast(msg) {
+      var el = $("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      setTimeout(function () { el.classList.remove("show"); }, 2500);
+    }
+
+    function esc(s) {
+      if (s == null) return "";
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function fmtDate(iso) {
+      if (!iso) return "—";
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return "—";
+      return d.toLocaleDateString(lang === "he" ? "he-IL" : "en-US", {
+        year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
+      });
+    }
+
+    function parseParams() {
+      // Try multiple ways to get the record ID
+      var params = new URLSearchParams(window.location.search);
+      
+      // 1. Direct query params
+      requestId = params.get("id") || params.get("data");
+      
+      // 2. Data might be URL encoded
+      if (!requestId) {
+        var dataParam = params.get("data");
+        if (dataParam) {
+          try { requestId = decodeURIComponent(dataParam); } catch (e) {}
+        }
+      }
+      
+      // 3. Check hash (some contexts pass via hash)
+      if (!requestId && window.location.hash) {
+        var hash = window.location.hash.substring(1);
+        if (/^[0-9a-f-]{36}$/i.test(hash)) {
+          requestId = hash;
+        }
+      }
+      
+      // 4. Check parent's Xrm context for passed data
+      if (!requestId) {
+        try {
+          var xrm = getXrm();
+          if (xrm && xrm.Utility && xrm.Utility.getPageContext) {
+            var ctx = xrm.Utility.getPageContext();
+            if (ctx && ctx.input && ctx.input.data) {
+              requestId = ctx.input.data;
+            }
+          }
+        } catch (e) {}
+      }
+      
+      // 5. Check if passed via window name (side pane technique)
+      if (!requestId && window.name) {
+        var match = window.name.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+        if (match) requestId = match[0];
+      }
+      
+      // 6. Clean up - remove braces if present
+      if (requestId) {
+        requestId = requestId.replace(/[{}]/g, "").trim();
+      }
+      
+      // Debug to console
+      console.log("documentViewer: parsed requestId =", requestId, "from URL:", window.location.href);
+    }
+
+    function loadRequest() {
+      if (!requestId) {
+        renderError("לא נמצא מזהה בקשה");
+        return Promise.reject("no id");
+      }
+      var select = "alex_name,alex_status,alex_senton,alex_completedon,alex_laststatuscheckon,alex_signednoteid,alex_primaryrecordid";
+      select += ",_alex_templateid_value,_alex_relatedcontactid_value";
+      return apiGet("alex_signaturerequests(" + requestId + ")?$select=" + select + "&$expand=alex_TemplateId($select=alex_name),alex_RelatedContactId($select=fullname,emailaddress1,mobilephone)");
+    }
+
+    function loadNote(noteId) {
+      if (!noteId) return Promise.resolve(null);
+      return apiGet("annotations(" + noteId + ")?$select=annotationid,filename,mimetype,documentbody,createdon").catch(function () { return null; });
+    }
+
+    function findNoteFallback() {
+      // Fallback: find note on primary record by subject pattern
+      if (!requestData) return Promise.resolve(null);
+      var primary = requestData.alex_primaryrecordid;
+      var name = requestData.alex_name;
+      if (!primary || !name) return Promise.resolve(null);
+      // We don't know the table, try contact first
+      var contactId = requestData._alex_relatedcontactid_value;
+      if (!contactId) return Promise.resolve(null);
+      var filter = "objectid_contact/contactid eq " + contactId + " and isdocument eq true and contains(subject,'" + encodeURIComponent(name) + "')";
+      return apiGet("annotations?$select=annotationid,filename,mimetype,documentbody,createdon&$filter=" + filter + "&$top=1&$orderby=createdon desc")
+        .then(function (d) { return (d.value && d.value[0]) || null; })
+        .catch(function () { return null; });
+    }
+
+    function render() {
+      var v = $("viewer");
+      var d = requestData;
+      var statusVal = d.alex_status;
+      var st = STATUS_MAP[statusVal] || { cls: "muted", he: "לא ידוע", en: "Unknown" };
+      var statusLabel = lang === "he" ? st.he : st.en;
+      var name = d.alex_name || "—";
+      var template = (d.alex_TemplateId && d.alex_TemplateId.alex_name) || (d["_alex_templateid_value@OData.Community.Display.V1.FormattedValue"]) || "—";
+      var contact = (d.alex_RelatedContactId && d.alex_RelatedContactId.fullname) || (d["_alex_relatedcontactid_value@OData.Community.Display.V1.FormattedValue"]) || "—";
+      var sentOn = fmtDate(d.alex_senton);
+      var completedOn = fmtDate(d.alex_completedon);
+      var lastCheck = fmtDate(d.alex_laststatuscheckon);
+
+      var isSigned = statusVal === 626210006;
+      var hasPdf = noteData && noteData.documentbody;
+
+      var html = "";
+
+      // Header
+      html += '<div class="v-head">';
+      html += '<div class="v-icon">' + SVG_DOC + '</div>';
+      html += '<div class="v-title-wrap">';
+      html += '<div class="v-title">' + esc(name) + '</div>';
+      html += '<div class="v-template">' + esc(template) + '</div>';
+      html += '</div>';
+      html += '<span class="badge ' + st.cls + '">' + esc(statusLabel) + '</span>';
+      html += '</div>';
+
+      // Meta
+      html += '<div class="v-meta">';
+      html += '<div class="meta-item"><div class="meta-lbl">' + (lang === "he" ? "נמען" : "Recipient") + '</div><div class="meta-val">' + esc(contact) + '</div></div>';
+      html += '<div class="meta-item"><div class="meta-lbl">' + (lang === "he" ? "תאריך שליחה" : "Sent") + '</div><div class="meta-val">' + esc(sentOn) + '</div></div>';
+      html += '<div class="meta-item"><div class="meta-lbl">' + (lang === "he" ? "נבדק לאחרונה" : "Last Check") + '</div><div class="meta-val">' + esc(lastCheck) + '</div></div>';
+      html += '<div class="meta-item"><div class="meta-lbl">' + (lang === "he" ? "הושלם" : "Completed") + '</div><div class="meta-val">' + esc(completedOn) + '</div></div>';
+      html += '</div>';
+
+      // PDF section
+      html += '<div class="v-pdf-section">';
+      html += '<div class="v-pdf-title">' + (lang === "he" ? "מסמך חתום" : "Signed Document") + '</div>';
+      if (hasPdf) {
+        var pdfData = "data:" + (noteData.mimetype || "application/pdf") + ";base64," + noteData.documentbody;
+        html += '<div class="v-pdf-frame"><iframe id="pdfFrame" src="' + pdfData + '"></iframe></div>';
+        html += '<div class="v-pdf-actions">';
+        html += '<button class="btn-pdf" id="btnDownload">' + SVG_DOWNLOAD + '<span>' + (lang === "he" ? "הורדה" : "Download") + '</span></button>';
+        html += '<button class="btn-pdf" id="btnOpen">' + SVG_OPEN + '<span>' + (lang === "he" ? "פתיחה בחלון חדש" : "Open in new tab") + '</span></button>';
+        html += '</div>';
+      } else if (isSigned) {
+        html += '<div class="v-pdf-frame"><div class="v-pdf-empty"><div class="v-pdf-empty-icon">📄</div><div>' + (lang === "he" ? "הקובץ החתום לא נמצא" : "Signed file not found") + '</div></div></div>';
+      } else {
+        html += '<div class="v-pdf-frame"><div class="v-pdf-empty"><div class="v-pdf-empty-icon">⏳</div><div>' + (lang === "he" ? "המסמך טרם נחתם" : "Document not yet signed") + '</div></div></div>';
+      }
+      html += '</div>';
+
+      // Send copy section (only if signed)
+      if (isSigned) {
+        html += '<div class="v-copy-section">';
+        html += '<div class="v-copy-title">' + (lang === "he" ? "שליחת עותק ללקוח" : "Send copy to customer") + '</div>';
+        html += '<div class="v-copy-desc">' + (lang === "he" ? "שלח עותק של המסמך החתום ללקוח בערוץ הרצוי" : "Send a copy of the signed document to the customer") + '</div>';
+        html += '<div class="v-copy-btns">';
+        html += '<button class="btn-copy sms" id="btnSms">' + SVG_SMS + '<span>SMS</span></button>';
+        html += '<button class="btn-copy email" id="btnEmail">' + SVG_EMAIL + '<span>Email</span></button>';
+        html += '<button class="btn-copy whatsapp" id="btnWhatsapp">' + SVG_WHATSAPP + '<span>WhatsApp</span></button>';
+        html += '</div>';
+        html += '</div>';
+      }
+
+      v.innerHTML = html;
+      wireEvents();
+    }
+
+    function wireEvents() {
+      var btnDownload = $("btnDownload");
+      var btnOpen = $("btnOpen");
+      var btnSms = $("btnSms");
+      var btnEmail = $("btnEmail");
+      var btnWhatsapp = $("btnWhatsapp");
+
+      if (btnDownload && noteData) {
+        btnDownload.addEventListener("click", function () {
+          var blob = base64ToBlob(noteData.documentbody, noteData.mimetype || "application/pdf");
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url;
+          a.download = noteData.filename || "signed.pdf";
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+      }
+
+      if (btnOpen && noteData) {
+        btnOpen.addEventListener("click", function () {
+          var blob = base64ToBlob(noteData.documentbody, noteData.mimetype || "application/pdf");
+          var url = URL.createObjectURL(blob);
+          window.open(url, "_blank");
+        });
+      }
+
+      if (btnSms) {
+        btnSms.addEventListener("click", function () { triggerCopy("sms", btnSms); });
+      }
+      if (btnEmail) {
+        btnEmail.addEventListener("click", function () { triggerCopy("email", btnEmail); });
+      }
+      if (btnWhatsapp) {
+        btnWhatsapp.addEventListener("click", function () { triggerCopy("whatsapp", btnWhatsapp); });
+      }
+    }
+
+    function triggerCopy(channel, btn) {
+      var fieldMap = {
+        sms: "alex_sendcopysms",
+        email: "alex_sendcopyemail",
+        whatsapp: "alex_sendcopywhatsapp"
+      };
+      var field = fieldMap[channel];
+      if (!field || !requestId) return;
+
+      btn.disabled = true;
+      var origText = btn.querySelector("span").textContent;
+      btn.querySelector("span").textContent = lang === "he" ? "שולח…" : "Sending…";
+
+      var body = {};
+      body[field] = true;
+      apiPatch("alex_signaturerequests(" + requestId + ")", body)
+        .then(function () {
+          toast(lang === "he" ? "הבקשה נשלחה בהצלחה" : "Request sent successfully");
+          btn.querySelector("span").textContent = lang === "he" ? "נשלח ✓" : "Sent ✓";
+          setTimeout(function () {
+            btn.disabled = false;
+            btn.querySelector("span").textContent = origText;
+          }, 3000);
+        })
+        .catch(function (e) {
+          toast(lang === "he" ? "השליחה נכשלה" : "Send failed");
+          btn.disabled = false;
+          btn.querySelector("span").textContent = origText;
+        });
+    }
+
+    function base64ToBlob(b64, mime) {
+      var byteChars = atob(b64);
+      var byteNums = new Array(byteChars.length);
+      for (var i = 0; i < byteChars.length; i++) {
+        byteNums[i] = byteChars.charCodeAt(i);
+      }
+      var byteArray = new Uint8Array(byteNums);
+      return new Blob([byteArray], { type: mime });
+    }
+
+    function renderError(msg) {
+      $("viewer").innerHTML = '<div class="error-box">' + esc(msg) + '</div>';
+    }
+
+    function detectLang() {
+      var xrm = getXrm();
+      if (xrm && xrm.Utility && xrm.Utility.getGlobalContext) {
+        var lcid = xrm.Utility.getGlobalContext().userSettings.languageId;
+        if (lcid === 1037) lang = "he";
+        else lang = "en";
+      }
+    }
+
+    function init() {
+      detectLang();
+      parseParams();
+      loadRequest()
+        .then(function (d) {
+          console.log("documentViewer: loadRequest success, data =", d);
+          requestData = d;
+          // Only a signed/completed request has a signed document. For any other
+          // status (sent, delivered, etc.) we must NOT show a PDF.
+          if (d.alex_status !== 626210006) {
+            return null;
+          }
+          var noteId = d.alex_signednoteid;
+          if (noteId) {
+            return loadNote(noteId);
+          } else {
+            return findNoteFallback();
+          }
+        })
+        .then(function (n) {
+          noteData = n;
+          render();
+        })
+        .catch(function (e) {
+          console.error("documentViewer: init error =", e);
+          renderError((lang === "he" ? "טעינת הנתונים נכשלה: " : "Failed to load data: ") + (e.message || e));
+        });
+    }
+
+    init();
+  </script>
+</body>
+</html>

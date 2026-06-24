@@ -1,0 +1,515 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_alex-5feasydo-5f5849d39a0feaf28d": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "alex_easydo"
+        },
+        "api": {
+          "name": "shared_alex-5feasydo-5f5849d39a0feaf28d",
+          "logicalName": "alex_5Feasydo"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "alex_dataverse_easydo"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "Run_every_5_minutes": {
+          "metadata": {
+            "operationMetadataId": "b7c0d1e2-0001-4a10-9c01-000000000001"
+          },
+          "type": "Recurrence",
+          "recurrence": {
+            "interval": 5,
+            "frequency": "Minute"
+          }
+        }
+      },
+      "actions": {
+        "Get_the_enabled_setting": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "b7c0d1e2-0002-4a10-9c01-000000000002"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "environmentvariabledefinitions",
+              "$select": "schemaname,defaultvalue",
+              "$filter": "schemaname eq 'alex_TemplateAutoSyncEnabled'",
+              "$expand": "environmentvariabledefinition_environmentvariablevalue($select=value)"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Get_the_interval_setting": {
+          "runAfter": {
+            "Get_the_enabled_setting": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b7c0d1e2-0003-4a10-9c01-000000000003"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "environmentvariabledefinitions",
+              "$select": "schemaname,defaultvalue",
+              "$filter": "schemaname eq 'alex_TemplateSyncIntervalMinutes'",
+              "$expand": "environmentvariabledefinition_environmentvariablevalue($select=value)"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Resolve_enabled": {
+          "runAfter": {
+            "Get_the_interval_setting": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b7c0d1e2-0004-4a10-9c01-000000000004"
+          },
+          "type": "Compose",
+          "inputs": "@toLower(string(coalesce(first(first(outputs('Get_the_enabled_setting')?['body/value'])?['environmentvariabledefinition_environmentvariablevalue'])?['value'], first(outputs('Get_the_enabled_setting')?['body/value'])?['defaultvalue'], 'no')))"
+        },
+        "Resolve_interval_minutes": {
+          "runAfter": {
+            "Resolve_enabled": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b7c0d1e2-0005-4a10-9c01-000000000005"
+          },
+          "type": "Compose",
+          "inputs": "@int(coalesce(first(first(outputs('Get_the_interval_setting')?['body/value'])?['environmentvariabledefinition_environmentvariablevalue'])?['value'], first(outputs('Get_the_interval_setting')?['body/value'])?['defaultvalue'], '60'))"
+        },
+        "Sync_is_due": {
+          "runAfter": {
+            "Resolve_interval_minutes": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b7c0d1e2-0006-4a10-9c01-000000000006"
+          },
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@contains(createArray('yes','true','1','on'), outputs('Resolve_enabled'))",
+                  true
+                ]
+              },
+              {
+                "equals": [
+                  "@mod(div(ticks(utcNow()), 3000000000), max(1, div(outputs('Resolve_interval_minutes'), 5)))",
+                  0
+                ]
+              }
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "actions": {
+            "Get_templates_from_easydo": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "a1f0c1e2-0002-4a10-9c01-000000000002"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_alex-5feasydo-5f5849d39a0feaf28d",
+                  "operationId": "GetTemplates",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f5849d39a0feaf28d"
+                },
+                "parameters": {},
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Apply_to_each_template": {
+              "foreach": "@outputs('Get_templates_from_easydo')?['body/data']",
+              "runAfter": {
+                "Get_templates_from_easydo": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a1f0c1e2-0006-4a10-9c01-000000000006"
+              },
+              "type": "Foreach",
+              "actions": {
+                "List_existing_template": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "a1f0c1e2-0003-4a10-9c01-000000000003"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "ListRecords",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "alex_signaturetemplates",
+                      "$select": "alex_signaturetemplateid",
+                      "$filter": "@concat('alex_externaltemplateid eq ''', string(items('Apply_to_each_template')?['id']), '''')"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Upsert_template": {
+                  "runAfter": {
+                    "List_existing_template": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "2aa4a501-5ca3-4f71-94f4-45886ac0b760"
+                  },
+                  "type": "If",
+                  "expression": {
+                    "greater": [
+                      "@length(outputs('List_existing_template')?['body/value'])",
+                      0
+                    ]
+                  },
+                  "actions": {
+                    "Update_template": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "a1f0c1e2-0004-4a10-9c01-000000000004"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps",
+                          "operationId": "UpdateOnlyRecord",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "alex_signaturetemplates",
+                          "recordId": "@first(outputs('List_existing_template')?['body/value'])?['alex_signaturetemplateid']",
+                          "item/alex_name": "@items('Apply_to_each_template')?['name']",
+                          "item/alex_isactive": "@equals(items('Apply_to_each_template')?['status'], 'active')",
+                          "item/alex_templatesummary": "@items('Apply_to_each_template')?['description']",
+                          "item/alex_lastsyncedon": "@utcNow()"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Create_template": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "a1f0c1e2-0005-4a10-9c01-000000000005"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_commondataserviceforapps",
+                            "operationId": "CreateRecord",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                          },
+                          "parameters": {
+                            "entityName": "alex_signaturetemplates",
+                            "item/alex_name": "@items('Apply_to_each_template')?['name']",
+                            "item/alex_isactive": "@equals(items('Apply_to_each_template')?['status'], 'active')",
+                            "item/alex_templatesummary": "@items('Apply_to_each_template')?['description']",
+                            "item/alex_externaltemplateid": "@string(items('Apply_to_each_template')?['id'])",
+                            "item/alex_lastsyncedon": "@utcNow()"
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      }
+                    }
+                  }
+                },
+                "Resolve_template_id": {
+                  "runAfter": {
+                    "Upsert_template": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "a1f0c1e2-0007-4a10-9c01-000000000007"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "ListRecords",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "alex_signaturetemplates",
+                      "$select": "alex_signaturetemplateid",
+                      "$filter": "@concat('alex_externaltemplateid eq ''', string(items('Apply_to_each_template')?['id']), '''')"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Get_template_detail": {
+                  "runAfter": {
+                    "Resolve_template_id": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "a1f0c1e2-0008-4a10-9c01-000000000008"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_alex-5feasydo-5f5849d39a0feaf28d",
+                      "operationId": "GetTemplate",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f5849d39a0feaf28d"
+                    },
+                    "parameters": {
+                      "templateId": "@string(items('Apply_to_each_template')?['id'])"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Apply_to_each_field": {
+                  "foreach": "@outputs('Get_template_detail')?['body/data_headers']",
+                  "runAfter": {
+                    "Get_template_detail": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "a1f0c1e2-000c-4a10-9c01-00000000000c"
+                  },
+                  "type": "Foreach",
+                  "actions": {
+                    "List_existing_field": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "a1f0c1e2-0009-4a10-9c01-000000000009"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps",
+                          "operationId": "ListRecords",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "alex_templatefieldmappings",
+                          "$select": "alex_templatefieldmappingid",
+                          "$filter": "@concat('_alex_templateid_value eq ', first(outputs('Resolve_template_id')?['body/value'])?['alex_signaturetemplateid'], ' and alex_externalfieldid eq ''', items('Apply_to_each_field')?['name'], '''')"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Upsert_field": {
+                      "runAfter": {
+                        "List_existing_field": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "8b5ecae0-2fb1-4724-af6d-1ff804aec59a"
+                      },
+                      "type": "If",
+                      "expression": {
+                        "greater": [
+                          "@length(outputs('List_existing_field')?['body/value'])",
+                          0
+                        ]
+                      },
+                      "actions": {
+                        "Update_field": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "a1f0c1e2-000a-4a10-9c01-00000000000a"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_commondataserviceforapps",
+                              "operationId": "UpdateOnlyRecord",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                            },
+                            "parameters": {
+                              "entityName": "alex_templatefieldmappings",
+                              "recordId": "@first(outputs('List_existing_field')?['body/value'])?['alex_templatefieldmappingid']",
+                              "item/alex_name": "@coalesce(items('Apply_to_each_field')?['header'], items('Apply_to_each_field')?['name'])",
+                              "item/alex_externalfieldname": "@items('Apply_to_each_field')?['header']",
+                              "item/alex_externalfieldtype": "@items('Apply_to_each_field')?['type']"
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {
+                          "Create_field": {
+                            "runAfter": {},
+                            "metadata": {
+                              "operationMetadataId": "a1f0c1e2-000b-4a10-9c01-00000000000b"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_commondataserviceforapps",
+                                "operationId": "CreateRecord",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                              },
+                              "parameters": {
+                                "entityName": "alex_templatefieldmappings",
+                                "item/alex_name": "@coalesce(items('Apply_to_each_field')?['header'], items('Apply_to_each_field')?['name'])",
+                                "item/alex_TemplateId@odata.bind": "@concat('/alex_signaturetemplates(', first(outputs('Resolve_template_id')?['body/value'])?['alex_signaturetemplateid'], ')')",
+                                "item/alex_externalfieldid": "@items('Apply_to_each_field')?['name']",
+                                "item/alex_externalfieldname": "@items('Apply_to_each_field')?['header']",
+                                "item/alex_externalfieldtype": "@items('Apply_to_each_field')?['type']"
+                              },
+                              "authentication": "@parameters('$authentication')"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Collect_the_easydo_template_ids": {
+              "runAfter": {
+                "Apply_to_each_template": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b7c0d1e2-0009-4a10-9c01-000000000009"
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@coalesce(outputs('Get_templates_from_easydo')?['body/data'], json('[]'))",
+                "select": "@string(item()?['id'])"
+              }
+            },
+            "List_active_local_templates": {
+              "runAfter": {
+                "Collect_the_easydo_template_ids": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b7c0d1e2-000a-4a10-9c01-00000000000a"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "alex_signaturetemplates",
+                  "$select": "alex_signaturetemplateid,alex_externaltemplateid,alex_name",
+                  "$filter": "statecode eq 0 and alex_externaltemplateid ne null"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Deactivate_removed_templates": {
+              "foreach": "@outputs('List_active_local_templates')?['body/value']",
+              "runAfter": {
+                "List_active_local_templates": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b7c0d1e2-000d-4a10-9c01-00000000000d"
+              },
+              "type": "Foreach",
+              "actions": {
+                "Template_is_missing_in_easydo": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "b7c0d1e2-000b-4a10-9c01-00000000000b"
+                  },
+                  "type": "If",
+                  "expression": {
+                    "equals": [
+                      "@contains(body('Collect_the_easydo_template_ids'), string(items('Deactivate_removed_templates')?['alex_externaltemplateid']))",
+                      false
+                    ]
+                  },
+                  "else": {
+                    "actions": {}
+                  },
+                  "actions": {
+                    "Deactivate_the_template": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "b7c0d1e2-000c-4a10-9c01-00000000000c"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_commondataserviceforapps",
+                          "operationId": "UpdateRecord",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                        },
+                        "parameters": {
+                          "entityName": "alex_signaturetemplates",
+                          "recordId": "@items('Deactivate_removed_templates')?['alex_signaturetemplateid']",
+                          "item/statecode": 1,
+                          "item/statuscode": 2
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "schemaVersion": "1.0.0.0"
+}

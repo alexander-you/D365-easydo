@@ -51,6 +51,7 @@ $toolBody = @{
     msdyn_uniquename     = $toolUnique
     msdyn_controlname    = $controlName
     msdyn_description    = $toolDescription
+    msdyn_defaulticon    = "/WebResources/alex_/icons/sendIcon.svg"   # paper-plane send icon (alex_/icons/sendIcon.svg web resource)
     msdyn_type           = 0            # 0 = Control (פקד)
     msdyn_data           = "{}"
     msdyn_category       = 100000001    # Agent guidance (הדרכת סוכנים)

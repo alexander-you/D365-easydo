@@ -495,8 +495,17 @@
     .titem .ti-main { flex:1 1 auto; min-width:0; }
     .titem .ti-name { font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .titem .ti-logical { font-size:11.5px; color:var(--text-3); margin-top:2px; direction:ltr; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .titem .ti-act { flex:0 0 auto; }
+    .titem .ti-act { flex:0 0 auto; display:flex; align-items:center; gap:8px; }
     .titem .ti-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .fi-warn {
+      flex:0 0 auto; display:flex; gap:10px; align-items:flex-start;
+      margin-bottom:14px; padding:12px 14px; border-radius:13px; line-height:1.5;
+      background: color-mix(in srgb, var(--amber) 12%, transparent);
+      border:1px solid color-mix(in srgb, var(--amber) 34%, transparent);
+      color:var(--text-2); font-size:12.5px;
+    }
+    .fi-warn svg { width:18px; height:18px; flex:0 0 auto; color:var(--amber); margin-top:1px; }
+    .fi-warn b { color:var(--text); font-weight:700; }
     .empty-note { font-size:13px; color:var(--text-3); padding:16px 4px; text-align:center; line-height:1.5; }
     .search-box {
       display:flex; align-items:center; gap:8px; margin-bottom:12px; flex:0 0 auto;
@@ -658,7 +667,7 @@
           <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="step-body"><div class="step-body-inner">
-          <div class="step-desc">ארבע זרימות האוטומציה שמפעילות שליחה, סנכרון תבניות, קריאת תוצאות וחתימה בזמן אמת.</div>
+          <div class="step-desc">חמש זרימות האוטומציה שמפעילות שליחה, סנכרון תבניות (ידני ואוטומטי), קריאת תוצאות וחתימה בזמן אמת.</div>
           <div class="checklist" id="step2Checks"></div>
           <div class="step-foot">
             <button class="ghost-btn primary" id="enableAllBtn"><span>הפעל הכל</span></button>
@@ -718,6 +727,23 @@
       <div class="sc-act">
         <button class="ghost-btn primary" id="manageCcBtn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>הגדרות</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="send-card" id="templateSyncCard">
+      <div class="sc-ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+      </div>
+      <div class="sc-main">
+        <div class="sc-title">סנכרון תבניות אוטומטי</div>
+        <div class="sc-sub">קבע אם רשימת התבניות מ-easydo מתעדכנת אוטומטית בתדירות קבועה, ובאיזה קצב. תבניות שנמחקו ב-easydo יושבתו אוטומטית.</div>
+        <div class="sc-chips" id="syncChips"></div>
+      </div>
+      <div class="sc-act">
+        <button class="ghost-btn primary" id="manageSyncBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
           <span>הגדרות</span>
         </button>
       </div>
@@ -801,7 +827,7 @@
         <div class="gs-master">
           <div class="gs-main">
             <div class="gs-name">ערוצים נוספים</div>
-            <div class="gs-desc">הפצת קישור החתימה גם בערוצים נוספים מעבר לערוץ הראשי. כל ערוץ נוסף הוא הצהרתי: המערכת מחוללת את הקישור וההפצה בפועל באחריות מסע (CIJ) או זרימת Power Automate שתבחר.</div>
+            <div class="gs-desc">הפצת קישור החתימה גם בערוצים נוספים מעבר לערוץ הראשי.</div>
           </div>
           <button class="switch" id="swMultiChannel" role="switch" aria-label="ערוצים נוספים"></button>
         </div>
@@ -959,6 +985,66 @@
     </div>
   </aside>
 
+  <div class="drawer-overlay" id="syncOverlay"></div>
+  <aside class="drawer" id="syncDrawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div style="flex:1 1 auto; min-width:0;">
+        <div class="dh-title">סנכרון תבניות אוטומטי</div>
+        <div class="dh-sub">עדכון רשימת התבניות מ-easydo בתדירות קבועה</div>
+      </div>
+      <button class="drawer-close" id="syncClose" title="סגור">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6 18 18M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <div class="gs-body">
+        <div class="gs-master">
+          <div class="gs-main">
+            <div class="gs-name">סנכרון אוטומטי</div>
+            <div class="gs-desc">כאשר מופעל, רשימת התבניות מסונכרנת אוטומטית מ-easydo בתדירות שנבחרה למטה. הסנכרון הידני (כפתור הרענון) ממשיך לעבוד תמיד, ללא תלות בהגדרה זו.</div>
+          </div>
+          <button class="switch" id="swAutoSync" role="switch" aria-label="סנכרון אוטומטי"></button>
+        </div>
+        <div class="gs-dist-field" id="syncIntervalRow" style="margin-top:2px;">
+          <label for="syncInterval">תדירות הסנכרון</label>
+          <select id="syncInterval">
+            <option value="5">כל 5 דקות</option>
+            <option value="15">כל 15 דקות</option>
+            <option value="30">כל 30 דקות</option>
+            <option value="60">כל שעה</option>
+            <option value="120">כל שעתיים</option>
+            <option value="240">כל 4 שעות</option>
+            <option value="720">כל 12 שעות</option>
+            <option value="1440">פעם ביום</option>
+          </select>
+          <div class="gs-desc" style="margin-top:6px;">קצב הסנכרון האוטומטי (כפולה של 5 דקות). ההגדרה נשמרת כמשתנה סביבה ונשארת ייחודית לכל סביבה — שינוי כאן אינו דורש עריכת הזרימה.</div>
+        </div>
+        <div class="pane-hint">תבניות שנמחקו ב-easydo יסומנו אוטומטית כלא-פעילות (לא ניתן יהיה לשלוח אותן), וההיסטוריה והבקשות הקיימות נשמרות.</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="drawer-overlay" id="formInjectOverlay"></div>
+  <aside class="drawer" id="formInjectDrawer" aria-hidden="true" style="width:min(560px,96vw);">
+    <div class="drawer-head">
+      <div style="flex:1 1 auto; min-width:0;">
+        <div class="dh-title">הוספת גריד מסמכים לטופס</div>
+        <div class="dh-sub">טבלה: <span id="fiTableName"></span></div>
+      </div>
+      <button class="drawer-close" id="fiClose" title="סגור">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6 18 18M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body" style="flex-direction:column;">
+      <div class="fi-warn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <div><b>רכיב לא מנוהל.</b> הוספת הגריד עורכת ישירות את הטופס הנבחר ויוצרת רכיב התאמה אישית לא מנוהל. מומלץ לבצע בסביבת פיתוח ולייצא ל-solution. השינוי נכנס לתוקף מיד לאחר הפרסום.</div>
+      </div>
+      <div class="pane-hint" style="margin-top:0;">בחר את הטופס שאליו יתווסף הלשונית <b>easydo Documents</b> עם גריד המסמכים.</div>
+      <div class="tlist" id="formInjectList"></div>
+    </div>
+  </aside>
+
   <div class="modal-overlay" id="confirmOverlay">
     <div class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="cmTitle">
       <div class="cm-icon">
@@ -990,7 +1076,8 @@
         { id: "0fc45c36-f96a-f111-ab0d-000d3a66fdf4", he: "קריאת תוצאות חתימה" },
         { id: "c7533576-826a-f111-ab0c-7ced8d72428a", he: "סנכרון תבניות easydo" },
         { id: "50007ad1-876a-f111-ab0c-7ced8d72428a", he: "שליחת בקשת חתימה" },
-        { id: "bd967ede-ae6d-f111-ab0e-7ced8d726840", he: "חתימה בזמן אמת" }
+        { id: "bd967ede-ae6d-f111-ab0e-7ced8d726840", he: "חתימה בזמן אמת" },
+        { id: "bf47806d-d16e-f111-ab0c-7ced8d726840", he: "סנכרון תבניות אוטומטי" }
       ];
 
       // ---- Xrm + helpers ----
@@ -1044,6 +1131,7 @@
 
       var SVG_EXTERNAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>';
       var SVG_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+      var SVG_FORM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>';
 
       // Transient / system tables that must never appear in the send-enable
       // table picker. The live conversation can't host a document; it is managed
@@ -1139,13 +1227,37 @@
         recompute();
       }
 
+      // Open the solution's Connection References area, where the admin can
+      // create a connection AND bind it to the connection reference (the step a
+      // managed-solution import leaves unbound). Falls back to the generic
+      // Connections list if the env id or solution can't be resolved.
+      var SOLUTION_UNIQUE = "alex_d365_easydo";
       function openConnections() {
         var e = envId();
-        var url = e
+        var fallback = e
           ? "https://make.powerautomate.com/environments/" + e + "/connections"
           : "https://make.powerautomate.com/connections";
-        window.open(url, "_blank");
-        toast("נפתח מסך החיבורים בלשונית חדשה");
+        // Open the tab synchronously so it isn't blocked, then redirect once the
+        // solution id is resolved.
+        var w = window.open("", "_blank");
+        function go(url, viaSolution) {
+          if (w) { w.location.href = url; } else { window.open(url, "_blank"); }
+          toast(viaSolution
+            ? "נפתח הפתרון — בחר Connection references וקשר חיבור"
+            : "נפתח מסך החיבורים בלשונית חדשה");
+        }
+        if (!e || !xrm || !xrm.WebApi) { go(fallback, false); return; }
+        xrm.WebApi.retrieveMultipleRecords(
+          "solution",
+          "?$select=solutionid&$filter=uniquename eq '" + SOLUTION_UNIQUE + "'"
+        ).then(function (res) {
+          var sol = res.entities && res.entities[0];
+          if (sol && sol.solutionid) {
+            go("https://make.powerapps.com/environments/" + e + "/solutions/" + sol.solutionid, true);
+          } else {
+            go(fallback, false);
+          }
+        }, function () { go(fallback, false); });
       }
 
       // ---- Flows (step 2) ----
@@ -1497,6 +1609,10 @@
         s.ccEnabled = !s.ccEnabled;
         state.settings = s;
         saveSettings();
+        // Enabling the integration auto-registers the productivity tool and
+        // refreshes the profile list — registration is part of the process, no
+        // external script required.
+        if (s.ccEnabled) loadCcProfiles();
       }
       // Send behaviour default: direct to customer vs agent sendbox for review.
       function toggleCcAgentReview() {
@@ -1756,6 +1872,115 @@
         $("ccDrawer").setAttribute("aria-hidden", "true");
       }
 
+      // ---- Template auto-sync (env-var driven) ----
+      var syncOpen = false;
+      var AS_ENABLED = "alex_TemplateAutoSyncEnabled";
+      var AS_INTERVAL = "alex_TemplateSyncIntervalMinutes";
+
+      function asTruthy(v) {
+        v = (v == null ? "" : v.toString()).toLowerCase();
+        return v === "yes" || v === "true" || v === "1" || v === "on";
+      }
+      function asIntervalLabel(m) {
+        m = m || 60;
+        if (m >= 1440 && m % 1440 === 0) { var d = m / 1440; return d === 1 ? "יום" : d + " ימים"; }
+        if (m >= 60 && m % 60 === 0) { var h = m / 60; return h === 1 ? "שעה" : (h === 2 ? "שעתיים" : h + " שעות"); }
+        return m + " דק'";
+      }
+
+      function loadAutoSync() {
+        if (!xrm) return Promise.resolve();
+        var q = "?$select=schemaname,defaultvalue&$filter=schemaname eq '" + AS_ENABLED +
+          "' or schemaname eq '" + AS_INTERVAL +
+          "'&$expand=environmentvariabledefinition_environmentvariablevalue($select=value,environmentvariablevalueid)";
+        return xrm.WebApi.retrieveMultipleRecords("environmentvariabledefinition", q).then(function (r) {
+          var as = { enabled: false, interval: 60, enabledDefId: null, enabledValId: null, intervalDefId: null, intervalValId: null };
+          (r.entities || []).forEach(function (d) {
+            var vals = d.environmentvariabledefinition_environmentvariablevalue || [];
+            var has = vals.length > 0;
+            var cur = has ? vals[0].value : null;
+            var valId = has ? vals[0].environmentvariablevalueid : null;
+            var eff = (cur !== null && cur !== undefined && cur !== "") ? cur : d.defaultvalue;
+            if (d.schemaname === AS_ENABLED) {
+              as.enabledDefId = d.environmentvariabledefinitionid; as.enabledValId = valId; as.enabled = asTruthy(eff);
+            } else if (d.schemaname === AS_INTERVAL) {
+              as.intervalDefId = d.environmentvariabledefinitionid; as.intervalValId = valId; as.interval = parseInt(eff, 10) || 60;
+            }
+          });
+          state.autoSync = as;
+          renderSyncSummary();
+          if (syncOpen) renderSync();
+        }, function () { state.autoSync = null; renderSyncSummary(); });
+      }
+
+      function writeEnvVar(defId, valId, value) {
+        if (valId) {
+          return xrm.WebApi.updateRecord("environmentvariablevalue", valId, { value: value }).then(function () { return valId; });
+        }
+        return xrm.WebApi.createRecord("environmentvariablevalue", {
+          value: value,
+          "EnvironmentVariableDefinitionId@odata.bind": "/environmentvariabledefinitions(" + defId + ")"
+        }).then(function (res) { return res.id; });
+      }
+
+      function renderSyncSummary() {
+        var box = $("syncChips"); if (!box) return;
+        box.innerHTML = "";
+        var as = state && state.autoSync;
+        var chips = (as && as.enabled) ? ["מופעל", "כל " + asIntervalLabel(as.interval)] : ["ידני בלבד"];
+        chips.forEach(function (txt) {
+          var c = document.createElement("span");
+          c.className = "tbl-chip";
+          c.innerHTML = SVG_CHECK_SM + '<span></span>';
+          c.querySelector("span").textContent = txt;
+          box.appendChild(c);
+        });
+      }
+
+      function renderSync() {
+        var as = state && state.autoSync;
+        setSwitch("swAutoSync", as ? as.enabled : false, !as);
+        var sel = $("syncInterval");
+        if (sel) { if (as) sel.value = String(as.interval); sel.disabled = !as || !as.enabled; }
+        var row = $("syncIntervalRow");
+        if (row) row.classList.toggle("disabled", !as || !as.enabled);
+      }
+
+      function openSync() {
+        syncOpen = true;
+        $("syncOverlay").classList.add("open");
+        $("syncDrawer").classList.add("open");
+        $("syncDrawer").setAttribute("aria-hidden", "false");
+        renderSync();
+      }
+      function closeSync() {
+        syncOpen = false;
+        $("syncOverlay").classList.remove("open");
+        $("syncDrawer").classList.remove("open");
+        $("syncDrawer").setAttribute("aria-hidden", "true");
+      }
+
+      function toggleAutoSync() {
+        var as = state && state.autoSync; if (!as) return;
+        var target = !as.enabled;
+        setSwitch("swAutoSync", target, true);
+        writeEnvVar(as.enabledDefId, as.enabledValId, target ? "yes" : "no").then(function (id) {
+          as.enabledValId = id; as.enabled = target;
+          renderSync(); renderSyncSummary();
+          toast(target ? "סנכרון אוטומטי הופעל" : "סנכרון אוטומטי כובה");
+        }, function () { setSwitch("swAutoSync", as.enabled, false); toast("שמירה נכשלה"); });
+      }
+
+      function changeSyncInterval() {
+        var as = state && state.autoSync; if (!as) return;
+        var v = parseInt($("syncInterval").value, 10) || 60;
+        writeEnvVar(as.intervalDefId, as.intervalValId, String(v)).then(function (id) {
+          as.intervalValId = id; as.interval = v;
+          renderSyncSummary();
+          toast("תדירות הסנכרון עודכנה");
+        }, function () { toast("שמירה נכשלה"); });
+      }
+
       // ---- Experience-profile pane deployment ----
       // Dataverse has no FK between an experience profile (msdyn_appconfiguration)
       // and its productivity pane (msdyn_paneconfiguration); Customer Service
@@ -1763,16 +1988,57 @@
       // and toggle the easydo tool tab (msdyn_panetabconfiguration) per profile.
       var CC_TOOL_UNIQUE = "alex_easydo_cc_signature_tool";
 
+      // Lazily register the easydo Contact Center productivity tool
+      // (msdyn_panetoolconfiguration) — the record the old
+      // 33-register-cc-productivity-tool.ps1 used to create. Creating it here
+      // makes enabling CC signing a self-contained part of the process, with no
+      // external script. The record is created in the active (default) solution
+      // and is never added to alex_d365_easydo, so that solution stays importable
+      // into plain Dataverse environments. Idempotent: looks up by unique name.
+      function ensureCcTool() {
+        if (state.ccTool) return Promise.resolve(state.ccTool);
+        return xrm.WebApi.retrieveMultipleRecords("msdyn_panetoolconfiguration",
+            "?$select=msdyn_panetoolconfigurationid&$filter=msdyn_uniquename eq '" + CC_TOOL_UNIQUE + "'&$top=1")
+          .then(function (r) {
+            if (r.entities.length) {
+              state.ccTool = r.entities[0].msdyn_panetoolconfigurationid;
+              return state.ccTool;
+            }
+            var body = {
+              msdyn_name: "easydo - שליחה לחתימה",
+              msdyn_uniquename: CC_TOOL_UNIQUE,
+              msdyn_controlname: "alex_EasyDo.ContactCenterPane",
+              msdyn_description: "שליחת מסמך לחתימה ללקוח של השיחה הפעילה, ישירות מתוך סשן הנציג.",
+              msdyn_defaulticon: "/WebResources/alex_/icons/sendIcon.svg",
+              msdyn_type: 0,
+              msdyn_data: "{}",
+              msdyn_category: 100000001,
+              msdyn_isglobal: false,
+              msdyn_isconfigurable: false
+            };
+            return xrm.WebApi.createRecord("msdyn_panetoolconfiguration", body).then(function (res) {
+              state.ccTool = res.id;
+              return state.ccTool;
+            });
+          });
+      }
+
       function loadCcProfiles() {
         var box = $("ccProfList");
         if (box) box.innerHTML = '<div class="empty-note">טוען פרופילים…</div>';
         var toolId = null, profiles = [];
-        return xrm.WebApi.retrieveMultipleRecords("msdyn_panetoolconfiguration",
-            "?$select=msdyn_panetoolconfigurationid&$filter=msdyn_uniquename eq '" + CC_TOOL_UNIQUE + "'&$top=1")
-          .then(function (r) {
-            if (!r.entities.length) { state.ccTool = null; return null; }
-            toolId = r.entities[0].msdyn_panetoolconfigurationid;
-            state.ccTool = toolId;
+        // When the integration is enabled, auto-register the tool; otherwise just
+        // look it up (create nothing until the admin turns CC signing on).
+        var toolPromise = currentSettings().ccEnabled
+          ? ensureCcTool()
+          : xrm.WebApi.retrieveMultipleRecords("msdyn_panetoolconfiguration",
+                "?$select=msdyn_panetoolconfigurationid&$filter=msdyn_uniquename eq '" + CC_TOOL_UNIQUE + "'&$top=1")
+              .then(function (r) { return r.entities.length ? r.entities[0].msdyn_panetoolconfigurationid : null; });
+        return toolPromise
+          .then(function (tid) {
+            if (!tid) { state.ccTool = null; return null; }
+            toolId = tid;
+            state.ccTool = tid;
             return xrm.WebApi.retrieveMultipleRecords("msdyn_appconfiguration",
               "?$select=msdyn_appconfigurationid,msdyn_name,msdyn_uniquename&$filter=statecode eq 0 and ismanaged eq false&$orderby=msdyn_name");
           })
@@ -1821,7 +2087,7 @@
         if (!box) return;
         box.innerHTML = "";
         if (!state.ccTool) {
-          box.innerHTML = '<div class="empty-note">כלי החתימה טרם נרשם בסביבה.<br>הרץ את 33-register-cc-productivity-tool.ps1 כדי לרשום אותו.</div>';
+          box.innerHTML = '<div class="empty-note">הפעל את "הפעלת חתימה ב-Contact Center" כדי לרשום את כלי החתימה.</div>';
           return;
         }
         var list = state.ccProfiles || [];
@@ -1911,11 +2177,17 @@
             '</div>';
           row.querySelector(".ti-name").textContent = cfg.display;
           row.querySelector(".ti-logical").textContent = cfg.logical;
+          var act = row.querySelector(".ti-act");
+          var fb = document.createElement("button");
+          fb.className = "ti-btn-add";
+          fb.innerHTML = SVG_FORM + '<span>הוסף לטופס</span>';
+          fb.addEventListener("click", function () { openFormInject(cfg); });
+          act.appendChild(fb);
           var rb = document.createElement("button");
           rb.className = "ti-btn-rem";
           rb.innerHTML = '<span>הסר</span>';
           rb.addEventListener("click", function () { disableTable(cfg, rb); });
-          row.querySelector(".ti-act").appendChild(rb);
+          act.appendChild(rb);
           box.appendChild(row);
         });
       }
@@ -1926,6 +2198,242 @@
         if (status === 2) return { kind: "warn", label: "קשר בתהליך" };
         if (status === 4) return { kind: "bad", label: "שגיאת קשר" };
         return { kind: "muted", label: "ללא קשר" };
+      }
+
+      /* ===== easydo Documents grid: inject into a form ===== */
+      var DOCS_VIEW_ID = "{1373E5C7-E06E-F111-AB0C-7CED8D726840}";
+      var DOCS_CONTROL = "alex_EasyDo.EasyDoDocumentsGrid";
+      var DOCS_TARGET = "alex_signaturerequest";
+      var SUBGRID_CLASSID = "{E7A81278-8635-4D9E-8D4D-59480B391C5B}";
+      var injectCfg = null;
+      var injectRelName = null;
+
+      function newGuid() {
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+          var r = Math.random() * 16 | 0;
+          var v = c === "x" ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        }).toUpperCase();
+      }
+
+      function apiBase() { return clientUrl() + "/api/data/v9.2/"; }
+
+      function apiGet(path) {
+        return fetch(apiBase() + path, {
+          headers: { Accept: "application/json", "OData-MaxVersion": "4.0", "OData-Version": "4.0" },
+          credentials: "include"
+        }).then(function (r) {
+          if (!r.ok) { return r.text().then(function (t) { throw new Error(t); }); }
+          return r.json();
+        });
+      }
+
+      function apiSend(method, path, body) {
+        return fetch(apiBase() + path, {
+          method: method,
+          headers: {
+            "Content-Type": "application/json", Accept: "application/json",
+            "OData-MaxVersion": "4.0", "OData-Version": "4.0"
+          },
+          credentials: "include",
+          body: JSON.stringify(body)
+        }).then(function (r) {
+          if (!r.ok) { return r.text().then(function (t) { throw new Error(t); }); }
+        });
+      }
+
+      function resolveDocsRelationship(logical) {
+        var path = "RelationshipDefinitions/Microsoft.Dynamics.CRM.OneToManyRelationshipMetadata"
+          + "?$select=SchemaName,ReferencingAttribute"
+          + "&$filter=ReferencingEntity eq 'alex_signaturerequest' and ReferencedEntity eq '" + logical + "'";
+        return apiGet(path).then(function (d) {
+          var arr = d.value || [];
+          for (var i = 0; i < arr.length; i++) {
+            var a = arr[i].ReferencingAttribute || "";
+            if (a.indexOf("alex_related") === 0) return arr[i].SchemaName;
+          }
+          return null;
+        });
+      }
+
+      function fetchEntityForms(logical) {
+        var path = "systemforms?$select=formid,name,type,formxml"
+          + "&$filter=objecttypecode eq '" + logical + "' and type eq 2";
+        return apiGet(path).then(function (d) { return d.value || []; });
+      }
+
+      function docsLabels() {
+        return '<labels><label description="easydo Documents" languagecode="1033" />'
+          + '<label description="מסמכי easydo" languagecode="1037" /></labels>';
+      }
+
+      function docsSubgridParams(relName) {
+        return '<parameters>'
+          + '<ViewId>' + DOCS_VIEW_ID + '</ViewId>'
+          + '<IsUserView>false</IsUserView>'
+          + '<RelationshipName>' + relName + '</RelationshipName>'
+          + '<TargetEntityType>' + DOCS_TARGET + '</TargetEntityType>'
+          + '<AutoExpand>Fixed</AutoExpand>'
+          + '<EnableQuickFind>false</EnableQuickFind>'
+          + '<EnableViewPicker>false</EnableViewPicker>'
+          + '<EnableJumpBar>false</EnableJumpBar>'
+          + '<ChartGridMode>Grid</ChartGridMode>'
+          + '<VisualizationId />'
+          + '<IsUserChart>false</IsUserChart>'
+          + '<EnableChartPicker>false</EnableChartPicker>'
+          + '<RecordsPerPage>10</RecordsPerPage>'
+          + '</parameters>';
+      }
+
+      function buildDocsTab(relName, uid) {
+        var tabId = "{" + newGuid() + "}";
+        var secId = "{" + newGuid() + "}";
+        var cellId = "{" + newGuid() + "}";
+        var control = '<control indicationOfSubgrid="true" id="easydo_documents_grid" classid="'
+          + SUBGRID_CLASSID + '" uniqueid="' + uid + '">' + docsSubgridParams(relName) + '</control>';
+        var cell = '<cell id="' + cellId + '" rowspan="8" colspan="1" auto="false" showlabel="false">'
+          + docsLabels() + control + '</cell>';
+        var section = '<section name="easydo_documents_section" id="' + secId
+          + '" IsUserDefined="1" locklevel="0" showlabel="false" showbar="false" layout="varwidth"'
+          + ' celllabelalignment="Left" celllabelposition="Left" columns="1" labelwidth="115">'
+          + docsLabels() + '<rows><row>' + cell + '</row></rows></section>';
+        return '<tab name="easydo_documents_tab" id="' + tabId
+          + '" IsUserDefined="1" locklevel="0" showlabel="true" expanded="true">'
+          + docsLabels()
+          + '<columns><column width="100%"><sections>' + section + '</sections></column></columns></tab>';
+      }
+
+      function buildDocsControlDescription(uid, relName) {
+        var dataSet = '<data-set name="records">'
+          + '<ViewId>' + DOCS_VIEW_ID + '</ViewId>'
+          + '<IsUserView>false</IsUserView>'
+          + '<RelationshipName>' + relName + '</RelationshipName>'
+          + '<TargetEntityType>' + DOCS_TARGET + '</TargetEntityType>'
+          + '</data-set>';
+        var cd = '<controlDescription forControl="' + uid + '">'
+          + '<customControl id="' + SUBGRID_CLASSID + '">' + docsSubgridParams(relName) + '</customControl>';
+        var ff = [0, 1, 2];
+        for (var i = 0; i < ff.length; i++) {
+          cd += '<customControl formFactor="' + ff[i] + '" name="' + DOCS_CONTROL + '"><parameters>'
+            + dataSet + '<language static="true" type="Enum">auto</language>'
+            + '</parameters></customControl>';
+        }
+        return cd + '</controlDescription>';
+      }
+
+      function mergeControlDescription(xml, cd) {
+        if (xml.indexOf("<controlDescriptions />") >= 0) {
+          return xml.replace("<controlDescriptions />", "<controlDescriptions>" + cd + "</controlDescriptions>");
+        }
+        if (xml.indexOf("<controlDescriptions/>") >= 0) {
+          return xml.replace("<controlDescriptions/>", "<controlDescriptions>" + cd + "</controlDescriptions>");
+        }
+        if (xml.indexOf("</controlDescriptions>") >= 0) {
+          return xml.replace("</controlDescriptions>", cd + "</controlDescriptions>");
+        }
+        return xml.replace("</form>", "<controlDescriptions>" + cd + "</controlDescriptions></form>");
+      }
+
+      function setInjectBusy(btn, busy, label) {
+        if (!btn) return;
+        btn.disabled = busy;
+        var s = btn.querySelector("span");
+        if (s && label) s.textContent = label;
+      }
+
+      function markFormInjected(btn) {
+        if (!btn || !btn.parentNode) return;
+        btn.parentNode.innerHTML = '<span class="pill ok sm"><span class="pdot"></span>נוסף</span>';
+      }
+
+      function injectIntoForm(form, btn) {
+        if (!injectRelName) { toast("לא נמצא קשר מתאים לטבלה"); return; }
+        setInjectBusy(btn, true, "מוסיף…");
+        apiGet("systemforms(" + form.formid + ")?$select=formxml").then(function (f) {
+          var xml = f.formxml || "";
+          if (xml.indexOf("easydo_documents_tab") >= 0) {
+            markFormInjected(btn);
+            toast("הגריד כבר קיים בטופס \u201C" + form.name + "\u201D");
+            return null;
+          }
+          if (xml.indexOf("</tabs>") < 0) {
+            setInjectBusy(btn, false, "הוסף");
+            toast("מבנה הטופס אינו נתמך");
+            return null;
+          }
+          var uid = "{" + newGuid() + "}";
+          xml = xml.replace("</tabs>", buildDocsTab(injectRelName, uid) + "</tabs>");
+          xml = mergeControlDescription(xml, buildDocsControlDescription(uid, injectRelName));
+          return apiSend("PATCH", "systemforms(" + form.formid + ")", { formxml: xml }).then(function () {
+            return apiSend("POST", "PublishXml", {
+              ParameterXml: "<importexportxml><entities><entity>" + injectCfg.logical + "</entity></entities></importexportxml>"
+            });
+          }).then(function () {
+            markFormInjected(btn);
+            toast("הגריד נוסף לטופס \u201C" + form.name + "\u201D");
+          });
+        }).catch(function (e) {
+          setInjectBusy(btn, false, "הוסף");
+          toast("ההוספה נכשלה: " + ((e && e.message) || e));
+        });
+      }
+
+      function renderFormInjectList(forms) {
+        var box = $("formInjectList");
+        if (!box) return;
+        box.innerHTML = "";
+        if (!injectRelName) {
+          box.innerHTML = '<div class="empty-note">לא נמצא קשר (Lookup) לבקשות חתימה עבור טבלה זו.<br>הפעל מחדש את הטבלה כדי ליצור את הקשר.</div>';
+          return;
+        }
+        if (!forms.length) {
+          box.innerHTML = '<div class="empty-note">לא נמצאו טפסים ראשיים לטבלה זו.</div>';
+          return;
+        }
+        forms.sort(function (a, b) { return (a.name || "").localeCompare(b.name || "", "he"); });
+        forms.forEach(function (form) {
+          var has = (form.formxml || "").indexOf("easydo_documents_tab") >= 0;
+          var row = document.createElement("div");
+          row.className = "titem";
+          row.innerHTML =
+            '<div class="ti-main"><div class="ti-name"></div><div class="ti-logical">טופס ראשי</div></div>' +
+            '<div class="ti-act"></div>';
+          row.querySelector(".ti-name").textContent = form.name || form.formid;
+          var act = row.querySelector(".ti-act");
+          if (has) {
+            act.innerHTML = '<span class="pill ok sm"><span class="pdot"></span>נוסף</span>';
+          } else {
+            var ab = document.createElement("button");
+            ab.className = "ti-btn-add";
+            ab.innerHTML = SVG_PLUS + '<span>הוסף</span>';
+            ab.addEventListener("click", function () { injectIntoForm(form, ab); });
+            act.appendChild(ab);
+          }
+          box.appendChild(row);
+        });
+      }
+
+      function openFormInject(cfg) {
+        injectCfg = cfg;
+        injectRelName = null;
+        $("fiTableName").textContent = cfg.display + " (" + cfg.logical + ")";
+        $("formInjectList").innerHTML = '<div class="empty-note">טוען טפסים…</div>';
+        $("formInjectOverlay").classList.add("open");
+        $("formInjectDrawer").classList.add("open");
+        $("formInjectDrawer").setAttribute("aria-hidden", "false");
+        resolveDocsRelationship(cfg.logical).then(function (rel) {
+          injectRelName = rel;
+          if (!rel) { renderFormInjectList([]); return null; }
+          return fetchEntityForms(cfg.logical).then(renderFormInjectList);
+        }).catch(function () {
+          $("formInjectList").innerHTML = '<div class="empty-note">טעינת הטפסים נכשלה.</div>';
+        });
+      }
+
+      function closeFormInject() {
+        $("formInjectOverlay").classList.remove("open");
+        $("formInjectDrawer").classList.remove("open");
+        $("formInjectDrawer").setAttribute("aria-hidden", "true");
       }
 
       function ensureMeta() {
@@ -2168,13 +2676,13 @@
           $("heroSub").textContent = "פתח את מרכז הניהול מתוך אפליקציית easydo כדי לראות נתונים חיים.";
           return;
         }
-        state = { conns: {}, flows: {}, configs: {}, metaTables: null, settings: null, cloudFlows: [] };
+        state = { conns: {}, flows: {}, configs: {}, metaTables: null, settings: null, cloudFlows: [], autoSync: null };
         initChecks();
         recompute();
         renderSendSummary();
         renderSettingsSummary();
         var btn = $("refreshBtn"); btn.classList.add("spinning");
-        Promise.all([loadConnections(), loadFlows(), loadConfigs(), loadSettings()]).then(function () {
+        Promise.all([loadConnections(), loadFlows(), loadConfigs(), loadSettings(), loadAutoSync()]).then(function () {
           btn.classList.remove("spinning");
           $("footnote").textContent = "סביבה: " + (envId() || "—");
         }, function () {
@@ -2188,6 +2696,8 @@
       $("manageTablesBtn").addEventListener("click", openDrawer);
       $("drawerClose").addEventListener("click", closeDrawer);
       $("drawerOverlay").addEventListener("click", closeDrawer);
+      $("fiClose").addEventListener("click", closeFormInject);
+      $("formInjectOverlay").addEventListener("click", closeFormInject);
       $("tableSearch").addEventListener("input", renderAvailableList);
       $("manageSettingsBtn").addEventListener("click", openSettings);
       $("settingsClose").addEventListener("click", closeSettings);
@@ -2200,6 +2710,11 @@
       $("swCcRealtime").addEventListener("click", toggleCcRealtime);
       $("swCcDefaultCase").addEventListener("click", toggleCcDefaultCase);
       $("ccMsgTemplate").addEventListener("change", commitCcMessageTemplate);
+      $("manageSyncBtn").addEventListener("click", openSync);
+      $("syncClose").addEventListener("click", closeSync);
+      $("syncOverlay").addEventListener("click", closeSync);
+      $("swAutoSync").addEventListener("click", toggleAutoSync);
+      $("syncInterval").addEventListener("change", changeSyncInterval);
       $("primarySeg").addEventListener("click", function (e) {
         var btn = e.target.closest ? e.target.closest(".gs-seg-btn") : null;
         if (btn && btn.getAttribute("data-ch")) setPrimary(btn.getAttribute("data-ch"));

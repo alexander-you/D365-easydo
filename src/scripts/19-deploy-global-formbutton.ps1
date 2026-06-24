@@ -80,7 +80,7 @@ $cmdId  = "alex.global.Form.EasyDoSend.Command"
 $ruleId = "alex.global.Form.EasyDoSend.EnableRule"
 $loc    = "Mscrm.Form.{!EntityLogicalName}.MainTab.Save.Controls._children"
 
-$customAction = "<CustomAction Id=`"$caId`" Location=`"$loc`" Sequence=`"35`"><CommandUIDefinition><Button Id=`"$btnId`" Command=`"$cmdId`" Sequence=`"35`" LabelText=`"$label`" ToolTipTitle=`"$label`" ToolTipDescription=`"$tipDesc`" TemplateAlias=`"o1`" ModernImage=`"WordTemplates`" /></CommandUIDefinition></CustomAction>"
+$customAction = "<CustomAction Id=`"$caId`" Location=`"$loc`" Sequence=`"35`"><CommandUIDefinition><Button Id=`"$btnId`" Command=`"$cmdId`" Sequence=`"35`" LabelText=`"$label`" ToolTipTitle=`"$label`" ToolTipDescription=`"$tipDesc`" TemplateAlias=`"o1`" ModernImage=`"`$webresource:alex_/icons/sendIcon.svg`" /></CommandUIDefinition></CustomAction>"
 $commandDef = "<CommandDefinition Id=`"$cmdId`"><EnableRules><EnableRule Id=`"$ruleId`" /></EnableRules><DisplayRules /><Actions><JavaScriptFunction FunctionName=`"EasyDo.FormSend.launch`" Library=`"`$webresource:$jsName`"><CrmParameter Value=`"PrimaryControl`" /></JavaScriptFunction></Actions></CommandDefinition>"
 $enableRuleDef = "<EnableRule Id=`"$ruleId`"><CustomRule FunctionName=`"EasyDo.FormSend.isEnabled`" Library=`"`$webresource:$jsName`" Default=`"false`"><CrmParameter Value=`"PrimaryControl`" /></CustomRule></EnableRule>"
 

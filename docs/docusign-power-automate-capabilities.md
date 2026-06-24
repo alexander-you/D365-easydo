@@ -414,3 +414,29 @@ Recommended compatibility rules:
 ### Bottom line for easydo
 
 The DocuSign capability model can be reproduced on easydo by treating easydo template fields as provider metadata and Dataverse mappings as the product control plane. easydo does not need to match DocuSign's Power Automate dynamic-schema experience in the designer. The important capabilities are runtime template discovery, field sync, recipient resolution, send-time prefill with lock policy, safe preview through draft forms, status/read-back processing, and backward-compatible storage of all integration outcomes in Dataverse.
+
+## Short Note: DocuSign Security Roles / Permission Profiles
+
+DocuSign eSignature does not use Dataverse-style security roles. The closest equivalent is an account-level **Permission Profile** assigned to each DocuSign user. The eSignature API exposes these profiles through `GET /restapi/v2.1/accounts/{accountId}/permission_profiles`; the documented example includes the standard profiles **Account Administrator**, **DocuSign Sender**, and **DocuSign Viewer**, plus custom permission profiles.
+
+### Standard profiles
+
+| DocuSign profile | Purpose | Typical capabilities |
+| --- | --- | --- |
+| **Account Administrator** | Account-level administration. | Manages account settings, users, groups, permission profiles, templates/settings, integrations such as Connect where enabled, and other administrative configuration. This is the broadest eSignature account role and should not be used for routine sending unless administration is required. |
+| **DocuSign Sender** | Business user who prepares and sends envelopes. | Sends envelopes, uses templates, manages their own sending workflow, and works with envelopes they are allowed to access. Exact abilities, such as template creation or sharing, depend on the account's permission-profile settings. |
+| **DocuSign Viewer** | Read-only or limited-access user. | Views envelopes/documents/status information according to account permissions, but is not intended to send envelopes or administer the account. Useful for audit, support, or reporting scenarios where users should not modify sending configuration. |
+| **Custom Permission Profile** | Organization-specific least-privilege role. | A tailored profile created by an administrator by enabling only the required permissions, for example send-only, template-manager, reporting-only, or integration-service-user profiles. Custom profiles are usually preferable for production integrations. |
+
+### Organization-level administration
+
+Large DocuSign tenants may also use DocuSign Admin / organization-level administration. That layer can include organization administrators who manage cross-account concerns such as users, domains, identity, SSO, and account membership. This is separate from the eSignature account permission profile used when sending envelopes from a specific account.
+
+### Integration guidance for Dynamics 365 / Power Automate
+
+- Use a dedicated DocuSign integration or service user for the Power Automate connection.
+- Prefer a custom least-privilege permission profile over **Account Administrator**.
+- For send-only automation, the service user generally needs sender rights and access to the templates it will use.
+- If the integration must create/update templates, configure Connect webhooks, manage account custom fields, or administer users, it needs additional administrative permissions, and those should be explicitly justified.
+- Store the selected DocuSign account ID and permission-profile expectation in deployment documentation so production support can verify the connection user quickly.
+- Before go-live, call or inspect `permission_profiles` for the target account and confirm the actual profile names and settings, because organizations can rename or customize profiles and available permissions can vary by plan.

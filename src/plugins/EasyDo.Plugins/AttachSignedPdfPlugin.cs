@@ -107,6 +107,14 @@ namespace EasyDo.Plugins
                 var id = svc.Create(note);
                 ctx.OutputParameters["AnnotationId"] = id.ToString();
                 trace.Trace("AttachSignedPdf: created note {0} on {1}:{2}.", id, primary.LogicalName, primary.Id);
+
+                // Write the note ID back to the signature request for easy retrieval
+                var requestUpdate = new Entity("alex_signaturerequest", requestId)
+                {
+                    ["alex_signednoteid"] = id.ToString()
+                };
+                svc.Update(requestUpdate);
+                trace.Trace("AttachSignedPdf: stored note ID {0} on request {1}.", id, requestId);
             }
             catch (Exception ex)
             {

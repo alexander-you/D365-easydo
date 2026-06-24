@@ -1,0 +1,91 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "alex_dataverse_easydo"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_send_copy_WhatsApp_is_set": {
+          "metadata": {
+            "operationMetadataId": "wa-0001-0001-0001-000000000001"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "SubscribeWebhookTrigger",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 3,
+              "subscriptionRequest/entityname": "alex_signaturerequest",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/filterexpression": "alex_sendcopywhatsapp eq true"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "actions": {
+        "Compose_placeholder": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "wa-0002-0001-0001-000000000001"
+          },
+          "type": "Compose",
+          "inputs": {
+            "message": "Send Copy WhatsApp triggered",
+            "requestId": "@triggerOutputs()?['body/alex_signaturerequestid']",
+            "requestName": "@triggerOutputs()?['body/alex_name']",
+            "signedNoteId": "@triggerOutputs()?['body/alex_signednoteid']"
+          }
+        },
+        "Reset_flag": {
+          "runAfter": {
+            "Compose_placeholder": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "wa-0003-0001-0001-000000000001"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "UpdateRecord",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "alex_signaturerequests",
+              "recordId": "@triggerOutputs()?['body/alex_signaturerequestid']",
+              "item/alex_sendcopywhatsapp": false
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      }
+    }
+  },
+  "schemaVersion": "1.0.0.0"
+}

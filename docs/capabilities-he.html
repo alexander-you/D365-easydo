@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>easydo ↔ Dynamics 365 — כל יכולות האינטגרציה</title>
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("clawpilotTheme");
+      const theme =
+        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --cp-bg: #f7f4ef;
+      --cp-bg-elevated: #fcfbf8;
+      --cp-surface: #ffffff;
+      --cp-surface-soft: #f5f5f5;
+      --cp-border: #dedede;
+      --cp-border-strong: #919191;
+      --cp-text: #242424;
+      --cp-text-muted: #5c5c5c;
+      --cp-text-soft: #6f6f6f;
+      --cp-accent: #b11f4b;
+      --cp-accent-hover: #9a1a41;
+      --cp-accent-soft: rgba(177, 31, 75, 0.08);
+      --cp-accent-fg: #ffffff;
+      --cp-success: #16a34a;
+      --cp-danger: #dc2626;
+      --cp-warning: #f59e0b;
+      --cp-link: #0078d4;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+      --cp-overlay: rgba(255, 255, 255, 0.8);
+      --cp-panel: rgba(255, 255, 255, 0.86);
+      --cp-panel-strong: rgba(255, 255, 255, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.55);
+      --cp-highlight: rgba(177, 31, 75, 0.12);
+    }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --cp-bg: #3d3b3a;
+      --cp-bg-elevated: #343231;
+      --cp-surface: #292929;
+      --cp-surface-soft: #2e2e2e;
+      --cp-border: #474747;
+      --cp-border-strong: #5f5f5f;
+      --cp-text: #dedede;
+      --cp-text-muted: #919191;
+      --cp-text-soft: #b0b0b0;
+      --cp-accent: #fd8ea1;
+      --cp-accent-hover: #fb7b91;
+      --cp-accent-soft: rgba(253, 142, 161, 0.14);
+      --cp-accent-fg: #1a1a1a;
+      --cp-success: #4ade80;
+      --cp-danger: #f87171;
+      --cp-warning: #fbbf24;
+      --cp-link: #4da6ff;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+      --cp-overlay: rgba(41, 41, 41, 0.88);
+      --cp-panel: rgba(41, 41, 41, 0.72);
+      --cp-panel-strong: rgba(41, 41, 41, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.04);
+      --cp-highlight: rgba(253, 142, 161, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--cp-bg);
+      color: var(--cp-text);
+      font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.65;
+      font-size: 16px;
+    }
+    a { color: var(--cp-link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+    /* ---------- Hero ---------- */
+    .hero {
+      background:
+        radial-gradient(1200px 400px at 100% -10%, var(--cp-accent-soft), transparent),
+        var(--cp-bg-elevated);
+      border-bottom: 1px solid var(--cp-border);
+      padding: 56px 0 40px;
+    }
+    .hero .eyebrow {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      color: var(--cp-accent);
+      background: var(--cp-accent-soft);
+      border: 1px solid var(--cp-accent-soft);
+      padding: 5px 12px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-size: 40px;
+      line-height: 1.15;
+      margin: 0 0 14px;
+      letter-spacing: -0.01em;
+    }
+    .hero p.lead {
+      font-size: 19px;
+      color: var(--cp-text-muted);
+      max-width: 760px;
+      margin: 0 0 28px;
+    }
+    .stats { display: flex; flex-wrap: wrap; gap: 14px; }
+    .stat {
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-border);
+      border-radius: 16px;
+      padding: 14px 18px;
+      min-width: 150px;
+      box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+    }
+    .stat .n { font-size: 26px; font-weight: 800; color: var(--cp-accent); }
+    .stat .l { font-size: 13px; color: var(--cp-text-soft); }
+
+    /* ---------- Sticky nav ---------- */
+    nav.toc {
+      position: sticky; top: 0; z-index: 20;
+      background: var(--cp-panel-strong);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--cp-border);
+    }
+    nav.toc .wrap { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 10px; padding-bottom: 10px; }
+    nav.toc a {
+      font-size: 13.5px; font-weight: 600; color: var(--cp-text-muted);
+      padding: 6px 12px; border-radius: 999px; border: 1px solid transparent;
+    }
+    nav.toc a:hover { color: var(--cp-text); background: var(--cp-surface-soft); text-decoration: none; }
+
+    /* ---------- Sections ---------- */
+    section { padding: 48px 0 8px; border-bottom: 1px dashed var(--cp-border); }
+    section:last-of-type { border-bottom: none; }
+    .sec-head { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+    .sec-num {
+      flex: 0 0 auto;
+      width: 40px; height: 40px; border-radius: 12px;
+      display: grid; place-items: center;
+      background: var(--cp-accent); color: var(--cp-accent-fg);
+      font-weight: 800; font-size: 18px;
+    }
+    .sec-head h2 { font-size: 27px; margin: 0; letter-spacing: -0.01em; }
+    .sec-sub { color: var(--cp-text-muted); font-size: 16px; margin: 0 0 26px; padding-inline-start: 54px; }
+
+    /* ---------- Cards grid ---------- */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+    .card {
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-border);
+      border-radius: 16px;
+      padding: 20px 20px 18px;
+      box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+      transition: transform .12s ease, border-color .12s ease;
+    }
+    .card:hover { transform: translateY(-2px); border-color: var(--cp-border-strong); }
+    .card .ico {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: var(--cp-accent-soft); color: var(--cp-accent);
+      display: grid; place-items: center; margin-bottom: 12px;
+    }
+    .card .ico svg { width: 20px; height: 20px; }
+    .card h3 { margin: 0 0 8px; font-size: 18px; }
+    .card p { margin: 0 0 12px; color: var(--cp-text-muted); font-size: 14.5px; }
+    .card ul { margin: 0; padding-inline-start: 18px; color: var(--cp-text-muted); font-size: 14px; }
+    .card ul li { margin-bottom: 5px; }
+    .tag {
+      display: inline-block; font-size: 11.5px; font-weight: 700;
+      padding: 3px 9px; border-radius: 999px; margin: 0 0 12px 6px;
+      border: 1px solid var(--cp-border);
+      color: var(--cp-text-soft); background: var(--cp-surface-soft);
+    }
+    .tag.live { color: var(--cp-success); border-color: var(--cp-success); background: transparent; }
+    .tag.cc { color: var(--cp-accent); border-color: var(--cp-accent); background: transparent; }
+
+    /* ---------- Screenshot placeholder ---------- */
+    .shot {
+      margin-top: 14px;
+      border: 2px dashed var(--cp-border-strong);
+      border-radius: 12px;
+      background:
+        repeating-linear-gradient(45deg, var(--cp-surface-soft), var(--cp-surface-soft) 12px, transparent 12px, transparent 24px);
+      min-height: 120px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 16px; gap: 6px;
+      color: var(--cp-text-soft);
+    }
+    .shot .cam { font-size: 22px; opacity: .8; }
+    .shot .lbl { font-size: 13px; font-weight: 600; }
+    .shot .hint { font-size: 12px; color: var(--cp-text-soft); }
+
+    /* ---------- Architecture flow ---------- */
+    .flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px; margin-top: 8px; }
+    .node {
+      flex: 1 1 180px; min-width: 160px;
+      background: var(--cp-surface); border: 1px solid var(--cp-border);
+      border-radius: 14px; padding: 16px;
+      box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+    }
+    .node .t { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+    .node .d { font-size: 13px; color: var(--cp-text-muted); }
+    .node.accent { border-color: var(--cp-accent); }
+    .flow .arrow { align-self: center; color: var(--cp-accent); font-size: 22px; font-weight: 800; }
+
+    /* ---------- Lifecycle ---------- */
+    .life { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .chip {
+      font-size: 13px; font-weight: 600; padding: 7px 13px; border-radius: 999px;
+      border: 1px solid var(--cp-border); background: var(--cp-surface); color: var(--cp-text-muted);
+    }
+    .chip.s { border-color: var(--cp-warning); color: var(--cp-warning); }
+    .chip.ok { border-color: var(--cp-success); color: var(--cp-success); }
+    .chip.bad { border-color: var(--cp-danger); color: var(--cp-danger); }
+
+    /* ---------- Table ---------- */
+    .tbl { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+    .tbl th, .tbl td { text-align: right; padding: 10px 12px; border-bottom: 1px solid var(--cp-border); }
+    .tbl th { color: var(--cp-text-soft); font-weight: 700; font-size: 13px; }
+    .tbl tr:hover td { background: var(--cp-surface-soft); }
+    code {
+      font-family: Consolas, "Courier New", Courier, monospace;
+      background: var(--cp-surface-soft); border: 1px solid var(--cp-border);
+      border-radius: 6px; padding: 1px 6px; font-size: 13px; direction: ltr; display: inline-block;
+    }
+
+    /* ---------- Callout ---------- */
+    .callout {
+      margin-top: 18px; border: 1px solid var(--cp-border); border-inline-start: 4px solid var(--cp-accent);
+      background: var(--cp-accent-soft); border-radius: 12px; padding: 14px 18px; font-size: 14.5px;
+    }
+    .callout b { color: var(--cp-accent); }
+
+    footer { padding: 36px 0 60px; color: var(--cp-text-soft); font-size: 13.5px; }
+
+    /* ---------- Print / export to slides ---------- */
+    .toolbar { position: fixed; inset-block-start: 14px; inset-inline-start: 14px; z-index: 50; display: flex; gap: 8px; }
+    .btn {
+      border: 1px solid var(--cp-border); background: var(--cp-surface); color: var(--cp-text);
+      border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+      box-shadow: var(--cp-shadow);
+    }
+    .btn:hover { border-color: var(--cp-accent); color: var(--cp-accent); }
+    @media print {
+      .toolbar, nav.toc { display: none !important; }
+      section { break-inside: avoid; border-bottom: none; }
+      .card, .node, .shot { break-inside: avoid; }
+      body { background: #fff; }
+    }
+    @media (max-width: 620px) {
+      .hero h1 { font-size: 30px; }
+      .sec-sub { padding-inline-start: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button class="btn" onclick="window.print()">הדפסה / ייצוא ל-PDF</button>
+    <button class="btn" onclick="toggleTheme()">החלפת ערכת נושא</button>
+  </div>
+
+  <!-- ===================== HERO ===================== -->
+  <header class="hero">
+    <div class="wrap">
+      <span class="eyebrow">מסמך יכולות פנימי · easydo × Dynamics 365</span>
+      <h1>חתימה דיגיטלית של easydo בתוך Dynamics 365 Contact Center</h1>
+      <p class="lead">
+        אינטגרציה מקצה-לקצה שמאפשרת לשלוח מסמכים לחתימה, לעקוב אחר התקדמות בזמן אמת,
+        ולקלוט בחזרה את הערכים והמסמך החתום — ישירות מתוך הרשומות והשיחות החיות של D365,
+        בלי לצאת מהמערכת. מסמך זה מרכז את <b>כל היכולות</b> כבסיס למצגת, עם מקומות שמורים לצילומי מסך.
+      </p>
+      <div class="stats">
+        <div class="stat"><div class="n">15</div><div class="l">פעולות בקונקטור</div></div>
+        <div class="stat"><div class="n">4</div><div class="l">ערוצי שליחה</div></div>
+        <div class="stat"><div class="n">2</div><div class="l">זרימות Power Automate</div></div>
+        <div class="stat"><div class="n">100%</div><div class="l">בתוך D365 · ללא Azure</div></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================== TOC ===================== -->
+  <nav class="toc">
+    <div class="wrap">
+      <a href="#overview">סקירה ואדריכלות</a>
+      <a href="#send">שליחה לחתימה</a>
+      <a href="#prefill">מילוי מקדים ונעילה</a>
+      <a href="#preview">תצוגה מקדימה</a>
+      <a href="#realtime">מצב זמן אמת</a>
+      <a href="#cc">Contact Center</a>
+      <a href="#admin">מרכז ניהול</a>
+      <a href="#automation">אוטומציה וקליטה חזרה</a>
+      <a href="#data">מודל נתונים</a>
+      <a href="#security">אבטחה</a>
+    </div>
+  </nav>
+
+  <main class="wrap">
+
+    <!-- ===================== 1. OVERVIEW ===================== -->
+    <section id="overview">
+      <div class="sec-head"><div class="sec-num">1</div><h2>סקירה ואדריכלות</h2></div>
+      <p class="sec-sub">מה הפתרון עושה, ומאילו רכיבים הוא בנוי — הכול רץ בתוך Dynamics 365.</p>
+
+      <div class="flow">
+        <div class="node accent"><div class="t">משתמש / נציג</div><div class="d">שולח לחתימה מרשומה או משיחה חיה</div></div>
+        <div class="arrow">←</div>
+        <div class="node"><div class="t">אשף שליחה</div><div class="d">Web Resource בחלונית צד · Xrm.WebApi</div></div>
+        <div class="arrow">←</div>
+        <div class="node"><div class="t">Dataverse + תוספים</div><div class="d">בקשת חתימה, מיפוי שדות, סטטוסים</div></div>
+        <div class="arrow">←</div>
+        <div class="node"><div class="t">Power Automate</div><div class="d">קונקטור מותאם של easydo</div></div>
+        <div class="arrow">←</div>
+        <div class="node accent"><div class="t">easydo</div><div class="d">שליחה, חתימה, מסמך חתום</div></div>
+      </div>
+
+      <div class="grid" style="margin-top:22px">
+        <div class="card">
+          <div class="ico">📦</div>
+          <h3>רכיבי הפתרון</h3>
+          <ul>
+            <li>קונקטור מותאם של easydo (15 פעולות)</li>
+            <li>אשף שליחה — Web Resource בחלונית צד</li>
+            <li>מרכז ניהול הגדרות (Admin Center)</li>
+            <li>2 זרימות Power Automate (שליחה + קליטה)</li>
+            <li>תוספים (Plugins) ו-Custom API</li>
+            <li>טבלאות וסטטוסים ב-Dataverse</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="ico">⚙️</div>
+          <h3>עקרונות תכן</h3>
+          <ul>
+            <li>הכול בתוך D365 — ללא Azure וללא קוד בענן חיצוני</li>
+            <li>מבוסס-נתונים: מילוי מקדים מרשומות Dataverse</li>
+            <li>אותו מקור (same-origin) → Xrm.WebApi מקורי, בלי קונקטור פרימיום ב-UI</li>
+            <li>קישור חזרה לרשומה דרך <code>meta_data.client</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="ico">🎯</div>
+          <h3>תרחישי שימוש</h3>
+          <ul>
+            <li>שליחה לחתימה מרשומת לקוח / תיק</li>
+            <li>שליחה תוך כדי שיחה חיה (צ'אט/וואטסאפ/SMS)</li>
+            <li>תצוגה מקדימה ואישור לפני שליחה</li>
+            <li>מעקב חתימה בזמן אמת מול הלקוח</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="cam">📷</div>
+        <div class="lbl">צילום מסך: תרשים אדריכלות / מסך הבית של הפתרון</div>
+        <div class="hint">מומלץ: צילום של הרשומה עם כפתור "שליחה לחתימה" + חלונית האשף פתוחה</div>
+      </div>
+    </section>
+
+    <!-- ===================== 2. SEND ===================== -->
+    <section id="send">
+      <div class="sec-head"><div class="sec-num">2</div><h2>שליחה לחתימה — אשף וקונקטור</h2></div>
+      <p class="sec-sub">הליבה: בחירת תבנית, נמענים, ערוצים ושליחה — בצעדים ברורים.</p>
+
+      <div class="grid">
+        <div class="card">
+          <span class="tag">אשף</span>
+          <h3>אשף שליחה רב-שלבי</h3>
+          <p>חלונית צד מודרכת: תבנית ← נתונים/מילוי מקדים ← נמענים ← הגדרות ← סקירה ← שליחה. דו-לשוני (עברית/אנגלית) ו-RTL.</p>
+          <ul>
+            <li>בחירת תבנית מתוך הרשימה</li>
+            <li>נמענים לפי תפקידים מוגדרים (Roles) או נמען בודד</li>
+            <li>סדר חתימה (טורי/מקבילי)</li>
+            <li>סקירה לפני שליחה</li>
+          </ul>
+          <div class="shot"><div class="cam">📷</div><div class="lbl">צילום: שלבי האשף</div><div class="hint">לכידת כל צעד: תבנית → נמענים → סקירה</div></div>
+        </div>
+
+        <div class="card">
+          <span class="tag">קונקטור</span>
+          <h3>15 פעולות קונקטור</h3>
+          <p>כיסוי מלא של ה-API: בדיקת חיבור, חיפושים, שליחה, וניהול ידני מתקדם.</p>
+          <ul>
+            <li><b>חיבור:</b> אחזור ישות (בדיקת חיבור)</li>
+            <li><b>חיפוש:</b> פרופילים, תבניות, פרטי תבנית, רשימת טפסים</li>
+            <li><b>שליחה:</b> שליחת תבנית ⭐, יצירת טיוטה</li>
+            <li><b>ידני:</b> יצירת טופס, נמענים, העלאת PDF, שליחה, סטטוס, הורדה, ביטול, מחיקה</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <span class="tag">רב-ערוצי</span>
+          <h3>הפצה רב-ערוצית</h3>
+          <p>התראת easydo בערוץ המרכזי, ובנוסף הפצה אופציונלית בערוצים נוספים דרך השיטה המוגדרת בארגון.</p>
+          <ul>
+            <li>דוא"ל · SMS · וואטסאפ</li>
+            <li>הפצה דרך Customer Insights - Journeys או Power Automate</li>
+            <li>בחירת ערוץ מרכזי וערוצי גיבוי</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 3. PREFILL ===================== -->
+    <section id="prefill">
+      <div class="sec-head"><div class="sec-num">3</div><h2>מילוי מקדים ונעילת שדות</h2></div>
+      <p class="sec-sub">מזרימים נתונים מ-D365 לתוך הטופס לפני שהלקוח פותח אותו — ונועלים אותם בעת הצורך.</p>
+
+      <div class="grid">
+        <div class="card">
+          <div class="ico">✍️</div>
+          <h3>מילוי מקדים מהרשומה</h3>
+          <p>ערכים מרשומת D365 (שם, ת"ז, פרטי לקוח) ממולאים אוטומטית בשדות התבנית בעת השליחה, דרך מערך <code>prefill_data</code>.</p>
+          <ul>
+            <li>מיפוי שדה לפי שם טכני</li>
+            <li>תיבות סימון: <code>checked</code> / <code>unchecked</code></li>
+            <li>מבוסס נתונים — שורות ב-Dataverse, ללא קוד</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="ico">🔒</div>
+          <h3>נעילת ערך (read-only)</h3>
+          <p>הגדרת <code>read_only:true</code> נועלת שדה שמולא מראש — הלקוח רואה את הערך אך לא יכול לשנותו (אומת מקצה-לקצה).</p>
+        </div>
+        <div class="card">
+          <div class="ico">↩️</div>
+          <h3>קליטה חזרה של ערכים</h3>
+          <p>הערכים שהלקוח הזין נקלטים בחזרה כשורות <code>alex_signaturefieldvalue</code> ב-Dataverse — עם תיעוד מלא של "נשלח" מול "הוחזר".</p>
+        </div>
+      </div>
+
+      <div class="shot"><div class="cam">📷</div><div class="lbl">צילום: שלב הנתונים באשף + טופס easydo עם שדה נעול</div></div>
+    </section>
+
+    <!-- ===================== 4. PREVIEW ===================== -->
+    <section id="preview">
+      <div class="sec-head"><div class="sec-num">4</div><h2>תצוגה מקדימה לפני שליחה</h2></div>
+      <p class="sec-sub">יוצרים טיוטה, רואים את ה-PDF המעובד, ורק אז שולחים.</p>
+
+      <div class="grid">
+        <div class="card">
+          <div class="ico">👁️</div>
+          <h3>טיוטה לבדיקה</h3>
+          <p>השליחה במצב <code>draft:true</code> מייצרת טופס שניתן לצפות בו לפני השליחה האמיתית — מנגנון ה"תצוגה מקדימה".</p>
+        </div>
+        <div class="card">
+          <div class="ico">✅</div>
+          <h3>אישור ושליחה</h3>
+          <p>האשף ממתין לרינדור ה-PDF, פותח אותו לצפייה, ומאפשר "אישור ושליחה" או חזרה לעריכה.</p>
+        </div>
+        <div class="card">
+          <div class="ico">🧹</div>
+          <h3>ניקוי טיוטות נטושות</h3>
+          <p>תכנון לזרימה מתוזמנת שמנקה טיוטות easydo שנותרו ללא שליחה (Backlog).</p>
+        </div>
+      </div>
+
+      <div class="shot"><div class="cam">📷</div><div class="lbl">צילום: מסך התצוגה המקדימה עם ה-PDF וכפתור "אישור ושליחה"</div></div>
+    </section>
+
+    <!-- ===================== 5. REALTIME ===================== -->
+    <section id="realtime">
+      <div class="sec-head"><div class="sec-num">5</div><h2>מצב זמן אמת</h2></div>
+      <p class="sec-sub">שליחה תוך כדי שיחה עם הלקוח ומעקב חי אחר ההתקדמות עד החתימה.</p>
+
+      <div class="grid">
+        <div class="card">
+          <span class="tag live">חי</span>
+          <h3>מעקב התקדמות</h3>
+          <p>סרגל בן 4 שלבים שמתעדכן בזמן אמת: נשלח ← נמסר ← נצפה ← הושלם.</p>
+          <ul>
+            <li>עדכון אוטומטי (poll) של הסטטוס</li>
+            <li>זיהוי "נדחה" ו"נכשל"</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="tag live">חי</span>
+          <h3>פתיחת המסמך החתום</h3>
+          <p>בסיום החתימה נטען ה-PDF החתום וניתן לפתוח אותו ישירות מהמעקב, בנוסף לצירוף שלו לרשומה.</p>
+        </div>
+        <div class="card">
+          <div class="ico">🖥️</div>
+          <h3>פאנל חתימה חי (שליחה רגילה)</h3>
+          <p>בשליחה שאינה משיחה — נפתח פאנל ייעודי עם התקדמות חיה ואפשרות לאשר/לדחות וצפייה ב-PDF.</p>
+        </div>
+      </div>
+
+      <div class="shot"><div class="cam">📷</div><div class="lbl">צילום: סרגל המעקב בזמן אמת + מסך "המסמך נחתם" עם כפתור פתיחה</div></div>
+    </section>
+
+    <!-- ===================== 6. CONTACT CENTER ===================== -->
+    <section id="cc">
+      <div class="sec-head"><div class="sec-num">6</div><h2>אינטגרציית Contact Center</h2></div>
+      <p class="sec-sub">חתימה ישירות מתוך סשן הנציג בשיחה חיה (צ'אט / וואטסאפ / SMS).</p>
+
+      <div class="grid">
+        <div class="card">
+          <span class="tag cc">CC</span>
+          <h3>שליחה מהשיחה החיה</h3>
+          <p>הנציג שולח מסמך לחתימה ללקוח של השיחה הפעילה, ישירות מכלי הפרודוקטיביות (Productivity Pane) — בלי לעזוב את הסשן.</p>
+        </div>
+        <div class="card">
+          <span class="tag cc">CC</span>
+          <h3>דחיפת הקישור לשיחה</h3>
+          <p>קישור החתימה נוצר ונשלח ישירות לתוך השיחה הפעילה, כך שהלקוח מקבל אותו באותו ערוץ — ללא התראה נפרדת.</p>
+        </div>
+        <div class="card">
+          <span class="tag cc">CC</span>
+          <h3>אישור נציג לפני שליחה</h3>
+          <p>אפשרות שהקישור ינחת בתיבת ההודעות של הנציג לבדיקה ושליחה ידנית, או יישלח ישירות — לפי הגדרת המנהל.</p>
+        </div>
+        <div class="card">
+          <span class="tag cc">CC</span>
+          <h3>מעקב בזמן אמת בתוך החלונית</h3>
+          <p>המעקב מוצג בתוך חלונית הצד (לא חוסם את הצ'אט) — הנציג ממשיך לשוחח בזמן שהלקוח חותם.</p>
+        </div>
+        <div class="card">
+          <span class="tag cc">CC</span>
+          <h3>תבנית הודעה מותאמת</h3>
+          <p>המנהל מגדיר טקסט שעוטף את קישור החתימה בשיחה, עם תווית מיקום <code>{קישור}</code> / <code>{link}</code>.</p>
+        </div>
+        <div class="card">
+          <span class="tag cc">CC</span>
+          <h3>פריסה לפי פרופיל נציג</h3>
+          <p>המנהל בוחר לאילו פרופילי חוויית-נציג הכלי יופיע — שליטה מדויקת בהטמעה.</p>
+        </div>
+      </div>
+
+      <div class="shot"><div class="cam">📷</div><div class="lbl">צילום: סשן נציג עם כלי easydo, הקישור בתוך הצ'אט, ומעקב הצד</div></div>
+    </section>
+
+    <!-- ===================== 7. ADMIN ===================== -->
+    <section id="admin">
+      <div class="sec-head"><div class="sec-num">7</div><h2>מרכז ניהול (Admin Center)</h2></div>
+      <p class="sec-sub">כל ההגדרות הארגוניות במקום אחד — ערוצים, תצוגה מקדימה, זמן אמת ו-Contact Center.</p>
+
+      <div class="grid">
+        <div class="card">
+          <div class="ico">🎚️</div>
+          <h3>הגדרות שליחה כלליות</h3>
+          <ul>
+            <li>ערוץ easydo מרכזי</li>
+            <li>הפעלת רב-ערוצי</li>
+            <li>אפשור תצוגה מקדימה</li>
+            <li>אפשור מצב זמן אמת</li>
+            <li>שיטה / מסע / זרימה לכל ערוץ</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="ico">💬</div>
+          <h3>הגדרות Contact Center</h3>
+          <ul>
+            <li>הפעלת היכולת בשיחות</li>
+            <li>אישור נציג לפני שליחה</li>
+            <li>תוצאות בזמן אמת בשיחה</li>
+            <li>תבנית הודעה לקישור</li>
+            <li>מתגי פריסה לכל פרופיל</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="ico">🧩</div>
+          <h3>שליטה ברמת התבנית</h3>
+          <ul>
+            <li>הסתרת תבנית מהאשף</li>
+            <li>אפשור עריכת מילוי מקדים</li>
+            <li>תפקידי חותמים מוגדרים (Roles)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="shot"><div class="cam">📷</div><div class="lbl">צילום: מרכז הניהול עם מגירת ה-Contact Center פתוחה</div></div>
+    </section>
+
+    <!-- ===================== 8. AUTOMATION ===================== -->
+    <section id="automation">
+      <div class="sec-head"><div class="sec-num">8</div><h2>אוטומציה וקליטה חזרה</h2></div>
+      <p class="sec-sub">זרימות Power Automate שמטפלות בשליחה, במעקב סטטוס ובמסמך החתום.</p>
+
+      <div class="grid">
+        <div class="card">
+          <div class="ico">🚀</div>
+          <h3>זרימת שליחה</h3>
+          <p>בונה את רשימת הנמענים, מצרף מילוי מקדים, ושולח ל-easydo. כוללת ענף תצוגה מקדימה ולכידת שגיאות מפורטת מ-easydo.</p>
+        </div>
+        <div class="card">
+          <div class="ico">🔄</div>
+          <h3>זרימת קליטה מתוזמנת</h3>
+          <p>כל 5 דקות בודקת רק בקשות פתוחות (מסנן מקדים → מחזורים ריקים לא צורכים קריאות). מעדכנת סטטוס, קולטת ערכים, ומורידה את ה-PDF החתום.</p>
+        </div>
+        <div class="card">
+          <div class="ico">📎</div>
+          <h3>מסמך חתום על הרשומה העסקית</h3>
+          <p>Custom API <code>alex_AttachSignedPdf</code> מצרף את ה-PDF החתום ל-Timeline של <b>הרשומה הראשית</b> (לא של הבקשה) — צירוף אחד נקי.</p>
+        </div>
+        <div class="card">
+          <div class="ico">⏱️</div>
+          <h3>"נצפה לאחרונה" חכם</h3>
+          <p>שמירת זמן הצפייה האחרון המשמעותי מתוך יומן המעורבות של הנמען — חותם זמן אחד, לא מונה ביקורים.</p>
+        </div>
+        <div class="card">
+          <div class="ico">🔗</div>
+          <h3>קישורים ייעודיים לכל טבלה</h3>
+          <p>לכל טבלה ראשית נוצר Lookup ייעודי על בקשת החתימה — שיוך מדויק חזרה לרשומה.</p>
+        </div>
+        <div class="card">
+          <div class="ico">🛡️</div>
+          <h3>לכידת שגיאות אמיתית</h3>
+          <p>הודעת השגיאה מ-easydo נשמרת ב-<code>alex_errormessage</code> — אבחון מהיר של כשלים (למשל חוסר נמען).</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 9. DATA MODEL ===================== -->
+    <section id="data">
+      <div class="sec-head"><div class="sec-num">9</div><h2>מודל נתונים וסטטוסים</h2></div>
+      <p class="sec-sub">הטבלאות המרכזיות ומחזור החיים של בקשת חתימה.</p>
+
+      <table class="tbl">
+        <thead><tr><th>טבלה</th><th>תפקיד</th></tr></thead>
+        <tbody>
+          <tr><td><code>alex_signaturerequest</code></td><td>בקשת חתימה — הליבה: סטטוס, נמענים, קישורים, מסמך חתום</td></tr>
+          <tr><td><code>alex_easydosettings</code></td><td>הגדרות ארגוניות (Singleton) — ערוצים, תצוגה מקדימה, זמן אמת, Contact Center</td></tr>
+          <tr><td><code>alex_templatefieldmapping</code></td><td>מיפוי שדות תבנית ↔ עמודות D365 + דגלי שליטה</td></tr>
+          <tr><td><code>alex_signaturefieldvalue</code></td><td>ערכי שדות לכל בקשה — מילוי מקדים מול קליטה חזרה</td></tr>
+          <tr><td><code>alex_easydoentityconfig</code></td><td>תצורת ישות / חיבור easydo</td></tr>
+        </tbody>
+      </table>
+
+      <p style="margin:22px 0 8px; font-weight:700;">מחזור חיים של בקשת חתימה</p>
+      <div class="life">
+        <span class="chip">טיוטה</span>
+        <span class="chip">מוכן לשליחה</span>
+        <span class="chip s">נשלח</span>
+        <span class="chip s">נמסר</span>
+        <span class="chip s">נצפה</span>
+        <span class="chip s">בתהליך</span>
+        <span class="chip ok">הושלם</span>
+        <span class="chip bad">נדחה</span>
+        <span class="chip bad">נכשל</span>
+        <span class="chip bad">בוטל</span>
+        <span class="chip bad">פג תוקף</span>
+      </div>
+
+      <div class="shot"><div class="cam">📷</div><div class="lbl">צילום: רשומת בקשת חתימה עם הסטטוס, הקישורים והמסמך החתום ב-Timeline</div></div>
+    </section>
+
+    <!-- ===================== 10. SECURITY ===================== -->
+    <section id="security">
+      <div class="sec-head"><div class="sec-num">10</div><h2>אבטחה ושליטה</h2></div>
+      <p class="sec-sub">חיבור מאובטח, שיוך אמין, ושמירה על סודות מחוץ למאגר.</p>
+
+      <div class="grid">
+        <div class="card">
+          <div class="ico">🔑</div>
+          <h3>אימות מאובטח</h3>
+          <p>חיבור באמצעות Bearer token (או Client ID + Secret) מנוהל בקונקטור — לא בקוד הלקוח.</p>
+        </div>
+        <div class="card">
+          <div class="ico">🧬</div>
+          <h3>שיוך אמין לרשומה</h3>
+          <p><code>meta_data.client</code> נושא את מזהה הרשומה והטבלה ב-D365 — קליטה חזרה ושיוך ודאי של המסמך החתום.</p>
+        </div>
+        <div class="card">
+          <div class="ico">🚫</div>
+          <h3>הפרדת סודות</h3>
+          <p>סודות, טוקנים, מסמכים חתומים ו-payloads חסומים מהמאגר (<code>.gitignore</code>).</p>
+        </div>
+      </div>
+
+      <div class="callout">
+        <b>הערה לגבי OTP / קוד-קבוע / תוקף:</b> היכולות קיימות במסך השליחה של easydo (קוד קבוע, קוד חד-פעמי, מועד אחרון להשלמה),
+        אך <b>אינן מתועדות ב-API הציבורי</b> כפרמטרי שליחה. הוספתן תדרוש לכידת גוף הבקשה האמיתי של <code>…/send</code> מאפליקציית הווב,
+        בדומה לאופן שבו פוענח מנגנון המילוי המקדים (<code>prefill_data</code>).
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="wrap">
+    מסמך פנימי · נוצר לבניית מצגת יכולות · easydo × Dynamics 365 Contact Center.
+    המקומות עם מסגרת מקווקוו ("📷") שמורים לצילומי מסך.
+  </footer>
+
+  <script>
+    function toggleTheme() {
+      const cur = document.documentElement.getAttribute("data-theme");
+      document.documentElement.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+    }
+  </script>
+</body>
+</html>
