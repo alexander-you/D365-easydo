@@ -157,10 +157,13 @@ flowchart LR
 - **Purpose**: Poll the current status of a form and its assignees.
 - **Caller**: Scheduled **Flow** (this is the MVP replacement for a trigger).
 - **User sees / enters**: nothing (background).
-- **Returns**: form status + per-recipient status (waiting / in progress /
-  viewed / signed / declined / approved), timestamps.
-- **Mapping**: updates `alex_signaturerequest.alex_status` and
-  `alex_signaturerecipient.alex_recipientstatus`.
+- **Returns**: form-level `status` (`waiting / signed / decline / expired /
+  canceled`), `has_data`, timestamps, and an `assignees[]` array with per-assignee
+  `status`, **`decline_reason`** (the recipient's typed reason) and the engagement
+  `log[]` (`action` = `view` / `fill` / `decline` / `attachment`). The full response
+  schema is documented inline in the swagger.
+- **Mapping**: updates `alex_signaturerequest.alex_status` (full lifecycle) and, on a
+  decline, copies the assignee `decline_reason` into `alex_declinereason`.
 - **HTTP**: `GET /entity/me/forms/{id}` *(route verified live; 400 for an
   unknown id)*. List all forms via `GET /entity/me/forms` (DataTables envelope).
 
@@ -216,11 +219,12 @@ sequenceDiagram
 | (draft created) | Draft |
 | sent | Sent |
 | waiting / in progress | In Progress |
-| viewed | Viewed |
-| declined | Declined |
-| signed / approved | Completed |
+| viewed (engagement `view` log) | Viewed |
+| declined (+ `decline_reason`) | Declined |
+| signed / `has_data` | Completed |
+| expired | Expired |
 | (error) | Failed → Pending Retry |
-| (user cancel) | Cancelled |
+| canceled / `deleted_at` | Cancelled |
 
 ## Verified endpoints (live, 2026-06-17)
 

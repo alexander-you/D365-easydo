@@ -15,6 +15,48 @@ All notable changes to this project are documented here.
   N days and clears the preview columns, and/or a "discard preview" action in the
   wizard that calls `DeleteForm` and resets the request. Not yet implemented.
 
+## [Unreleased] — decline reason capture & comprehensive status sync (2026-06-27)
+
+### Added
+
+- **Decline reason captured.** New multiline column **`alex_declinereason`** on
+  `alex_signaturerequest` (`src/scripts/36-add-declinereason-column.ps1`). When easydo
+  reports a declined form, the read-back flow stores the recipient's typed reason
+  (easydo assignee `decline_reason`) into this column, and `documentViewer.html` shows
+  it on the side panel for declined requests.
+- **Comprehensive status sync.** The read-back flow's `Record_the_status_check` step
+  now maps the **full** easydo lifecycle to `alex_status` on every poll, not only
+  completion: `decline` → **Declined** (626210007), `expired` → **Expired** (626210010),
+  `canceled`/`deleted_at` → **Cancelled** (626210009), `signed`/`has_data` →
+  **Completed** (626210006), a `view` engagement-log event → **Viewed** (626210004);
+  otherwise the current status is preserved. Existing-record-safe (the trigger picks up
+  any request still in an open status).
+- **Failed-send timestamp.** The Send flow now stamps **`alex_senton`** with `utcNow()`
+  when a send fails (alongside status **Failed** 626210008 and the error message), so a
+  failed attempt has a meaningful timestamp in the grid/side panel.
+
+### Documented
+
+- **Connector `GetFormStatus` fully described.** The swagger response for
+  `GET /entity/me/forms/{formId}` was a bare `200 OK`; it now carries a full inline
+  schema — form-level `status` enum (`waiting/signed/decline/expired/canceled`),
+  `has_data`, timestamps, plus the `assignees[]` array including per-assignee `status`,
+  **`decline_reason`** and the engagement `log[]`. Re-deployed to the EN connector.
+
+### Decisions
+
+- **No `delivered` signal.** Empirically, easydo exposes only the engagement-log
+  actions `attachment, decline, fill, view` and no delivery receipt, so **Delivered**
+  (626210003) is intentionally **not** auto-set. **Viewed** is the earliest reliable
+  signal after sending.
+
+> **בעברית.** נוספה לכידת **סיבת דחייה** (`alex_declinereason`) — סיבת הסירוב שהלקוח
+> הקליד ב‑easydo נשמרת ומוצגת בפאנל הצדדי. זרימת ה‑polling מסנכרנת עכשיו את **כל**
+> מחזור החיים (נדחה / פג‑תוקף / בוטל / הושלם / נצפה) ולא רק הושלם, וגם רשומות עבר
+> נתפסות. בכישלון שליחה נחתם `alex_senton`. ה‑swagger של `GetFormStatus` תועד במלואו
+> (כולל `decline_reason`) ונפרס מחדש לקונקטור. אין ל‑easydo אות "נמסר" אמין, לכן
+> **נמסר** לא נקבע אוטומטית — **נצפה** הוא האות הראשון האמין.
+
 ## [Unreleased] — send-table enablement survives managed solutions (2026-06-26)
 
 ### Fixed
