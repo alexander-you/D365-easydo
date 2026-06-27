@@ -76,11 +76,25 @@ Signature Recipient · Signature Document · Integration Log
 
 ### Status polling & document return
 
-1. A scheduled flow reads open `Signature Request` rows and calls easydo *Get
-   Status*.
-2. Status is mapped to the Dataverse status choice.
-3. On `signed` / `approved`, the flow downloads the complete PDF and stores it in a
-   **Dataverse File** column on `Signature Document`, then surfaces it on the Contact.
+1. A scheduled flow (every 5 min) reads open `Signature Request` rows
+   (`alex_status` in Sent/Delivered/Viewed/InProgress, `alex_externalformid` set,
+   not in a live real-time session) and calls easydo *Get Status*
+   (`GET /entity/me/forms/{formId}`).
+2. The easydo form `status` + assignee `log` are mapped to the Dataverse status
+   choice, covering the full lifecycle:
+   - `decline` → **Declined** (`626210007`), and the assignee `decline_reason`
+     is captured into **`alex_declinereason`**.
+   - `expired` → **Expired** (`626210010`).
+   - `canceled` / `deleted_at` set → **Cancelled** (`626210009`).
+   - `signed` / `has_data` → **Completed** (`626210006`).
+   - a `view` log event (no submission yet) → **Viewed** (`626210004`).
+   - otherwise the existing status is preserved.
+   > easydo exposes no reliable *delivered* signal (log actions observed:
+   > `attachment, decline, fill, view` only), so **Delivered** is not auto-set.
+3. On completion (`signed` / `has_data`), the flow downloads the complete PDF and
+   stores it in a **Dataverse File** column on `Signature Document`, then surfaces
+   it on the Contact (and the side panel shows the decline reason for declined
+   requests).
 
 ## Dynamic send-table enablement
 
