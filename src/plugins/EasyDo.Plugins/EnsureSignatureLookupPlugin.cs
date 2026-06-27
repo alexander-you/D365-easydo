@@ -23,20 +23,36 @@
                      Created                  (Boolean) - true when newly created by this call
 
   Idempotent: if the lookup already exists the call is a no-op and returns
-  Created = false. The new relationship is added to the alex_d365_easydo solution.
+  Created = false.
+
+  ALM-safe solution targeting: the relationship must be added to an UNMANAGED
+  solution. The base solution (alex_d365_easydo) is installed managed on customer
+  environments, and a managed solution cannot receive new components. The plugin
+  therefore resolves a writable target:
+     - base solution unmanaged -> use it (clean ALM, e.g. the dev environment);
+     - base solution managed   -> ensure/create a dedicated unmanaged solution
+                                  (alex_d365_easydo_runtime) and warn the admin;
+     - cannot create one        -> leave the component in the Default solution.
+  It never swallows an OrganizationService failure and continues - doing so
+  aborts the platform transaction ("ISV code reduced the open transaction count").
+
+  Output parameter Warning (String) carries any ALM advisory back to the UI.
 */
 using System;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
+using Microsoft.Xrm.Sdk.Query;
 
 namespace EasyDo.Plugins
 {
     public sealed class EnsureSignatureLookupPlugin : PluginBase
     {
         private const string RequestEntity = "alex_signaturerequest";
-        private const string SolutionUniqueName = "alex_d365_easydo";
+        private const string PrimarySolution = "alex_d365_easydo";
+        private const string RuntimeSolution = "alex_d365_easydo_runtime";
+        private const string RuntimeSolutionFriendly = "D365 easydo - Runtime Customizations";
 
         public EnsureSignatureLookupPlugin(string unsecure, string secure) : base(typeof(EnsureSignatureLookupPlugin)) { }
 
@@ -130,24 +146,106 @@ namespace EasyDo.Plugins
             trace.Trace("EnsureSignatureLookup: created relationship {0} (attribute id {1}).",
                 relationshipName, createResp.AttributeId);
 
-            // Add the new relationship to the easydo solution so it travels with ALM.
-            try
+            // Add the new relationship to a WRITABLE (unmanaged) solution so it travels
+            // with ALM. A managed base solution cannot receive components, so resolve a
+            // safe target. We do NOT swallow an OrganizationService failure and continue:
+            // doing so aborts the platform transaction.
+            string warning;
+            var targetSolution = ResolveTargetSolution(svc, trace, out warning);
+
+            if (!string.IsNullOrEmpty(targetSolution))
             {
                 svc.Execute(new AddSolutionComponentRequest
                 {
                     ComponentType = 10, // Entity Relationship
                     ComponentId = createResp.RelationshipId,
-                    SolutionUniqueName = SolutionUniqueName,
+                    SolutionUniqueName = targetSolution,
                     AddRequiredComponents = false
                 });
+                trace.Trace("EnsureSignatureLookup: relationship added to solution '{0}'.", targetSolution);
             }
-            catch (Exception ex)
+            else
             {
-                // Non-fatal: the lookup is live even if solution add fails.
-                trace.Trace("EnsureSignatureLookup: AddSolutionComponent failed (non-fatal): {0}", ex.Message);
+                trace.Trace("EnsureSignatureLookup: relationship left in the Default solution.");
             }
 
+            ctx.OutputParameters["TargetSolution"] = targetSolution ?? "Default";
+            ctx.OutputParameters["Warning"] = warning ?? string.Empty;
             ctx.OutputParameters["Created"] = true;
+        }
+
+        // Resolves an UNMANAGED solution the new relationship can be added to.
+        // Returns null to mean "leave the component in the Default solution".
+        private static string ResolveTargetSolution(IOrganizationService svc, ITracingService trace, out string warning)
+        {
+            warning = null;
+
+            var primary = RetrieveSolution(svc, PrimarySolution);
+            if (primary != null && !primary.IsManaged)
+                return PrimarySolution; // unmanaged base (e.g. dev): keep ALM clean.
+
+            // Base solution is managed (or missing) -> it cannot receive new components.
+            var runtime = RetrieveSolution(svc, RuntimeSolution);
+            if (runtime != null && !runtime.IsManaged)
+            {
+                warning = "Base solution '" + PrimarySolution + "' is managed; the relationship was added to the " +
+                          "unmanaged solution '" + RuntimeSolution + "'. Track this solution in your ALM/source control.";
+                return RuntimeSolution;
+            }
+
+            // Try to create the dedicated unmanaged runtime solution, reusing the base publisher.
+            if (primary != null && primary.PublisherId != Guid.Empty)
+            {
+                try
+                {
+                    var sol = new Entity("solution");
+                    sol["uniquename"] = RuntimeSolution;
+                    sol["friendlyname"] = RuntimeSolutionFriendly;
+                    sol["version"] = "1.0.0.0";
+                    sol["publisherid"] = new EntityReference("publisher", primary.PublisherId);
+                    svc.Create(sol);
+                    trace.Trace("EnsureSignatureLookup: created unmanaged runtime solution '{0}'.", RuntimeSolution);
+                    warning = "Base solution '" + PrimarySolution + "' is managed. A new unmanaged solution '" +
+                              RuntimeSolution + "' was created automatically to hold signature-request relationships " +
+                              "made on this environment. New relationships will be added there from now on - include it in your ALM.";
+                    return RuntimeSolution;
+                }
+                catch (Exception ex)
+                {
+                    trace.Trace("EnsureSignatureLookup: could not create runtime solution: {0}", ex.Message);
+                }
+            }
+
+            // Last resort: leave the component in the Default solution (functional, not packaged).
+            warning = "Base solution '" + PrimarySolution + "' is managed and a dedicated unmanaged solution could not " +
+                      "be created. The relationship was left in the Default solution (functional but not tracked in a packaged solution).";
+            return null;
+        }
+
+        private static SolutionInfo RetrieveSolution(IOrganizationService svc, string uniqueName)
+        {
+            var q = new QueryExpression("solution")
+            {
+                ColumnSet = new ColumnSet("solutionid", "ismanaged", "publisherid"),
+                TopCount = 1
+            };
+            q.Criteria.AddCondition("uniquename", ConditionOperator.Equal, uniqueName);
+
+            var res = svc.RetrieveMultiple(q);
+            if (res.Entities.Count == 0) return null;
+
+            var e = res.Entities[0];
+            return new SolutionInfo
+            {
+                IsManaged = e.GetAttributeValue<bool>("ismanaged"),
+                PublisherId = e.Contains("publisherid") ? ((EntityReference)e["publisherid"]).Id : Guid.Empty
+            };
+        }
+
+        private sealed class SolutionInfo
+        {
+            public bool IsManaged;
+            public Guid PublisherId;
         }
 
         private static bool AttributeExists(IOrganizationService svc, ITracingService trace, string logical)

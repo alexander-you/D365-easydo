@@ -82,6 +82,38 @@ Signature Recipient · Signature Document · Integration Log
 3. On `signed` / `approved`, the flow downloads the complete PDF and stores it in a
    **Dataverse File** column on `Signature Document`, then surfaces it on the Contact.
 
+## Dynamic send-table enablement
+
+Any business table can be made "sendable" at runtime from the admin center
+(`adminCenter.html` → **Send tables management**). Enabling a table calls the unbound
+Custom API **`alex_EnsureSignatureLookup`** (`EnsureSignatureLookupPlugin`), which
+idempotently provisions a native **N:1 relationship** `alex_<table>_signaturerequest`
+(lookup `alex_related<table>id`) from `alex_signaturerequest` to that table.
+`PopulateAnchorPlugin` later fills the matching lookup alongside the generic anchor.
+
+**Target-solution resolution.** A new metadata component must land in a **writable
+(unmanaged)** solution. The plug-in therefore inspects the base solution
+`alex_d365_easydo`:
+
+| Base solution state | Where the relationship is added | `Warning` |
+| --- | --- | --- |
+| Unmanaged (Dev) | `alex_d365_easydo` directly | — |
+| Managed (Test/Prod/customer) | dedicated unmanaged `alex_d365_easydo_runtime`, created on demand under the same publisher | advisory text returned |
+| Solution not found | Default solution | advisory text returned |
+
+The API returns `RelationshipSchemaName`, `LookupLogicalName`, `Created`,
+**`TargetSolution`** and **`Warning`**; the admin center shows the warning as a toast
+and persists it to `alex_statusmessage`. The plug-in deliberately **does not catch and
+continue** past an `OrganizationService` failure — doing so aborts the platform
+transaction and silently rolls the relationship back.
+
+> **בעברית.** הפעלת טבלה לשליחה (מסך "ניהול טבלאות שליחה") קוראת ל‑Custom API
+> `alex_EnsureSignatureLookup`, שמייצר קשר N:1 מ‑`alex_signaturerequest` לטבלה. מאחר
+> שאי אפשר לכתוב מטא‑דאטה ל‑solution מנוהל, הפלאגין בוחר יעד **לא‑מנוהל**: בפיתוח —
+> `alex_d365_easydo` עצמו; אצל לקוח (בסיס מנוהל) — solution לא‑מנוהל ייעודי
+> `alex_d365_easydo_runtime` שנוצר לפי הצורך, עם **אזהרה** למשתמש. הפלאגין אינו בולע
+> חריגות, כדי לא לגלגל את הטרנזקציה לאחור.
+
 ## Correlation strategy
 
 The easydo `meta_data.client` bag stores `{ "d365_table": "contact",

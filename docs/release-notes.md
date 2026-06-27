@@ -15,6 +15,72 @@ All notable changes to this project are documented here.
   N days and clears the preview columns, and/or a "discard preview" action in the
   wizard that calls `DeleteForm` and resets the request. Not yet implemented.
 
+## [Unreleased] — send-table enablement survives managed solutions (2026-06-26)
+
+### Fixed
+
+- **Enabling a send table no longer fails on a managed (customer) environment.**
+  The admin center "Send tables management" screen (`adminCenter.html`) calls the
+  `alex_EnsureSignatureLookup` Custom API (`EnsureSignatureLookupPlugin`) to
+  provision, on demand, a native N:1 relationship `alex_<table>_signaturerequest`
+  (lookup `alex_related<table>id`) between the business table and
+  `alex_signaturerequest`. The plug-in previously always added that new relationship
+  to the hard-coded `alex_d365_easydo` solution and **swallowed** the error if that
+  solution was **managed**. On a customer org this raised *"Cannot update a managed
+  solution"*; because the exception was caught and ignored, the platform aborted the
+  whole transaction (*"ISV code reduced the open transaction count"*) and rolled the
+  relationship back — the table stayed stuck on **Failed (4)** with the easydo
+  connection error (*"שגיאת קשר"*).
+
+### Added
+
+- **Runtime solution for managed environments.** The plug-in now resolves a
+  **writable** target solution before adding the relationship:
+  - base `alex_d365_easydo` is **unmanaged** (Dev) → use it directly — no change, no
+    warning;
+  - base is **managed** (Test/Prod/customer) → create or reuse a dedicated
+    **unmanaged** solution **`alex_d365_easydo_runtime`** ("D365 easydo - Runtime
+    Customizations") under the same publisher, add the relationship there, and return
+    an advisory.
+  - The plug-in **no longer swallows** `OrganizationService` exceptions, so a real
+    failure surfaces instead of corrupting the transaction.
+- **New Custom API outputs** on `alex_EnsureSignatureLookup`: `TargetSolution` (which
+  solution received the relationship) and `Warning` (advisory text). `adminCenter.html`
+  shows the warning as a toast and stores it in `alex_statusmessage`.
+
+### Decisions
+
+- **Business — why a separate runtime solution.** A managed solution is read-only by
+  design; on a customer's environment our base solution arrives managed, so new
+  metadata cannot be written into it. Rather than block the admin, the feature keeps
+  the customer self-serving: the on-the-fly relationship is placed in a clearly named
+  *runtime* solution, and the admin is told (via the warning) that this customization
+  now lives there and should be exported with the rest of their unmanaged layer.
+- **ALM — managed dependencies are expected.** Enabling a table that is owned by a
+  managed first-party solution makes the easydo solution **depend** on it: e.g.
+  `account`/`salesorder` → **Sales** (`msdynce_Sales`), `incident`/`entitlement` →
+  **Service** (`msdynce_Service`), `msevtmgt_event` → **Marketing – Event Management**.
+  Those managed solutions must exist in the target environment or import fails — so
+  only enable the tables the customer actually has.
+
+### Verified
+
+- Live in Dev (EN, unmanaged base): re-enabling `account`, `entitlement`, `incident`
+  and `msevtmgt_event` created their relationships and set the config rows to
+  **Created (3)** with no transaction rollback; no runtime solution is created because
+  the base is unmanaged (by design).
+
+> **בעברית.** הפעלת טבלת שליחה ממסך "ניהול טבלאות שליחה" קוראת ל‑Custom API
+> `alex_EnsureSignatureLookup` שמייצר ביקוש קשר N:1 בין הטבלה העסקית ל‑
+> `alex_signaturerequest`. קודם הפלאגין הוסיף את הקשר ל‑solution הקשיח
+> `alex_d365_easydo` ו**בלע** שגיאה כשה‑solution מנוהל — מה שגרם לגלגול הטרנזקציה
+> לאחור ולסטטוס **נכשל (4)** עם "שגיאת קשר". **התיקון:** אם הבסיס לא‑מנוהל (פיתוח)
+> משתמשים בו ישירות; אם מנוהל (לקוח) נוצר/נעשה שימוש ב‑solution לא‑מנוהל ייעודי
+> **`alex_d365_easydo_runtime`** והמשתמש מקבל **אזהרה** שההתאמה נשמרה שם; הפלאגין כבר
+> אינו בולע חריגות. **השלכת ALM:** הפעלת טבלה בבעלות solution מנוהל (Sales / Service /
+> Marketing) יוצרת **תלות מנוהלת** עליו — שחייבת להתקיים בסביבת היעד, אחרת הייבוא
+> ייכשל. לכן יש להפעיל רק טבלאות שהלקוח באמת מחזיק.
+
 ## [Unreleased] — signed PDF on the primary record, smart last-viewed & per-table lookups (2026-06-21)
 
 ### Added

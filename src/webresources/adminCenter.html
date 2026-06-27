@@ -2575,12 +2575,18 @@
 
         return ensureConfig.then(function (configId) {
           return callEnsureLookup(t.logical).then(function (resp) {
+            var warn = (resp && resp.Warning) || "";
             return xrm.WebApi.updateRecord("alex_easydoentityconfig", configId, {
               alex_relationshipstatus: 3,   // Created
               alex_relationshipschemaname: (resp && resp.RelationshipSchemaName) || lookupSchemaPreview(t.logical),
-              alex_statusmessage: ""
+              alex_statusmessage: warn
             }).then(function () {
-              toast("הופעל ונוצר קשר עבור \u201C" + t.display + "\u201D"); loadConfigs();
+              if (warn) {
+                toast("הופעל עבור \u201C" + t.display + "\u201D \u2014 " + warn);
+              } else {
+                toast("הופעל ונוצר קשר עבור \u201C" + t.display + "\u201D");
+              }
+              loadConfigs();
             });
           }, function (err) {
             return xrm.WebApi.updateRecord("alex_easydoentityconfig", configId, {
