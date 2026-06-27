@@ -138,7 +138,9 @@
                       "entityName": "alex_signaturerequests",
                       "recordId": "@items('Process_each_open_request')?['alex_signaturerequestid']",
                       "item/alex_laststatuscheckon": "@utcNow()",
-                      "item/alex_lastviewedon": "@if(empty(body('Find_the_view_events')), null, last(body('Find_the_view_events'))?['created_at'])"
+                      "item/alex_lastviewedon": "@if(empty(body('Find_the_view_events')), null, last(body('Find_the_view_events'))?['created_at'])",
+                      "item/alex_status": "@if(equals(body('Get_the_form')?['status'], 'decline'), 626210007, if(equals(body('Get_the_form')?['status'], 'expired'), 626210010, if(or(equals(body('Get_the_form')?['status'], 'canceled'), not(equals(coalesce(body('Get_the_form')?['deleted_at'], ''), ''))), 626210009, if(or(coalesce(body('Get_the_form')?['has_data'], false), equals(body('Get_the_form')?['status'], 'signed')), 626210006, if(not(empty(body('Find_the_view_events'))), 626210004, items('Process_each_open_request')?['alex_status'])))))",
+                      "item/alex_declinereason": "@if(equals(body('Get_the_form')?['status'], 'decline'), first(body('Get_the_form')?['assignees'])?['decline_reason'], null)"
                     },
                     "authentication": "@parameters('$authentication')"
                   }

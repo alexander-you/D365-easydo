@@ -1,0 +1,241 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "alex_sharedsharepointonline_942cf"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      },
+      "shared_alex-5feasydo-5f55924d4d89150206": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "alex_easydo"
+        },
+        "api": {
+          "name": "shared_alex-5feasydo-5f55924d4d89150206"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_a_file_is_selected_in_SharePoint": {
+          "metadata": {
+            "operationMetadataId": "a1000000-0000-4a10-9c01-000000000001"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "OnFileSelected",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "https://d365demotsce39096545.sharepoint.com/sites/contosoteam",
+              "table": "Documents",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "RecipientEmail": {
+                    "title": "Recipient email",
+                    "type": "string",
+                    "description": "Email of the person who must sign | דוא\"ל החותם",
+                    "x-ms-content-hint": "TEXT",
+                    "x-ms-dynamically-added": true
+                  },
+                  "RecipientName": {
+                    "title": "Recipient name",
+                    "type": "string",
+                    "description": "Display name of the signer | שם החותם",
+                    "x-ms-content-hint": "TEXT",
+                    "x-ms-dynamically-added": true
+                  }
+                },
+                "required": [
+                  "RecipientEmail",
+                  "RecipientName"
+                ]
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "actions": {
+        "Get_file_properties": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "a1000000-0000-4a10-9c01-000000000002"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "https://d365demotsce39096545.sharepoint.com/sites/contosoteam",
+              "table": "Documents",
+              "id": "@triggerOutputs()?['body/ID']"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Get_file_content": {
+          "runAfter": {
+            "Get_file_properties": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a1000000-0000-4a10-9c01-000000000003"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContent",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "https://d365demotsce39096545.sharepoint.com/sites/contosoteam",
+              "id": "@outputs('Get_file_properties')?['body/{Identifier}']"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Create_blank_form": {
+          "runAfter": {
+            "Get_file_content": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a1000000-0000-4a10-9c01-000000000004"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_alex-5feasydo-5f55924d4d89150206",
+              "operationId": "CreateForm",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f55924d4d89150206"
+            },
+            "parameters": {
+              "body/name": "@coalesce(outputs('Get_file_properties')?['body/{FilenameWithExtension}'], triggerOutputs()?['body/fileName'])",
+              "body/draft": true
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Upload_the_PDF": {
+          "runAfter": {
+            "Create_blank_form": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a1000000-0000-4a10-9c01-000000000005"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_alex-5feasydo-5f55924d4d89150206",
+              "operationId": "UploadFile",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f55924d4d89150206"
+            },
+            "parameters": {
+              "formId": "@string(outputs('Create_blank_form')?['body/id'])",
+              "body/file/name": "@coalesce(outputs('Get_file_properties')?['body/{FilenameWithExtension}'], triggerOutputs()?['body/fileName'])",
+              "body/file/data": "@base64(body('Get_file_content'))",
+              "body/file/mime": "application/pdf"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Build_the_assignee": {
+          "runAfter": {
+            "Upload_the_PDF": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a1000000-0000-4a10-9c01-000000000006"
+          },
+          "type": "Compose",
+          "inputs": [
+            {
+              "email": "@triggerBody()?['RecipientEmail']",
+              "name": "@triggerBody()?['RecipientName']",
+              "sequence": 1,
+              "recipient": true,
+              "notify_platform": "any"
+            }
+          ]
+        },
+        "Set_the_recipient": {
+          "runAfter": {
+            "Build_the_assignee": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a1000000-0000-4a10-9c01-000000000007"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_alex-5feasydo-5f55924d4d89150206",
+              "operationId": "SetAssignees",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f55924d4d89150206"
+            },
+            "parameters": {
+              "formId": "@string(outputs('Create_blank_form')?['body/id'])",
+              "body/assignees": "@outputs('Build_the_assignee')"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Send_the_form_for_signature": {
+          "runAfter": {
+            "Set_the_recipient": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a1000000-0000-4a10-9c01-000000000008"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_alex-5feasydo-5f55924d4d89150206",
+              "operationId": "SendForm",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f55924d4d89150206"
+            },
+            "parameters": {
+              "formId": "@string(outputs('Create_blank_form')?['body/id'])"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "outputs": {}
+    }
+  },
+  "schemaVersion": "1.0.0.0"
+}

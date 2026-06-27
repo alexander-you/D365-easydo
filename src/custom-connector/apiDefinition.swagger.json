@@ -644,7 +644,164 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "x-ms-summary": "מזהה טופס | Form ID",
+                  "description": "easydo numeric form id. | מזהה טופס מספרי ב-easydo."
+                },
+                "uuid": {
+                  "type": "string",
+                  "x-ms-summary": "UUID",
+                  "description": "Form UUID. | מזהה ייחודי של הטופס."
+                },
+                "template_id": {
+                  "type": "integer",
+                  "x-ms-summary": "מזהה תבנית | Template ID",
+                  "description": "Source template id. | מזהה התבנית שממנה נוצר הטופס."
+                },
+                "status": {
+                  "type": "string",
+                  "x-ms-summary": "סטטוס טופס | Form status",
+                  "description": "Overall form status. Observed values: waiting (sent, awaiting action), signed (completed), decline (recipient refused to sign), expired, canceled. | סטטוס כללי של הטופס. ערכים שנצפו: waiting (נשלח וממתין), signed (הושלם), decline (הנמען סירב לחתום), expired (פג תוקף), canceled (בוטל).",
+                  "enum": [
+                    "waiting",
+                    "signed",
+                    "decline",
+                    "expired",
+                    "canceled"
+                  ]
+                },
+                "has_data": {
+                  "type": "boolean",
+                  "x-ms-summary": "יש נתונים | Has data",
+                  "description": "True once the recipient submitted signed data. | אמת לאחר שהנמען הגיש נתונים חתומים."
+                },
+                "signed_date": {
+                  "type": "string",
+                  "x-ms-summary": "תאריך חתימה | Signed date",
+                  "description": "UTC timestamp the form was signed, otherwise null. | חותמת זמן UTC של החתימה, אחרת null."
+                },
+                "sent_date": {
+                  "type": "string",
+                  "x-ms-summary": "תאריך שליחה | Sent date",
+                  "description": "UTC timestamp the form was sent. | חותמת זמן UTC של השליחה."
+                },
+                "created_at": {
+                  "type": "string",
+                  "x-ms-summary": "נוצר ב | Created at",
+                  "description": "UTC creation timestamp. | חותמת זמן UTC של היצירה."
+                },
+                "updated_at": {
+                  "type": "string",
+                  "x-ms-summary": "עודכן ב | Updated at",
+                  "description": "UTC timestamp of the last status change (e.g. when a decline occurred). | חותמת זמן UTC של שינוי הסטטוס האחרון (למשל מועד הדחייה)."
+                },
+                "expires_at": {
+                  "type": "string",
+                  "x-ms-summary": "פג תוקף ב | Expires at",
+                  "description": "UTC expiry timestamp, or null if no expiry. | חותמת זמן UTC לפקיעת תוקף, או null אם אין."
+                },
+                "deleted_at": {
+                  "type": "string",
+                  "x-ms-summary": "נמחק ב | Deleted at",
+                  "description": "UTC timestamp if the form was deleted/canceled, otherwise null. | חותמת זמן UTC אם הטופס נמחק/בוטל, אחרת null."
+                },
+                "assignees": {
+                  "type": "array",
+                  "x-ms-summary": "נמענים | Assignees",
+                  "description": "Signers and their per-recipient status. | רשימת החותמים והסטטוס של כל אחד.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "x-ms-summary": "מזהה נמען | Assignee ID"
+                      },
+                      "name": {
+                        "type": "string",
+                        "x-ms-summary": "שם | Name"
+                      },
+                      "email": {
+                        "type": "string",
+                        "x-ms-summary": "דוא\"ל | Email"
+                      },
+                      "phone": {
+                        "type": "string",
+                        "x-ms-summary": "טלפון | Phone"
+                      },
+                      "sequence": {
+                        "type": "integer",
+                        "x-ms-summary": "סדר חתימה | Signing sequence"
+                      },
+                      "main": {
+                        "type": "boolean",
+                        "x-ms-summary": "נמען ראשי | Main recipient",
+                        "description": "True for the primary recipient. | אמת עבור הנמען הראשי."
+                      },
+                      "status": {
+                        "type": "string",
+                        "x-ms-summary": "סטטוס נמען | Assignee status",
+                        "description": "Per-recipient status. Observed values: waiting, signed, decline. | סטטוס הנמען. ערכים שנצפו: waiting, signed, decline.",
+                        "enum": [
+                          "waiting",
+                          "signed",
+                          "decline"
+                        ]
+                      },
+                      "decline_reason": {
+                        "type": "string",
+                        "x-ms-summary": "סיבת דחייה | Decline reason",
+                        "description": "Free-text reason supplied by the recipient when status is decline, otherwise null. | טקסט חופשי שהזין הנמען בעת דחייה, אחרת null."
+                      },
+                      "signed_date": {
+                        "type": "string",
+                        "x-ms-summary": "תאריך חתימה | Signed date"
+                      },
+                      "sent_date": {
+                        "type": "string",
+                        "x-ms-summary": "תאריך שליחה | Sent date"
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "x-ms-summary": "עודכן ב | Updated at"
+                      },
+                      "log": {
+                        "type": "array",
+                        "x-ms-summary": "יומן פעולות | Action log",
+                        "description": "Chronological recipient actions. | פעולות הנמען לפי סדר כרונולוגי.",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "action": {
+                              "type": "string",
+                              "x-ms-summary": "פעולה | Action",
+                              "description": "Action type. Observed values: view, decline (and sign-related actions). | סוג הפעולה. ערכים שנצפו: view, decline (ופעולות הקשורות לחתימה)."
+                            },
+                            "ip": {
+                              "type": "string",
+                              "x-ms-summary": "כתובת IP | IP"
+                            },
+                            "device": {
+                              "type": "string",
+                              "x-ms-summary": "מכשיר | Device"
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "x-ms-summary": "מועד הפעולה | Action time",
+                              "description": "UTC timestamp of the action. | חותמת זמן UTC של הפעולה."
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },

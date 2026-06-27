@@ -305,7 +305,7 @@
         renderError("לא נמצא מזהה בקשה");
         return Promise.reject("no id");
       }
-      var select = "alex_name,alex_status,alex_senton,alex_completedon,alex_laststatuscheckon,alex_signednoteid,alex_primaryrecordid";
+      var select = "alex_name,alex_status,alex_senton,alex_completedon,alex_laststatuscheckon,alex_signednoteid,alex_primaryrecordid,alex_declinereason";
       select += ",_alex_templateid_value,_alex_relatedcontactid_value";
       return apiGet("alex_signaturerequests(" + requestId + ")?$select=" + select + "&$expand=alex_TemplateId($select=alex_name),alex_RelatedContactId($select=fullname,emailaddress1,mobilephone)");
     }
@@ -365,6 +365,15 @@
       html += '<div class="meta-item"><div class="meta-lbl">' + (lang === "he" ? "נבדק לאחרונה" : "Last Check") + '</div><div class="meta-val">' + esc(lastCheck) + '</div></div>';
       html += '<div class="meta-item"><div class="meta-lbl">' + (lang === "he" ? "הושלם" : "Completed") + '</div><div class="meta-val">' + esc(completedOn) + '</div></div>';
       html += '</div>';
+
+      // Decline reason (only when the recipient refused to sign)
+      if (statusVal === 626210007) {
+        var declineReason = d.alex_declinereason || (lang === "he" ? "לא צוינה סיבה" : "No reason provided");
+        html += '<div style="margin:12px 0;padding:12px 14px;background:#fdecea;border:1px solid #f5c6c2;border-radius:8px;">';
+        html += '<div style="font-size:12px;font-weight:600;color:#b71c1c;margin-bottom:4px;">' + (lang === "he" ? "סיבת דחייה" : "Decline reason") + '</div>';
+        html += '<div style="font-size:13px;color:#5f2120;white-space:pre-wrap;line-height:1.5;">' + esc(declineReason) + '</div>';
+        html += '</div>';
+      }
 
       // PDF section
       html += '<div class="v-pdf-section">';

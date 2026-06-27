@@ -82,6 +82,7 @@ Central record for a single signature request.
 | `alex_laststatuscheckon` | DateTime | Polling timestamp (support) |
 | `alex_retrycount` | Number | Retry count (support) |
 | `alex_errorcode` / `alex_errormessage` | Text / Multiline | Last error (support) |
+| `alex_declinereason` | Multiline | Recipient's decline reason (from easydo assignee `decline_reason`) |
 
 ### `alex_templatefieldmapping` — Template Field Mapping (Standard)
 

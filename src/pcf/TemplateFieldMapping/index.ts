@@ -57,6 +57,7 @@ const I18N: Record<Lang, Record<string, string>> = {
     choose: "Choose…",
     locked: "Locked", editable: "Editable",
     shown: "Shown", hidden: "Hidden", editOn: "Editable", editOff: "Fixed",
+    editLockedByTemplate: "Editing is off for this template",
     dirPrefill: "Prefill", dirReadback: "Read back", dirBidir: "Bidirectional",
     stMapped: "Mapped", stUnmapped: "Unmapped",
     recordContext: "Record context", sourceTable: "Source table", mappingTable: "Mapping table", solution: "Solution", prefix: "Prefix", template: "Template",
@@ -73,6 +74,8 @@ const I18N: Record<Lang, Record<string, string>> = {
     prefillEdit: "Allow editing data on send", prefillEditHint: "Let the sender edit prefilled fields in the wizard before sending",
     onLbl: "On", offLbl: "Off",
     contactPathLabel: "Path to contact", contactPathNone: "No contact link",
+    contactPathHint: "Which lookup on the primary record points to the signer contact",
+    recipientLocked: "Lock recipient on send", recipientLockedHint: "The recipient resolved from the record is read-only — the sender cannot change it",
     choosePrimary: "Choose a base table…", contactDisplay: "Contact",
     viaSep: "via",
     configHint: "Pick the base table this document is built on. Each field can then map to a column on that table or on a single related record (one lookup hop).",
@@ -93,6 +96,7 @@ const I18N: Record<Lang, Record<string, string>> = {
     choose: "בחר…",
     locked: "נעול", editable: "ניתן לעריכה",
     shown: "מוצג", hidden: "מוסתר", editOn: "ניתן לעריכה", editOff: "קבוע",
+    editLockedByTemplate: "עריכה כבויה ברמת התבנית",
     dirPrefill: "מילוי מקדים", dirReadback: "קריאה חזרה", dirBidir: "דו‑כיווני",
     stMapped: "ממופה", stUnmapped: "לא ממופה",
     recordContext: "הקשר רשומה", sourceTable: "טבלת מקור", mappingTable: "טבלת מיפוי", solution: "פתרון", prefix: "תחילית", template: "תבנית",
@@ -109,6 +113,8 @@ const I18N: Record<Lang, Record<string, string>> = {
     prefillEdit: "אפשר עריכת נתונים בעת שליחה", prefillEditHint: "אפשרו לשולח לערוך שדות שמולאו מראש באשף לפני השליחה",
     onLbl: "פעיל", offLbl: "כבוי",
     contactPathLabel: "נתיב לאיש קשר", contactPathNone: "אין קישור לאיש קשר",
+    contactPathHint: "איזה שדה lookup ברשומה הראשית מצביע על איש הקשר החותם",
+    recipientLocked: "נעילת הנמען בשליחה", recipientLockedHint: "הנמען שנפתר מהרשומה לקריאה בלבד — השולח לא יכול לשנותו",
     choosePrimary: "בחרו טבלת בסיס…", contactDisplay: "איש קשר",
     viaSep: "דרך",
     configHint: "בחרו את טבלת הבסיס שעליה בנוי המסמך. כל שדה יכול להימפות לעמודה בטבלה זו או ברשומה קשורה אחת (קפיצת lookup אחת).",
@@ -174,6 +180,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
   private templateName = "";
   private allowSendFromObject = false; // alex_allowsendfromobject (template-level)
   private allowPrefillEdit = false;    // alex_allowprefilledit (template-level)
+  private recipientLocked = false;     // alex_recipientlocked (template-level)
 
   private tables: TableMeta[] = [];
   private colCache: Record<string, ColMeta[]> = {};
@@ -220,6 +227,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       this.contactPath = "";
       this.allowSendFromObject = false;
       this.allowPrefillEdit = false;
+      this.recipientLocked = false;
       this.lookups = [];
       this.renderLoading(I18N[this.lang].loadingMeta);
       void this.bootstrap();
@@ -402,10 +410,11 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
   private async fetchTemplateConfig(): Promise<void> {
     try {
       const rec = await this.context.webAPI.retrieveRecord(
-        TEMPLATE_ENTITY, this.templateId, "?$select=alex_primarytable,alex_contactpath,alex_name,alex_allowsendfromobject,alex_allowprefilledit"
+        TEMPLATE_ENTITY, this.templateId, "?$select=alex_primarytable,alex_contactpath,alex_name,alex_allowsendfromobject,alex_allowprefilledit,alex_recipientlocked"
       );
       this.primaryTable = (rec["alex_primarytable"] as string) ?? "";
       this.contactPath = (rec["alex_contactpath"] as string) ?? "";
+      this.recipientLocked = rec["alex_recipientlocked"] === true;
       this.allowSendFromObject = rec["alex_allowsendfromobject"] === true;
       this.allowPrefillEdit = rec["alex_allowprefilledit"] === true;
       if (!this.templateName && rec["alex_name"]) this.templateName = rec["alex_name"] as string;
@@ -663,6 +672,21 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     g1.appendChild(this.el("div", "edo-chint", t.primaryHint));
     strip.appendChild(g1);
 
+    // Path to the signer contact: which lookup on the primary record points to
+    // the contact. Only lookups that target the contact table are offered.
+    const gc = this.el("div", "edo-cfield");
+    gc.appendChild(this.el("label", "edo-clabel", t.contactPathLabel));
+    const contactOpts = this.lookups
+      .filter(l => l.targets.includes("contact"))
+      .map(l => ({ value: l.logical, label: l.display }));
+    const contactSel = this.buildCombo(
+      contactOpts, this.contactPath, t.contactPathNone,
+      (v) => { this.contactPath = v; void this.saveTemplateConfig(); }
+    );
+    gc.appendChild(contactSel);
+    gc.appendChild(this.el("div", "edo-chint", t.contactPathHint));
+    strip.appendChild(gc);
+
     // Template-level flags (moved here from the hidden "General" form tab so the
     // admin can configure everything from the one visible control).
     const g2 = this.el("div", "edo-cfield edo-tplflags");
@@ -673,7 +697,11 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     ));
     g2.appendChild(this.buildFlagToggle(
       this.allowPrefillEdit, t.prefillEdit, t.prefillEditHint,
-      (v) => { this.allowPrefillEdit = v; void this.saveTemplateFlag("alex_allowprefilledit", v); }
+      (v) => { this.allowPrefillEdit = v; void this.saveTemplateFlag("alex_allowprefilledit", v); this.render(); }
+    ));
+    g2.appendChild(this.buildFlagToggle(
+      this.recipientLocked, t.recipientLocked, t.recipientLockedHint,
+      (v) => { this.recipientLocked = v; void this.saveTemplateFlag("alex_recipientlocked", v); }
     ));
     strip.appendChild(g2);
 
@@ -744,10 +772,6 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     const bar = this.el("div", "edo-gridbar");
     const titleBox = this.el("div");
     titleBox.appendChild(this.el("div", "edo-gridtitle", t.gridTitle));
-    const meta = this.el("div", "edo-gridmeta");
-    meta.appendChild(document.createTextNode(t.gridMeta + " "));
-    meta.appendChild(this.el("code", undefined, ENTITY));
-    titleBox.appendChild(meta);
     bar.appendChild(titleBox);
 
     const search = this.el("div", "edo-search");
@@ -869,8 +893,13 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     tr.appendChild(tdVis);
 
     const tdEdit = this.el("td");
-    tdEdit.appendChild(this.buildBoolToggle(r.editableBeforeSend, t.editOn, t.editOff,
-      (v) => { r.editableBeforeSend = v; void this.persistRow(r); }));
+    // The per-field "editable on send" toggle has no effect unless the
+    // template-level master switch (allowPrefillEdit) is on, so disable it
+    // visually and explain why when the master switch is off.
+    const editToggle = this.buildBoolToggle(r.editableBeforeSend, t.editOn, t.editOff,
+      (v) => { r.editableBeforeSend = v; void this.persistRow(r); }, !this.allowPrefillEdit);
+    if (!this.allowPrefillEdit) { editToggle.title = t.editLockedByTemplate; }
+    tdEdit.appendChild(editToggle);
     tr.appendChild(tdEdit);
 
     const tdStatus = this.el("td", "edo-status-cell");
@@ -1011,18 +1040,20 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
   }
 
   // Generic on/off switch used by the wizard-visibility and editable columns.
-  private buildBoolToggle(checked: boolean, onLabel: string, offLabel: string, onChange: (v: boolean) => void): HTMLElement {
-    const wrap = this.el("label", "edo-toggle");
+  private buildBoolToggle(checked: boolean, onLabel: string, offLabel: string, onChange: (v: boolean) => void, disabled = false): HTMLElement {
+    const wrap = this.el("label", disabled ? "edo-toggle edo-toggle-disabled" : "edo-toggle");
     const sw = this.el("span", "edo-switch");
     const cb = this.el("input") as HTMLInputElement;
     cb.type = "checkbox";
     cb.checked = checked;
+    cb.disabled = disabled;
     const label = this.el("span", "edo-toggle-label", checked ? onLabel : offLabel);
     cb.onchange = () => { label.textContent = cb.checked ? onLabel : offLabel; onChange(cb.checked); };
     sw.appendChild(cb);
     sw.appendChild(this.el("span", "edo-slider"));
     wrap.appendChild(sw);
     wrap.appendChild(label);
+    if (disabled) { wrap.style.opacity = "0.45"; wrap.style.pointerEvents = "none"; }
     return wrap;
   }
 

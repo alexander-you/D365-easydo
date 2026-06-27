@@ -208,6 +208,7 @@
                     sHint: { template: "בחירת המסמך", recipients: "מי יקבל לחתימה", data: "אימות ועריכה", settings: "אופן השליחה", review: "אישור ושליחה" },
                     dataHeading: "אימות נתונים", dataHint: "השדות נשלפו מהרשומה. ניתן לערוך אותם לפני השליחה.", dataHintReadOnly: "השדות נשלפו מהרשומה ויוצגו במסמך.",
                     dataEmpty: "אין שדות זמינים לעריכה בתבנית זו.", dataLoading: "טוען שדות...", fieldLocked: "לקריאה בלבד",
+                    dataLockedByTemplate: "עריכת הנתונים כבויה עבור תבנית זו — השדות מוצגים לצפייה בלבד.",
                     roleHint: "התבנית כוללת מספר בעלי תפקידים. בחרו איש קשר לכל תפקיד והפרטים יושלמו אוטומטית.",
                     reviewFields: "שדות שעודכנו",
                     searchContact: "חיפוש איש קשר...", changeContact: "שינוי", noContactMatch: "לא נמצאו אנשי קשר תואמים",
@@ -217,6 +218,7 @@
                     noTemplates: "לא הוגדרו תבניות זמינות לשליחה.",
                     recipientsHeading: "נמענים", recipientsHint: "הוסיפו את האנשים שיקבלו את המסמך לחתימה.",
                     recipientsHintLocked: "הנמען נקבע אוטומטית מהרשומה. בדקו ואשרו \u2014 לא ניתן לערוך או להוסיף נמענים.",
+                    recipientsHintEditable: "הנמען מולא אוטומטית מהרשומה. ניתן לשנותו לפני השליחה.",
                     recipientReadOnly: "לקריאה בלבד",
                     ccRecipientHint: "ל-easydo נדרש דוא\"ל לזיהוי החותם. המלאו/תקנו את הדוא\"ל — קישור החתימה עצמו יישלח בשיחה החיה.",
                     recipientName: "שם", recipientEmail: "דוא\"ל", addRecipient: "הוספת נמען", removeRecipient: "הסרה",
@@ -262,6 +264,7 @@
                     sHint: { template: "Choose the document", recipients: "Who signs it", data: "Review & edit", settings: "How it is sent", review: "Confirm & send" },
                     dataHeading: "Review data", dataHint: "These fields were pulled from the record. You can edit them before sending.", dataHintReadOnly: "These fields were pulled from the record and will appear in the document.",
                     dataEmpty: "No editable fields are available for this template.", dataLoading: "Loading fields...", fieldLocked: "Read-only",
+                    dataLockedByTemplate: "Editing data is off for this template — fields are shown for review only.",
                     roleHint: "This template has multiple signer roles. Pick a contact for each role and the details fill in automatically.",
                     reviewFields: "Updated fields",
                     searchContact: "Search contact...", changeContact: "Change", noContactMatch: "No matching contacts",
@@ -271,6 +274,7 @@
                     noTemplates: "No templates are configured for sending.",
                     recipientsHeading: "Recipients", recipientsHint: "Add the people who will receive the document to sign.",
                     recipientsHintLocked: "The recipient is set automatically from the record. Review and approve \u2014 editing or adding recipients is disabled.",
+                    recipientsHintEditable: "The recipient was filled automatically from the record. You can change it before sending.",
                     recipientReadOnly: "Read-only",
                     ccRecipientHint: "easydo needs an email to identify the signer. Enter or correct the email — the signing link itself is sent in the live conversation.",
                     recipientName: "Name", recipientEmail: "Email", addRecipient: "Add recipient", removeRecipient: "Remove",
@@ -416,6 +420,11 @@
                 this.fieldsLoadedFor = null;
                 this.fieldsLoading = false;
                 this.launchContact = null;
+                // Contacts resolved from the launch record via each template's
+                // contact path (alex_contactpath), keyed by the lookup name.
+                this.pathContacts = {};
+                // Whether the selected template locks the auto-resolved recipient.
+                this.recipientLocked = false;
                 // Global send settings (loaded from alex_easydosettings). Until loaded
                 // the feature is treated as off (primary channel = email).
                 this.settings = {
@@ -444,9 +453,12 @@
                 Promise.all([this.loadLaunchContact(), this.fetchTemplates(), this.loadSettings()]).then(function (res) {
                     self.launchContact = res[0];
                     self.applySettings(res[2]);
-                    self.applyTemplates(res[1], true);
-                    self.loadFields();
-                    self.render();
+                    self.loadPathContacts(res[1]).then(function (map) {
+                        self.pathContacts = map;
+                        self.applyTemplates(res[1], true);
+                        self.loadFields();
+                        self.render();
+                    });
                 });
             };
 
@@ -591,6 +603,58 @@
                 );
             };
 
+            // For a non-contact launch record, resolve the signer contact for each
+            // template by following its contact path (alex_contactpath) — the lookup
+            // on the launch record that points to a contact. Returns a map keyed by
+            // the lookup name so syncRecipientsToTemplate can read it synchronously.
+            Wizard.prototype.loadPathContacts = function (templates) {
+                var self = this;
+                var ent = this.ctx.entityName;
+                if (!this.xrm || !ent || ent === "contact" || !this.ctx.recordId) return Promise.resolve({});
+                var paths = [];
+                (templates || []).forEach(function (t) {
+                    var p = t && t.contactPath;
+                    if (p && paths.indexOf(p) < 0) paths.push(p);
+                });
+                if (paths.length === 0) return Promise.resolve({});
+                var sel = paths.map(function (p) { return "_" + p + "_value"; }).join(",");
+                return this.xrm.WebApi.retrieveRecord(ent, this.ctx.recordId, "?$select=" + sel).then(
+                    function (rec) {
+                        var map = {};
+                        var jobs = [];
+                        paths.forEach(function (p) {
+                            var cid = rec && rec["_" + p + "_value"];
+                            if (!cid) return;
+                            var fallbackName = rec["_" + p + "_value@OData.Community.Display.V1.FormattedValue"] || "";
+                            jobs.push(
+                                self.xrm.WebApi.retrieveRecord("contact", cid, "?$select=fullname,emailaddress1,mobilephone,telephone1").then(
+                                    function (c) {
+                                        map[p] = {
+                                            id: cid,
+                                            name: (c && c.fullname) || fallbackName,
+                                            email: (c && c.emailaddress1) || "",
+                                            phone: (c && (c.mobilephone || c.telephone1)) || ""
+                                        };
+                                    },
+                                    function () { /* a single contact failure should not block the rest */ }
+                                )
+                            );
+                        });
+                        return Promise.all(jobs).then(function () { return map; });
+                    },
+                    function () { return {}; }
+                );
+            };
+
+            // The contact to pre-fill as the recipient for a given template: the
+            // launch record itself when it is a contact, otherwise the contact found
+            // by following the template's contact path on the launch record.
+            Wizard.prototype.autoContactFor = function (tpl) {
+                if (this.ctx.entityName === "contact") return this.launchContact;
+                if (tpl && tpl.contactPath && this.pathContacts) return this.pathContacts[tpl.contactPath] || null;
+                return null;
+            };
+
             Wizard.prototype.detectLang = function () {
                 try {
                     var lcid = this.xrm && this.xrm.Utility
@@ -603,7 +667,7 @@
                 var self = this;
                 var entityName = this.ctx.entityName;
                 if (!this.xrm || !entityName) { return Promise.resolve([]); }
-                var query = "?$select=alex_signaturetemplateid,alex_name,alex_externaltemplateid,alex_primarytable,alex_allowprefilledit,alex_rolesjson" +
+                var query = "?$select=alex_signaturetemplateid,alex_name,alex_externaltemplateid,alex_primarytable,alex_allowprefilledit,alex_rolesjson,alex_contactpath,alex_recipientlocked" +
                     "&$filter=alex_isactive eq true and statecode eq 0 and alex_allowsendfromobject eq true" +
                     " and alex_primarytable eq '" + entityName + "'" +
                     "&$orderby=alex_name";
@@ -617,6 +681,8 @@
                                 name: r.alex_name || "",
                                 primaryTable: r.alex_primarytable || "",
                                 allowPrefillEdit: r.alex_allowprefilledit === true,
+                                contactPath: r.alex_contactpath || "",
+                                recipientLocked: r.alex_recipientlocked === true,
                                 roles: parseRoles(r.alex_rolesjson)
                             };
                         }).filter(function (t) { return t.id && t.name && t.externalId; });
@@ -647,8 +713,9 @@
                 var tpl = this.findTemplate();
                 var roles = namedRoles(tpl);
                 this.roleMode = roles.length >= 2;
-                var lc = this.launchContact;
+                var lc = this.autoContactFor(tpl);
                 var lcUsable = !!(lc && (lc.email || lc.phone));
+                this.recipientLocked = !!(tpl && tpl.recipientLocked);
                 if (this.roleMode) {
                     // One fixed slot per signer role. The first slot is pre-filled
                     // with the launch contact (the user can change it); the rest are
@@ -923,7 +990,7 @@
 
             Wizard.prototype.stepRecipients = function (t) {
                 var self = this;
-                var hint = this.isCcSend() ? t.ccRecipientHint : (this.roleMode ? t.roleHint : t.recipientsHintLocked);
+                var hint = this.isCcSend() ? t.ccRecipientHint : (this.roleMode ? t.roleHint : (this.recipientLocked ? t.recipientsHintLocked : t.recipientsHintEditable));
                 var wrap = el("div", { "class": "edo-wz-step" }, [this.heading(t.recipientsHeading, hint)]);
                 var list = el("div", { "class": "edo-wz-recips" });
 
@@ -964,21 +1031,29 @@
                 }
 
                 // Single-recipient mode: the recipient is resolved automatically from
-                // the source record. It is READ-ONLY - the user only reviews and
-                // approves; values cannot be edited and recipients cannot be
-                // added/removed (the count is not user-defined here).
+                // the source record via the template's contact path. When the template
+                // locks the recipient it is READ-ONLY (review only); otherwise the
+                // sender may change it through a contact picker.
                 if (this.recipients.length === 0) {
                     list.appendChild(el("div", { "class": "edo-wz-empty", text: t.noRecipients }));
                 }
-                this.recipients.forEach(function (r) {
-                    var contact = r.email || r.phone || "";
-                    var info = el("div", { "class": "edo-wz-chip-info" }, [
-                        el("div", { "class": "edo-wz-chip-name", text: r.name || contact || "\u2014" })
-                    ]);
-                    if (contact) info.appendChild(el("div", { "class": "edo-wz-chip-mail", text: contact }));
-                    var badge = el("div", { "class": "edo-wz-ro-badge", text: t.recipientReadOnly });
-                    list.appendChild(el("div", { "class": "edo-wz-chip locked" }, [info, badge]));
-                });
+                if (this.recipientLocked) {
+                    this.recipients.forEach(function (r) {
+                        var contact = r.email || r.phone || "";
+                        var info = el("div", { "class": "edo-wz-chip-info" }, [
+                            el("div", { "class": "edo-wz-chip-name", text: r.name || contact || "\u2014" })
+                        ]);
+                        if (contact) info.appendChild(el("div", { "class": "edo-wz-chip-mail", text: contact }));
+                        var badge = el("div", { "class": "edo-wz-ro-badge", text: t.recipientReadOnly });
+                        list.appendChild(el("div", { "class": "edo-wz-chip locked" }, [info, badge]));
+                    });
+                } else {
+                    this.recipients.forEach(function (r, idx) {
+                        var picker = el("div", { "class": "edo-wz-picker" });
+                        self.renderRecipientPicker(picker, idx, t);
+                        list.appendChild(el("div", { "class": "edo-wz-field" }, [picker]));
+                    });
+                }
                 wrap.appendChild(list);
                 return wrap;
             };
@@ -1081,9 +1156,28 @@
                 }
                 var tpl = this.findTemplate();
                 var allowEdit = !!(tpl && tpl.allowPrefillEdit);
+                // When the template-level master switch is off, every field is
+                // read-only regardless of its per-field setting. Show one clear
+                // notice instead of repeating "read-only" on each field.
+                if (!allowEdit) {
+                    var note = el("div", { "class": "edo-wz-lock-note" }, [
+                        el("span", { "class": "edo-wz-lock-ico", text: "\uD83D\uDD12" }),
+                        el("span", { text: t.dataLockedByTemplate })
+                    ]);
+                    note.style.display = "flex";
+                    note.style.alignItems = "center";
+                    note.style.gap = "8px";
+                    note.style.padding = "10px 12px";
+                    note.style.margin = "0 0 12px";
+                    note.style.borderRadius = "8px";
+                    note.style.background = "#fff4e5";
+                    note.style.color = "#8a5a00";
+                    note.style.fontSize = "13px";
+                    wrap.appendChild(note);
+                }
                 this.fields.forEach(function (f, idx) {
                     var editable = allowEdit && f.editable && !f.readOnly;
-                    var labelText = f.label + (editable ? "" : "  · " + t.fieldLocked);
+                    var labelText = f.label + (editable ? "" : (allowEdit ? "  · " + t.fieldLocked : ""));
                     var label = el("div", { "class": "edo-wz-field-label", text: labelText });
                     var input = el("input", { "class": "edo-wz-input", value: f.value });
                     if (!editable) { input.readOnly = true; input.style.background = "#f5f5fa"; input.style.color = "var(--edo-sub)"; }

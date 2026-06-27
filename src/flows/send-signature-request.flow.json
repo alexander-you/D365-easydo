@@ -214,14 +214,7 @@
                   "type": "Select",
                   "inputs": {
                     "from": "@outputs('List_the_recipients')?['body/value']",
-                    "select": {
-                      "email": "@item()?['alex_email']",
-                      "phone": "@item()?['alex_phone']",
-                      "name": "@item()?['alex_name']",
-                      "sequence": "@item()?['alex_signingorder']",
-                      "notify_platform": "@if(not(equals(coalesce(triggerOutputs()?['body/alex_ccconversationid'], ''), '')), null, if(equals(triggerOutputs()?['body/alex_easydochannel'], 626210001), 'sms', if(equals(triggerOutputs()?['body/alex_easydochannel'], 626210002), 'whatsapp', 'email')))",
-                      "recipient": "@equals(item()?['alex_signingorder'], 1)"
-                    }
+                    "select": "@if(equals(item()?['alex_signingorder'], 1), addProperty(addProperty(addProperty(addProperty(addProperty(addProperty(json('{}'), 'email', item()?['alex_email']), 'phone', item()?['alex_phone']), 'name', item()?['alex_name']), 'sequence', item()?['alex_signingorder']), 'notify_platform', if(not(equals(coalesce(triggerOutputs()?['body/alex_ccconversationid'], ''), '')), null, if(equals(triggerOutputs()?['body/alex_easydochannel'], 626210001), 'sms', if(equals(triggerOutputs()?['body/alex_easydochannel'], 626210002), 'whatsapp', 'email')))), 'recipient', true), addProperty(addProperty(addProperty(addProperty(addProperty(json('{}'), 'email', item()?['alex_email']), 'phone', item()?['alex_phone']), 'name', item()?['alex_name']), 'sequence', item()?['alex_signingorder']), 'notify_platform', if(not(equals(coalesce(triggerOutputs()?['body/alex_ccconversationid'], ''), '')), null, if(equals(triggerOutputs()?['body/alex_easydochannel'], 626210001), 'sms', if(equals(triggerOutputs()?['body/alex_easydochannel'], 626210002), 'whatsapp', 'email')))))"
                   }
                 },
                 "Check_if_this_is_a_draft_preview": {
@@ -584,6 +577,7 @@
                   "entityName": "alex_signaturerequests",
                   "recordId": "@triggerOutputs()?['body/alex_signaturerequestid']",
                   "item/alex_status": 626210008,
+                  "item/alex_senton": "@utcNow()",
                   "item/alex_errormessage": "@concat('Send failed on ', utcNow(), ' | easydo: ', take(string(coalesce(outputs('Send_the_template_for_signature')?['body'], outputs('Set_the_preview_recipients')?['body'], outputs('Get_the_preview_form')?['body'], 'no response body')), 1700))"
                 },
                 "authentication": "@parameters('$authentication')"

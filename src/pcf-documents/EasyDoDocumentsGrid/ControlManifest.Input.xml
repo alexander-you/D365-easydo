@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest>
-  <control namespace="EasyDo" constructor="EasyDoDocumentsGrid" version="0.1.0"
+  <control namespace="EasyDo" constructor="EasyDoDocumentsGrid" version="0.1.1"
            display-name-key="EasyDoDocumentsGrid_Display"
            description-key="EasyDoDocumentsGrid_Desc"
            control-type="standard">

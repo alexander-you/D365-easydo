@@ -42,13 +42,14 @@ const ST: Record<number, string> = {
 };
 
 /* ---- chip definitions --------------------------------------------- */
-interface ChipDef { key: string; he: string; en: string; vals: number[] | null; }
+interface ChipDef { key: string; he: string; en: string; vals: number[] | null; tone: string; }
 const CHIPS: ChipDef[] = [
-  { key: "all", he: "כל המסמכים", en: "All documents", vals: null },
-  { key: "pending", he: "ממתין לחתימה", en: "Pending", vals: [626210000, 626210001, 626210002, 626210003, 626210004, 626210005, 626210011] },
-  { key: "signed", he: "נחתם", en: "Signed", vals: [626210006] },
-  { key: "rejected", he: "נדחה", en: "Declined", vals: [626210007] },
-  { key: "expired", he: "פג תוקף", en: "Expired", vals: [626210010] }
+  { key: "all", he: "כל המסמכים", en: "All documents", vals: null, tone: "brand" },
+  { key: "pending", he: "ממתין לחתימה", en: "Pending", vals: [626210000, 626210001, 626210002, 626210003, 626210004, 626210005, 626210011], tone: "info" },
+  { key: "signed", he: "נחתם", en: "Signed", vals: [626210006], tone: "ok" },
+  { key: "rejected", he: "נדחה", en: "Declined", vals: [626210007], tone: "bad" },
+  { key: "expired", he: "פג תוקף", en: "Expired", vals: [626210010], tone: "warn" },
+  { key: "failed", he: "נכשל", en: "Failed", vals: [626210008], tone: "bad" }
 ];
 
 /* ---- i18n --------------------------------------------------------- */
@@ -146,6 +147,16 @@ export class EasyDoDocumentsGrid implements ComponentFramework.StandardControl<I
     return f ? f : "";
   }
 
+  // Raw epoch (ms) for a datetime column, 0 when missing - used for sorting.
+  private dateVal(rec: EntityRecord, col: string): number {
+    const v = rec.getValue(col) as unknown;
+    if (v == null || v === "") return 0;
+    if (typeof v === "number") return v;
+    if (v instanceof Date) return v.getTime();
+    const t = new Date(String(v)).getTime();
+    return isNaN(t) ? 0 : t;
+  }
+
   /* ---- render ------------------------------------------------------ */
   private renderLoading(): void {
     this.root.setAttribute("dir", this.t("dir"));
@@ -176,6 +187,14 @@ export class EasyDoDocumentsGrid implements ComponentFramework.StandardControl<I
       if (this.categoryOf(this.statusVal(ds.records[id])) === this.activeChip) shown.push(id);
     }
 
+    // Newest send first; ties broken by most recently checked. Records with no
+    // send date (e.g. failed/draft) fall to the bottom.
+    shown.sort((a, b) => {
+      const s = this.dateVal(ds.records[b], F.sentOn) - this.dateVal(ds.records[a], F.sentOn);
+      if (s !== 0) return s;
+      return this.dateVal(ds.records[b], F.lastCheck) - this.dateVal(ds.records[a], F.lastCheck);
+    });
+
     let html = '<div class="edg-shell">';
 
     // header
@@ -192,7 +211,8 @@ export class EasyDoDocumentsGrid implements ComponentFramework.StandardControl<I
     html += '<div class="edg-chips">';
     for (const c of CHIPS) {
       const active = this.activeChip === c.key ? " is-active" : "";
-      html += '<button type="button" class="edg-chip' + active + '" data-chip="' + c.key + '">' +
+      html += '<button type="button" class="edg-chip t-' + c.tone + active + '" data-chip="' + c.key + '">' +
+        '<span class="edg-chip-dot"></span>' +
         '<span class="edg-chip-label">' + this.esc(lang === "he" ? c.he : c.en) + '</span>' +
         '<span class="edg-chip-count">' + (counts[c.key] || 0) + '</span>' +
         '</button>';

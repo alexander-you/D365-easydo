@@ -310,10 +310,68 @@
                     "authentication": "@parameters('$authentication')"
                   }
                 },
+                "Build_roles_array": {
+                  "runAfter": {
+                    "Get_template_detail": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "a1f0c1e2-00a1-4a10-9c01-0000000000a1"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@range(1, 10)",
+                    "select": {
+                      "name": "@coalesce(body('Get_template_detail')?['payload']?['roles']?[string(item())]?['placeholder']?['name'], '')",
+                      "sequence": "@item()",
+                      "recipient": "@if(equals(coalesce(body('Get_template_detail')?['payload']?['roles']?[string(item())]?['recipient'], false), true), true, false)"
+                    }
+                  }
+                },
+                "Filter_roles": {
+                  "runAfter": {
+                    "Build_roles_array": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "a1f0c1e2-00a2-4a10-9c01-0000000000a2"
+                  },
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@body('Build_roles_array')",
+                    "where": "@not(equals(item()?['name'], ''))"
+                  }
+                },
+                "Update_template_roles": {
+                  "runAfter": {
+                    "Filter_roles": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "a1f0c1e2-00a3-4a10-9c01-0000000000a3"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_commondataserviceforapps",
+                      "operationId": "UpdateOnlyRecord",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                    },
+                    "parameters": {
+                      "entityName": "alex_signaturetemplates",
+                      "recordId": "@first(outputs('Resolve_template_id')?['body/value'])?['alex_signaturetemplateid']",
+                      "item/alex_rolesjson": "@string(body('Filter_roles'))"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
                 "Apply_to_each_field": {
                   "foreach": "@outputs('Get_template_detail')?['body/data_headers']",
                   "runAfter": {
-                    "Get_template_detail": [
+                    "Update_template_roles": [
                       "Succeeded"
                     ]
                   },

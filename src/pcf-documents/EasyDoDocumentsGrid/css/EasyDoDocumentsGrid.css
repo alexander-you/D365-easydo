@@ -63,6 +63,24 @@
 }
 .edg-chip.is-active .edg-chip-count { background: rgba(255,255,255,.25); color: #fff; }
 
+/* status-tone coloring so the filters echo the badge colors (no pale chips) */
+.edg-chip-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--edg-muted); flex: none; }
+.edg-chip.t-brand .edg-chip-dot { background: var(--edg-blue); }
+.edg-chip.t-info  .edg-chip-dot { background: var(--edg-info); }
+.edg-chip.t-ok    .edg-chip-dot { background: var(--edg-ok); }
+.edg-chip.t-bad   .edg-chip-dot { background: var(--edg-bad); }
+.edg-chip.t-warn  .edg-chip-dot { background: var(--edg-warn); }
+.edg-chip.t-info:not(.is-active)  .edg-chip-count { color: var(--edg-info); background: var(--edg-info-bg); }
+.edg-chip.t-ok:not(.is-active)    .edg-chip-count { color: var(--edg-ok);   background: var(--edg-ok-bg); }
+.edg-chip.t-bad:not(.is-active)   .edg-chip-count { color: var(--edg-bad);  background: var(--edg-bad-bg); }
+.edg-chip.t-warn:not(.is-active)  .edg-chip-count { color: var(--edg-warn); background: var(--edg-warn-bg); }
+.edg-chip.t-brand.is-active { background: var(--edg-blue); border-color: var(--edg-blue); }
+.edg-chip.t-info.is-active  { background: var(--edg-info); border-color: var(--edg-info); }
+.edg-chip.t-ok.is-active    { background: var(--edg-ok);   border-color: var(--edg-ok); }
+.edg-chip.t-bad.is-active   { background: var(--edg-bad);  border-color: var(--edg-bad); }
+.edg-chip.t-warn.is-active  { background: var(--edg-warn); border-color: var(--edg-warn); }
+.edg-chip.is-active .edg-chip-dot { background: #fff; }
+
 /* list */
 .edg-list { display: flex; flex-direction: column; gap: 8px; padding: 0 2px; }
 
