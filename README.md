@@ -62,6 +62,8 @@ Dataverse plug-ins
 ```
 
 See [docs/](docs/) for detailed documentation, including
+[docs/prerequisites.md](docs/prerequisites.md) (what you need before installing — easydo
+account, API access, trial & contact),
 [docs/data-model.md](docs/data-model.md) (tables, ERD, data flow),
 [docs/custom-connector.md](docs/custom-connector.md) (easydo connector actions),
 [docs/technical-architecture.md](docs/technical-architecture.md) (components and

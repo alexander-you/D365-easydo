@@ -1,0 +1,74 @@
+name: Bug report | דיווח על באג
+description: Report a problem with the D365 ↔ easydo integration | דיווח על תקלה באינטגרציה
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill in the fields below.
+        תודה על הדיווח. אנא מלא/י את השדות הבאים.
+
+        > For questions about the **easydo product** (account, API access, templates)
+        > contact easydo support — see `docs/prerequisites.md`. This form is for issues
+        > with **the integration** (connector, flows, data model, controls).
+        >
+        > לשאלות על **מוצר easydo** (חשבון, גישת API, תבניות) פנה/י לתמיכת easydo. טופס
+        > זה מיועד לתקלות ב**אינטגרציה** (קונקטור, זרימות, מודל נתונים, פקדים).
+  - type: input
+    id: solution-version
+    attributes:
+      label: Solution version | גרסת ה‑solution
+      description: e.g. 1.0.0.10 (Settings → Solutions, or the Release tag)
+      placeholder: "1.0.0.10"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area | תחום
+      description: Which part of the integration? | איזה חלק?
+      options:
+        - Custom Connector | קונקטור מותאם
+        - Power Automate flow | זרימת Power Automate
+        - Data model / columns | מודל נתונים / עמודות
+        - PCF control / web resource | פקד PCF / משאב רשת
+        - Admin center / send tables | מסך ניהול / טבלאות שליחה
+        - SharePoint send flow | זרימת שליחה מ‑SharePoint
+        - Other | אחר
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened | מה קרה
+      description: Describe the problem, including any error message. | תיאור התקלה כולל הודעת שגיאה.
+      placeholder: When I ... , I expected ... , but ...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce | שלבים לשחזור
+      description: How can we reproduce it? | איך לשחזר?
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. See error ...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment | סביבה
+      description: Managed or unmanaged? Which environment (Dev/Test/Prod)? Language (He/En)?
+      placeholder: "Managed, Test, Hebrew base language"
+    validations:
+      required: false
+  - type: checkboxes
+    id: no-secrets
+    attributes:
+      label: Confirmation | אישור
+      options:
+        - label: I have NOT included any secret (easydo token, passwords) in this report. | לא צירפתי סודות (טוקן easydo, סיסמאות) לדיווח.
+          required: true

@@ -1,0 +1,28 @@
+name: Question / idea | שאלה / רעיון
+description: Ask a question or suggest an improvement | שאלה או הצעת שיפור
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question or an idea for the integration? Tell us below.
+        יש לך שאלה או רעיון לאינטגרציה? כתוב/כתבי כאן.
+
+        > Prefer an open conversation? Use
+        > [Discussions](https://github.com/alexander-you/D365-easydo/discussions).
+        > מעדיף/ה שיחה פתוחה? השתמש/י ב‑Discussions.
+  - type: textarea
+    id: body
+    attributes:
+      label: Your question or idea | השאלה או הרעיון שלך
+      placeholder: I would like to ... / How do I ...
+    validations:
+      required: true
+  - type: checkboxes
+    id: no-secrets
+    attributes:
+      label: Confirmation | אישור
+      options:
+        - label: I have NOT included any secret (easydo token, passwords). | לא צירפתי סודות (טוקן easydo, סיסמאות).
+          required: true

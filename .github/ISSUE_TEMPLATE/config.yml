@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private inquiry (email us directly) | פנייה פרטית (מייל ישיר)
+    # Replace this URL with your PRIVATE form endpoint (Microsoft Forms / Google Forms /
+    # Formspree). The form emails you; the destination address stays hidden from the user.
+    # החלף כתובת זו בטופס הפרטי שלך — הטופס שולח אליך מייל וכתובת היעד נשארת מוסתרת.
+    url: https://forms.office.com/REPLACE-WITH-YOUR-FORM-ID
+    about: Send a private message that reaches the maintainer by email (not shown publicly). | שליחת פנייה פרטית שמגיעה למתחזק במייל (לא מוצגת בפומבי).
+  - name: easydo support (product, API, account) | תמיכת easydo (מוצר, API, חשבון)
+    url: https://support.easydoc.co.il/
+    about: Questions about the easydo product itself — account, API access, templates, signatures. | שאלות על מוצר easydo — חשבון, גישת API, תבניות, חתימות.
+  - name: Discussions | דיונים
+    url: https://github.com/alexander-you/D365-easydo/discussions
+    about: Open Q&A and ideas with the community. | שאלות ורעיונות פתוחים.

@@ -68,6 +68,13 @@ has two ALM consequences to plan for:
 
 Before deploying or running the solution, make sure the following are in place.
 
+> For the **full** prerequisites — including the **easydo side** (account, API access,
+> where the API key comes from, free trial and contact details) with a diagram — see
+> [prerequisites.md](prerequisites.md).
+>
+> לרשימת הדרישות **המלאה** — כולל **צד easydo** (חשבון, גישת API, מהיכן משיגים
+> את המפתח, חשבון ניסיון ופרטי קשר) עם תרשים — ראה [prerequisites.md](prerequisites.md).
+
 ### Accounts & licensing | חשבונות ורישוי
 
 - A **Power Platform environment** with Dataverse enabled (Dev, and later Test/Prod).
