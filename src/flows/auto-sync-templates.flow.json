@@ -368,10 +368,52 @@
                     "authentication": "@parameters('$authentication')"
                   }
                 },
+                "Select_field_rows": {
+                  "runAfter": {
+                    "Update_template_roles": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "c1a10001-0001-4a10-9c01-000000000201"
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@coalesce(body('Get_template_detail')?['payload']?['data'], json('[]'))",
+                    "select": "@slice(string(item()), 1, -1)"
+                  }
+                },
+                "Filter_nonempty_row_str": {
+                  "runAfter": {
+                    "Select_field_rows": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "c1a10001-0002-4a10-9c01-000000000202"
+                  },
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@body('Select_field_rows')",
+                    "where": "@greater(length(item()), 0)"
+                  }
+                },
+                "Flatten_fields": {
+                  "runAfter": {
+                    "Filter_nonempty_row_str": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "c1a10001-0003-4a10-9c01-000000000203"
+                  },
+                  "type": "Compose",
+                  "inputs": "@json(concat('[', join(body('Filter_nonempty_row_str'), ','), ']'))"
+                },
                 "Apply_to_each_field": {
                   "foreach": "@outputs('Get_template_detail')?['body/data_headers']",
                   "runAfter": {
-                    "Update_template_roles": [
+                    "Flatten_fields": [
                       "Succeeded"
                     ]
                   },
@@ -380,8 +422,23 @@
                   },
                   "type": "Foreach",
                   "actions": {
-                    "List_existing_field": {
+                    "Find_cell": {
                       "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "c1a10001-0004-4a10-9c01-000000000204"
+                      },
+                      "type": "Query",
+                      "inputs": {
+                        "from": "@coalesce(outputs('Flatten_fields'), json('[]'))",
+                        "where": "@equals(coalesce(item()?['name'], ''), items('Apply_to_each_field')?['name'])"
+                      }
+                    },
+                    "List_existing_field": {
+                      "runAfter": {
+                        "Find_cell": [
+                          "Succeeded"
+                        ]
+                      },
                       "metadata": {
                         "operationMetadataId": "a1f0c1e2-0009-4a10-9c01-000000000009"
                       },
@@ -432,8 +489,9 @@
                             "parameters": {
                               "entityName": "alex_templatefieldmappings",
                               "recordId": "@first(outputs('List_existing_field')?['body/value'])?['alex_templatefieldmappingid']",
-                              "item/alex_name": "@coalesce(items('Apply_to_each_field')?['header'], items('Apply_to_each_field')?['name'])",
-                              "item/alex_externalfieldname": "@items('Apply_to_each_field')?['header']",
+                              "item/alex_name": "@coalesce(first(body('Find_cell'))?['label'], items('Apply_to_each_field')?['header'], items('Apply_to_each_field')?['name'])",
+                              "item/alex_externalfieldname": "@coalesce(first(body('Find_cell'))?['label'], items('Apply_to_each_field')?['header'], items('Apply_to_each_field')?['name'])",
+                              "item/alex_externalexportname": "@items('Apply_to_each_field')?['header']",
                               "item/alex_externalfieldtype": "@items('Apply_to_each_field')?['type']"
                             },
                             "authentication": "@parameters('$authentication')"
@@ -456,10 +514,11 @@
                               },
                               "parameters": {
                                 "entityName": "alex_templatefieldmappings",
-                                "item/alex_name": "@coalesce(items('Apply_to_each_field')?['header'], items('Apply_to_each_field')?['name'])",
+                                "item/alex_name": "@coalesce(first(body('Find_cell'))?['label'], items('Apply_to_each_field')?['header'], items('Apply_to_each_field')?['name'])",
                                 "item/alex_TemplateId@odata.bind": "@concat('/alex_signaturetemplates(', first(outputs('Resolve_template_id')?['body/value'])?['alex_signaturetemplateid'], ')')",
                                 "item/alex_externalfieldid": "@items('Apply_to_each_field')?['name']",
-                                "item/alex_externalfieldname": "@items('Apply_to_each_field')?['header']",
+                                "item/alex_externalfieldname": "@coalesce(first(body('Find_cell'))?['label'], items('Apply_to_each_field')?['header'], items('Apply_to_each_field')?['name'])",
+                                "item/alex_externalexportname": "@items('Apply_to_each_field')?['header']",
                                 "item/alex_externalfieldtype": "@items('Apply_to_each_field')?['type']"
                               },
                               "authentication": "@parameters('$authentication')"

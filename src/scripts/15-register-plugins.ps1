@@ -360,4 +360,61 @@ Set-EnsureRespProp -UniqueName "RelationshipSchemaName" -Name "RelationshipSchem
 Set-EnsureRespProp -UniqueName "LookupLogicalName"      -Name "LookupLogicalName"      -Type 10
 Set-EnsureRespProp -UniqueName "Created"                -Name "Created"                -Type 0
 
+# ---- 9. Custom API: alex_AutoMapTemplateFields --------------------------
+# Given a template, resolves every field mapping's export name
+# (alex_externalexportname) into a Dynamics binding (alex_dynamicstable /
+# alex_dynamicsfield / alex_lookupfield). Overwrites every row it can resolve.
+# Called by the "Auto-map fields" ribbon button on the template form.
+$autoMapTypeId = Set-PluginType -TypeName "EasyDo.Plugins.AutoMapTemplateFieldsPlugin" -Friendly "EasyDo Auto-Map Template Fields"
+$autoMapApiName = "alex_AutoMapTemplateFields"
+$autoMapApiBody = @{
+    uniquename       = $autoMapApiName
+    name             = "AutoMapTemplateFields"
+    displayname      = "Auto-Map Template Fields"
+    description      = "Resolves each template field mapping's export name to a Dynamics table.column binding. Overwrites every row it can resolve."
+    bindingtype      = 0       # Global
+    isfunction       = $false
+    isprivate        = $false
+    allowedcustomprocessingsteptype = 0
+    "PluginTypeId@odata.bind" = "/plugintypes($autoMapTypeId)"
+}
+$existingAutoMapApi = (Invoke-DV GET "customapis?`$select=customapiid&`$filter=uniquename eq '$autoMapApiName'").value
+if ($existingAutoMapApi -and $existingAutoMapApi.Count -gt 0) {
+    $autoMapApiId = $existingAutoMapApi[0].customapiid
+    Invoke-DV PATCH "customapis($autoMapApiId)" -Body @{ "PluginTypeId@odata.bind" = "/plugintypes($autoMapTypeId)"; description = $autoMapApiBody.description } | Out-Null
+    Write-Output "Custom API exists ($autoMapApiId), relinked"
+} else {
+    $r = Invoke-DV POST "customapis" -Body $autoMapApiBody -ExtraHeaders $solHeader -ReturnHeaders
+    $autoMapApiId = ($r.Headers["OData-EntityId"] -replace '.*\(([0-9a-fA-F-]+)\).*', '$1')
+    Write-Output "+ Custom API alex_AutoMapTemplateFields ($autoMapApiId)"
+}
+function Set-AutoMapReqParam {
+    param([string]$UniqueName, [string]$Name, [int]$Type, [bool]$Optional)
+    $f = (Invoke-DV GET "customapirequestparameters?`$select=customapirequestparameterid&`$filter=uniquename eq '$UniqueName' and _customapiid_value eq $autoMapApiId").value
+    if ($f -and $f.Count -gt 0) { Write-Output "  req param exists $UniqueName"; return }
+    $body = @{
+        uniquename = $UniqueName; name = $Name; displayname = $Name
+        type = $Type; isoptional = $Optional
+        "CustomAPIId@odata.bind" = "/customapis($autoMapApiId)"
+    }
+    Invoke-DV POST "customapirequestparameters" -Body $body -ExtraHeaders $solHeader | Out-Null
+    Write-Output "  + req param $UniqueName"
+}
+function Set-AutoMapRespProp {
+    param([string]$UniqueName, [string]$Name, [int]$Type)
+    $f = (Invoke-DV GET "customapiresponseproperties?`$select=customapiresponsepropertyid&`$filter=uniquename eq '$UniqueName' and _customapiid_value eq $autoMapApiId").value
+    if ($f -and $f.Count -gt 0) { Write-Output "  resp prop exists $UniqueName"; return }
+    $body = @{
+        uniquename = $UniqueName; name = $Name; displayname = $Name; type = $Type
+        "CustomAPIId@odata.bind" = "/customapis($autoMapApiId)"
+    }
+    Invoke-DV POST "customapiresponseproperties" -Body $body -ExtraHeaders $solHeader | Out-Null
+    Write-Output "  + resp prop $UniqueName"
+}
+# Type 10 = String, Type 7 = Integer
+Set-AutoMapReqParam -UniqueName "TemplateId" -Name "TemplateId" -Type 10 -Optional $false
+Set-AutoMapRespProp -UniqueName "Matched"    -Name "Matched"    -Type 7
+Set-AutoMapRespProp -UniqueName "Skipped"    -Name "Skipped"    -Type 7
+Set-AutoMapRespProp -UniqueName "Message"    -Name "Message"    -Type 10
+
 Write-Output "Done."

@@ -4,6 +4,40 @@
 
 All notable changes to this project are documented here.
 
+## [1.1.0.0] — field description, signature hiding & contact prefill in the wizard (2026-07-07)
+
+### Added
+
+- **Field description vs. export name — documented.** Every synced template field now
+  carries two clearly separated names: **`alex_externalfieldname`** (the human **field
+  description**, from easydo `label`) and **`alex_externalexportname`** (the machine
+  **export name**, from easydo `export.header`, the binding key used by auto‑mapping). A
+  new bilingual guide explains the business and technical meaning of each:
+  [field-description-vs-export-name.md](field-description-vs-export-name.md).
+- **Signature fields hidden by default in the mapping grid.** The Template Field Mapping
+  PCF now hides fields whose type contains `signature` (they are never mapped to a
+  Dynamics column), with an opt‑in **"Show signature fields"** checkbox to reveal them.
+- **Contact (lookup‑hop) fields resolve in the send wizard preview.** `sendWizard.html`
+  now follows lookup hops **client‑side** — e.g. contract → `alex_id_student` → contact —
+  so related‑record values (first name, last name, email, address…) are shown in the
+  **Data** step, not just direct columns on the launch record. One extra retrieve per
+  distinct lookup, guarded and batched with `Promise.all`.
+
+### Changed
+
+- **Mapping display uses the real description.** The template sync now writes
+  `alex_externalfieldname` from easydo **`label`** (`coalesce(label, header, name)`)
+  instead of `placeholderLabel`, which was only a **generic field‑type name** ("Text
+  field", "Date") rather than an actual description.
+
+> **בעברית.** כל שדה תבנית מסתנכרן עכשיו עם שני שמות נפרדים: **תיאור שדה**
+> (`alex_externalfieldname`, מ‑`label` של easydo — לבני אדם) ו**שם ייצוא**
+> (`alex_externalexportname`, מ‑`export.header` — מפתח הקישור לאוטומציה). נוסף מדריך
+> דו‑לשוני שמסביר את המשמעות העסקית והטכנית של כל אחד. פקד מיפוי השדות **מסתיר שדות חתימה**
+> כברירת מחדל (עם תיבת סימון "הצג שדות חתימה"). אשף השליחה **פותר עכשיו שדות איש‑קשר** (קפיצת
+> lookup) בצד הלקוח, כך שערכי הרשומה הקשורה מוצגים בשלב "נתונים" ולא רק עמודות ישירות. תצוגת
+> המיפוי משתמשת כעת ב‑`label` (התיאור האמיתי) במקום ב‑`placeholderLabel` (שם‑סוג גנרי).
+
 ## Backlog | לטיפול בהמשך
 
 - **Abandoned preview cleanup | ניקוי תצוגות מקדימות שננטשו.** When a user generates a

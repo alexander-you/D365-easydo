@@ -817,27 +817,68 @@
 
             // Best-effort read of each field's value from the launch record. Direct
             // columns (on the launch entity) resolve via one retrieve; lookup-hop
-            // fields are left to the server-side resolver and shown empty/editable.
+            // fields (e.g. contract -> alex_id_student -> contact.firstname) resolve
+            // with one extra retrieve per distinct lookup so the data step shows the
+            // related record's values too, mirroring the server-side resolver.
             Wizard.prototype.resolveFieldValues = function (fields) {
                 var self = this;
                 var entityName = this.ctx.entityName, recordId = this.ctx.recordId;
                 if (!this.xrm || !entityName || !recordId) return Promise.resolve();
+
+                // Direct columns on the launch entity, and the lookup columns we
+                // must read to follow each hop. hops[<lookup>] = { table, cols }.
                 var cols = {};
+                var hops = {};
                 fields.forEach(function (f) {
-                    if (!f.hop && f.column && (!f.table || f.table === entityName)) cols[f.column] = true;
+                    if (!f.column) return;
+                    if (f.hop) {
+                        if (!hops[f.hop]) hops[f.hop] = { table: f.table || "", cols: {} };
+                        if (!hops[f.hop].table && f.table) hops[f.hop].table = f.table;
+                        hops[f.hop].cols[f.column] = true;
+                    } else if (!f.table || f.table === entityName) {
+                        cols[f.column] = true;
+                    }
                 });
-                var list = Object.keys(cols);
-                if (list.length === 0) return Promise.resolve();
-                return this.xrm.WebApi.retrieveRecord(entityName, recordId, "?$select=" + list.join(",")).then(
+
+                var directList = Object.keys(cols);
+                var hopNames = Object.keys(hops);
+                // Always pull the lookup _value columns so each hop can be followed.
+                var launchSelect = directList.slice();
+                hopNames.forEach(function (h) { launchSelect.push("_" + h + "_value"); });
+                if (launchSelect.length === 0) return Promise.resolve();
+
+                var assign = function (f, rec) {
+                    var fmt = rec[f.column + "@OData.Community.Display.V1.FormattedValue"];
+                    var raw = rec[f.column];
+                    var v = (fmt !== undefined && fmt !== null) ? fmt : raw;
+                    if (v !== undefined && v !== null) f.value = String(v);
+                };
+
+                return this.xrm.WebApi.retrieveRecord(entityName, recordId, "?$select=" + launchSelect.join(",")).then(
                     function (rec) {
+                        // Direct fields on the launch entity.
                         fields.forEach(function (f) {
                             if (f.hop || !f.column) return;
                             if (f.table && f.table !== entityName) return;
-                            var fmt = rec[f.column + "@OData.Community.Display.V1.FormattedValue"];
-                            var raw = rec[f.column];
-                            var v = (fmt !== undefined && fmt !== null) ? fmt : raw;
-                            if (v !== undefined && v !== null) f.value = String(v);
+                            assign(f, rec);
                         });
+                        // Hop fields: retrieve each distinct related record, then fill.
+                        var tasks = hopNames.map(function (h) {
+                            var targetId = rec["_" + h + "_value"];
+                            var targetTable = hops[h].table;
+                            if (!targetId || !targetTable) return Promise.resolve();
+                            var sel = Object.keys(hops[h].cols).join(",");
+                            return self.xrm.WebApi.retrieveRecord(targetTable, targetId, "?$select=" + sel).then(
+                                function (trec) {
+                                    fields.forEach(function (f) {
+                                        if (f.hop !== h || !f.column) return;
+                                        assign(f, trec);
+                                    });
+                                },
+                                function () { return; }
+                            );
+                        });
+                        return Promise.all(tasks);
                     },
                     function () { return; }
                 );

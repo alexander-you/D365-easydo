@@ -125,6 +125,37 @@ function New-DVFile {
     }
 }
 
+function New-DVMoney {
+    param([string]$Schema, [string]$En, [string]$He, [string]$DescEn, [string]$DescHe,
+          [int]$Precision = 2, [double]$Min = 0, [double]$Max = 1000000000, [string]$Required = "None")
+    return @{
+        "@odata.type"   = "Microsoft.Dynamics.CRM.MoneyAttributeMetadata"
+        SchemaName      = $Schema
+        PrecisionSource = 1   # 1 = use the organization's pricing decimal precision
+        Precision       = $Precision
+        MinValue        = $Min
+        MaxValue        = $Max
+        RequiredLevel   = @{ Value = $Required }
+        DisplayName     = (New-DVLabel -En $En -He $He)
+        Description     = (New-DVLabel -En $DescEn -He $DescHe)
+    }
+}
+
+function New-DVDecimal {
+    param([string]$Schema, [string]$En, [string]$He, [string]$DescEn, [string]$DescHe,
+          [int]$Precision = 2, [double]$Min = 0, [double]$Max = 1000000000, [string]$Required = "None")
+    return @{
+        "@odata.type" = "Microsoft.Dynamics.CRM.DecimalAttributeMetadata"
+        SchemaName    = $Schema
+        Precision     = $Precision
+        MinValue      = $Min
+        MaxValue      = $Max
+        RequiredLevel = @{ Value = $Required }
+        DisplayName   = (New-DVLabel -En $En -He $He)
+        Description   = (New-DVLabel -En $DescEn -He $DescHe)
+    }
+}
+
 # ----- Table / column / choice operations ---------------------------------
 
 function Test-DVTable {

@@ -53,6 +53,7 @@ const I18N: Record<Lang, Record<string, string>> = {
     save: "Save", saving: "Saving…", validate: "Validate", refresh: "Refresh", showLogical: "Show logical names", hideLogical: "Hide logical names",
     gridTitle: "Field mappings", gridMeta: "Rows from",
     search: "Search field",
+    showSignatures: "Show signature fields",
     thEasydo: "easydo field", thTable: "Dynamics table", thColumn: "Dynamics column", thType: "Type", thReadOnly: "Locked", thDirection: "Direction", thVisible: "In wizard", thEditable: "Editable on send", thStatus: "Status",
     choose: "Choose…",
     locked: "Locked", editable: "Editable",
@@ -92,6 +93,7 @@ const I18N: Record<Lang, Record<string, string>> = {
     save: "שמירה", saving: "שומר…", validate: "בדיקה", refresh: "רענון", showLogical: "הצג שמות לוגיים", hideLogical: "הסתר שמות לוגיים",
     gridTitle: "מיפויי שדות", gridMeta: "שורות מתוך",
     search: "חיפוש שדה",
+    showSignatures: "הצג שדות חתימה",
     thEasydo: "שדה easydo", thTable: "טבלת Dynamics", thColumn: "עמודת Dynamics", thType: "סוג", thReadOnly: "נעול", thDirection: "כיוון", thVisible: "באשף", thEditable: "עריכה בשליחה", thStatus: "סטטוס",
     choose: "בחר…",
     locked: "נעול", editable: "ניתן לעריכה",
@@ -186,6 +188,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
   private colCache: Record<string, ColMeta[]> = {};
   private rows: MappingRow[] = [];
   private filter = "";
+  private showSignatures = false;   // signature fields are hidden by default
 
   private primaryTable = "";
   private contactPath = "";
@@ -817,15 +820,30 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     input.oninput = () => { this.filter = input.value; this.refreshTableBody(tbody); };
     search.appendChild(input);
 
+    const sigToggle = this.el("label", "edo-sigtoggle");
+    const sigCb = this.el("input") as HTMLInputElement;
+    sigCb.type = "checkbox";
+    sigCb.checked = this.showSignatures;
+    sigCb.onchange = () => { this.showSignatures = sigCb.checked; this.refreshTableBody(tbody); };
+    sigToggle.appendChild(sigCb);
+    sigToggle.appendChild(this.el("span", undefined, t.showSignatures));
+    bar.appendChild(sigToggle);
+
     this.refreshTableBody(tbody);
     return grid;
+  }
+
+  private isSignatureRow(r: MappingRow): boolean {
+    return (r.type || "").toLowerCase().indexOf("signature") >= 0;
   }
 
   private refreshTableBody(tbody: HTMLElement): void {
     const t = I18N[this.lang];
     const q = this.filter.trim().toLowerCase();
     tbody.innerHTML = "";
-    const list = this.rows.filter(r => !q || r.external.toLowerCase().includes(q) || r.externalId.toLowerCase().includes(q));
+    const list = this.rows.filter(r =>
+      (this.showSignatures || !this.isSignatureRow(r)) &&
+      (!q || r.external.toLowerCase().includes(q) || r.externalId.toLowerCase().includes(q)));
     list.forEach((r, i) => tbody.appendChild(this.buildRow(r, i + 1, t)));
   }
 
