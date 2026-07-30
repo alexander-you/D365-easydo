@@ -136,7 +136,7 @@ changes.
    Power Automate Flow / Workflow קלאסי / Plugin / פורטל וכו'). easydo רק **מייצרת**
    את הקישור ו**לא** מודיעה.
 
-המסמך מגדיר את **חוזה האינטגרציה** למקרה (2): הדרך האחת, הבלתי‑תלויה‑במנגנון, שבה כל
+המסמך מגדיר את **חוזה ההפצה העצמית** למקרה (2): הדרך האחת, הבלתי‑תלויה‑במנגנון, שבה כל
 תהליך של הלקוח יכול לתפוס בקשת חתימה ולהפיץ אותה. הכלל:
 
 > **הטריגר הוא תמיד יצירה / עדכון של רשומת `alex_signaturerequest` שמגיעה למצב שבו
@@ -169,6 +169,32 @@ changes.
 | `alex_senton` | תאריך/שעה | מתי הקישור נוצר. |
 | `alex_primaryrecordid` + `alex_primarytable` | טקסט | הרשומה שממנה יצא (למי לשלוח). |
 | רשומות `alex_signaturerecipient` קשורות | — | `alex_name`, `alex_email`, `alex_phone`, `alex_signingorder` — הנמען(ים) בפועל. |
+
+#### 3א. שליחה ידנית — יצירת רשומה: שדות חובה
+
+כדי לשלוח **ידנית** על‑ידי יצירת הרשומות (בלי אשף), צרו בסדר הזה:
+
+**1) `alex_signaturerequest`** — צרו קודם עם:
+| שדה | חובה | ערך |
+| --- | --- | --- |
+| `alex_name` | ✔️ | שם ידידותי לבקשה. |
+| `alex_templateid` | ✔️ | Lookup לתבנית פעילה (`alex_signaturetemplate`). |
+| `alex_primaryrecordid` + `alex_primarytable` | ✔️ | הרשומה שממנה שולחים (למשל `alex_tenant_contract`). |
+| `alex_status` | ✔️ | **התחילו כ‑`טיוטה` (626210000)** — לא "מוכן למשלוח" עדיין. |
+| `alex_easydochannel` | מומלץ | Email 626210000 / SMS 626210001 / WhatsApp 626210002. |
+
+**2) `alex_signaturerecipient`** — צרו נמען אחד לפחות **אחרי** הבקשה:
+| שדה | חובה | ערך |
+| --- | --- | --- |
+| `alex_signaturerequestid` | ✔️ | Lookup לבקשה מסעיף 1. |
+| `alex_name` | ✔️ | שם החותם. |
+| `alex_email` | ✔️* | מייל החותם (*או טלפון לפי הערוץ). |
+| `alex_phone` | לפי ערוץ | חובה ל‑SMS/WhatsApp. |
+| **`alex_signingorder`** | **✔️ חובה** | **חייב `1` לחותם הראשון.** ריק → easydo דוחה את השליחה (ר' אזהרה למטה). |
+
+**3)** רק אחרי שהנמען קיים — עדכנו את הבקשה ל‑**`alex_status = מוכן למשלוח` (626210001)**. זה מפעיל את ה‑Send flow.
+
+> ⚠️ **`alex_signingorder` חייב להיות `1`.** ה‑Send flow מסמן assignee כ‑`recipient:true` מול easydo **רק** כאשר `alex_signingorder = 1`. אם השדה ריק — easydo מחזירה שגיאה `assignees.0.recipient / role_id required`, הסטטוס עובר ל**נכשל (626210008)** והמסמך **לא נשלח**. זו הסיבה השכיחה ביותר לשליחה ידנית שנכשלת.
 
 ### 4. מחזור החיים של הסטטוס (`alex_status`)
 

@@ -162,59 +162,79 @@
                     ]
                   },
                   "actions": {
-                    "Keep_only_value_fields": {
+                    "Process_each_page": {
                       "runAfter": {},
                       "metadata": {
                         "operationMetadataId": "c3a0d1e2-0008-4a10-9c01-000000000008"
                       },
-                      "type": "Query",
-                      "inputs": {
-                        "from": "@first(body('Get_the_form')?['payload']?['data'])",
-                        "where": "@and(not(equals(item()?['type'], 'input-signature')), not(equals(coalesce(item()?['export']?['header'], ''), '')))"
-                      }
-                    },
-                    "Write_each_read_back_value": {
-                      "runAfter": {
-                        "Keep_only_value_fields": [
-                          "Succeeded"
-                        ]
-                      },
-                      "metadata": {
-                        "operationMetadataId": "c3a0d1e2-0009-4a10-9c01-000000000009"
-                      },
                       "type": "Foreach",
-                      "foreach": "@body('Keep_only_value_fields')",
+                      "foreach": "@body('Get_the_form')?['payload']?['data']",
+                      "runtimeConfiguration": {
+                        "concurrency": {
+                          "repetitions": 1
+                        }
+                      },
                       "actions": {
-                        "Create_a_read_back_value": {
+                        "Keep_only_value_fields": {
                           "runAfter": {},
                           "metadata": {
-                            "operationMetadataId": "c3a0d1e2-000a-4a10-9c01-00000000000a"
+                            "operationMetadataId": "c3a0d1e2-0008-4a10-9c01-00000000000c"
                           },
-                          "type": "OpenApiConnection",
+                          "type": "Query",
                           "inputs": {
-                            "host": {
-                              "connectionName": "shared_commondataserviceforapps",
-                              "operationId": "CreateRecord",
-                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
-                            },
-                            "parameters": {
-                              "entityName": "alex_signaturefieldvalues",
-                              "item/alex_name": "@coalesce(item()?['label'], item()?['export']?['header'], item()?['name'])",
-                              "item/alex_fieldname": "@item()?['name']",
-                              "item/alex_fieldlabel": "@item()?['label']",
-                              "item/alex_externalfieldname": "@item()?['export']?['header']",
-                              "item/alex_value": "@string(coalesce(body('Get_the_form')?['data']?[item()?['export']?['header']], ''))",
-                              "item/alex_direction": 626210001,
-                              "item/alex_SignatureRequestId@odata.bind": "@concat('/alex_signaturerequests(', items('Process_each_open_request')?['alex_signaturerequestid'], ')')"
-                            },
-                            "authentication": "@parameters('$authentication')"
+                            "from": "@items('Process_each_page')",
+                            "where": "@and(not(equals(item()?['type'], 'input-signature')), not(equals(coalesce(item()?['export']?['header'], ''), '')))"
+                          }
+                        },
+                        "Write_each_read_back_value": {
+                          "runAfter": {
+                            "Keep_only_value_fields": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "c3a0d1e2-0009-4a10-9c01-000000000009"
+                          },
+                          "type": "Foreach",
+                          "foreach": "@body('Keep_only_value_fields')",
+                          "runtimeConfiguration": {
+                            "concurrency": {
+                              "repetitions": 1
+                            }
+                          },
+                          "actions": {
+                            "Create_a_read_back_value": {
+                              "runAfter": {},
+                              "metadata": {
+                                "operationMetadataId": "c3a0d1e2-000a-4a10-9c01-00000000000a"
+                              },
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "connectionName": "shared_commondataserviceforapps",
+                                  "operationId": "CreateRecord",
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                                },
+                                "parameters": {
+                                  "entityName": "alex_signaturefieldvalues",
+                                  "item/alex_name": "@coalesce(items('Write_each_read_back_value')?['label'], items('Write_each_read_back_value')?['export']?['header'], items('Write_each_read_back_value')?['name'])",
+                                  "item/alex_fieldname": "@items('Write_each_read_back_value')?['name']",
+                                  "item/alex_fieldlabel": "@items('Write_each_read_back_value')?['label']",
+                                  "item/alex_externalfieldname": "@items('Write_each_read_back_value')?['export']?['header']",
+                                  "item/alex_value": "@string(coalesce(body('Get_the_form')?['data']?[items('Write_each_read_back_value')?['export']?['header']], ''))",
+                                  "item/alex_direction": 626210001,
+                                  "item/alex_SignatureRequestId@odata.bind": "@concat('/alex_signaturerequests(', items('Process_each_open_request')?['alex_signaturerequestid'], ')')"
+                                },
+                                "authentication": "@parameters('$authentication')"
+                              }
+                            }
                           }
                         }
                       }
                     },
                     "Mark_request_as_Completed": {
                       "runAfter": {
-                        "Write_each_read_back_value": [
+                        "Process_each_page": [
                           "Succeeded"
                         ]
                       },

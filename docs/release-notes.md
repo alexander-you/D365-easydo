@@ -4,6 +4,31 @@
 
 All notable changes to this project are documented here.
 
+## [1.2.0.0] — multi-page read-back (signed-value write-back across all pages) (2026-07-30)
+
+### Fixed
+
+- **Read-back now processes every page of a signed document, not just the first.**
+  The **Read Signature Results** flow ([read-signature-results.flow.json](../src/flows/read-signature-results.flow.json))
+  previously read only `first(payload.data)` — i.e. page 0 of the returned form —
+  because the original test templates were single-page. On a real multi-page contract
+  (easydo returns `payload.data` as **one array element per PDF page**), every field on
+  pages 1..N (e.g. **payment currency** on page 23) was silently skipped, so no
+  `alex_signaturefieldvalue` row was created and the write-back plugin had nothing to
+  write. The flow now wraps the value extraction in a `Process_each_page` loop over the
+  full `payload.data`, so **all fields on all pages** are captured. Values are still read
+  from the flat top-level `data[header]` object. Handles an unlimited number of pages and
+  fields (both loops run with `concurrency.repetitions = 1` to avoid Dataverse throttling).
+  New implementer guide: [multipage-readback-fix.md](multipage-readback-fix.md).
+
+> **בעברית.** זרימת קריאת התוצאות קראה בעבר רק את **העמוד הראשון** של המסמך החתום
+> (`first(payload.data)`), כי תבניות הבדיקה המקוריות היו בנות עמוד אחד. במסמך אמיתי
+> רב‑עמודים easydo מחזירה את `payload.data` כמערך **לפי עמוד**, ולכן כל שדה בעמודים
+> 1..N (למשל **מטבע התשלום** בעמוד 23) דולג בשקט ולא נכתב חזרה ל‑Dynamics. הזרימה עוטפת
+> עכשיו את חילוץ הערכים בלולאת `Process_each_page` על כל העמודים — כך **כל השדות מכל
+> העמודים** נקראים. הערכים עדיין נשאבים מהאובייקט השטוח `data[header]`. תומך בכמות עמודים
+> ושדות בלתי‑מוגבלת (שתי הלולאות רצות סדרתית למניעת חניקה). נוסף מדריך מיישם ייעודי.
+
 ## [1.1.0.0] — field description, signature hiding & contact prefill in the wizard (2026-07-07)
 
 ### Added

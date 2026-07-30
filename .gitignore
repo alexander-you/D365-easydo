@@ -34,6 +34,8 @@ appsettings.*.json
 **/out/**
 *.zip
 !**/exported-solutions/.gitkeep
+# Keep versioned solution release artifacts (managed + unmanaged)
+!deployment/releases/**/*.zip
 
 # PAC CLI / temp
 .pac/
