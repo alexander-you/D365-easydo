@@ -140,6 +140,10 @@
         .edo-wz-chk.on .edo-wz-chk-box { background: var(--edo-accent); border-color: var(--edo-accent); }
         .edo-wz-chk.on .edo-wz-chk-box::after { content: ""; position: absolute; left: 5px; top: 1.5px; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
         .edo-wz-chk-label { font-weight: 600; font-size: 13.5px; }
+        .edo-wz-num-row { display: inline-flex; align-items: center; gap: 9px; }
+        .edo-wz-num { width: 96px; border: 1px solid var(--edo-line); border-radius: 10px; padding: 9px 12px; background: var(--edo-bg); color: var(--edo-ink); font: inherit; font-weight: 600; text-align: center; }
+        .edo-wz-num:focus { outline: none; border-color: var(--edo-accent); box-shadow: var(--edo-shadow); }
+        .edo-wz-num-suffix { font-size: 13px; color: var(--edo-sub); font-weight: 600; }
         .edo-wz-decl { flex-basis: 100%; border: 1px solid var(--edo-line); border-radius: 10px; padding: 9px 12px; background: var(--edo-bg); }
         .edo-wz-decl-text { font-size: 13px; font-weight: 600; color: var(--edo-ink); }
         .edo-wz-decl-warn { font-size: 12px; color: #8a5a00; margin-top: 3px; }
@@ -233,6 +237,7 @@
                     channelsLabel: "ערוצי שליחה", channelEmail: "דוא\"ל", channelSms: "SMS", channelWhatsApp: "WhatsApp",
                     channelPrimary: "ערוץ easydo ראשי",
                     channelsHint: "easydo שולחת את ההתראה בערוץ הראשי. ערוצים נוספים מפיצים את קישור החתימה דרך שירות הלקוח לפי הגדרת ההפצה של הארגון.",
+                    validityLabel: "תוקף המסמך (ימים)", validityHint: "מספר הימים שהמסמך יישאר בתוקף מרגע השליחה. לאחר מכן הוא ייסגר אוטומטית.", validityDays: "ימים",
                     declVia: "מופץ דרך", declCij: "מסעות לקוח (CIJ)", declFlow: "זרימת Power Automate",
                     declVerify: "ודאו שערוץ ההפצה פעיל לפני השליחה.",
                     reviewHeading: "סקירה ושליחה", reviewHint: "בדקו את הפרטים ולחצו שליחה.",
@@ -289,6 +294,7 @@
                     channelsLabel: "Send channels", channelEmail: "Email", channelSms: "SMS", channelWhatsApp: "WhatsApp",
                     channelPrimary: "Primary easydo channel",
                     channelsHint: "easydo notifies on the primary channel. Additional channels distribute the signing link through your organization's configured method.",
+                    validityLabel: "Document validity (days)", validityHint: "How many days the document stays valid from the moment it is sent. After that it is closed automatically.", validityDays: "days",
                     declVia: "Distributed via", declCij: "Customer Insights - Journeys (CIJ)", declFlow: "Power Automate flow",
                     declVerify: "Make sure the distribution channel is active before sending.",
                     reviewHeading: "Review & send", reviewHint: "Check the details and press Send.",
@@ -425,6 +431,10 @@
                 this.pathContacts = {};
                 // Whether the selected template locks the auto-resolved recipient.
                 this.recipientLocked = false;
+                // Per-send document validity (days). Seeded from the template default
+                // and editable in the settings step only when the template both has
+                // expiry and allows changing it at send time.
+                this.expiryDays = null;
                 // Global send settings (loaded from alex_easydosettings). Until loaded
                 // the feature is treated as off (primary channel = email).
                 this.settings = {
@@ -667,7 +677,7 @@
                 var self = this;
                 var entityName = this.ctx.entityName;
                 if (!this.xrm || !entityName) { return Promise.resolve([]); }
-                var query = "?$select=alex_signaturetemplateid,alex_name,alex_externaltemplateid,alex_primarytable,alex_allowprefilledit,alex_rolesjson,alex_contactpath,alex_recipientlocked" +
+                var query = "?$select=alex_signaturetemplateid,alex_name,alex_externaltemplateid,alex_primarytable,alex_allowprefilledit,alex_rolesjson,alex_contactpath,alex_recipientlocked,alex_hasexpiry,alex_expirydays,alex_allowexpiryoverride" +
                     "&$filter=alex_isactive eq true and statecode eq 0 and alex_allowsendfromobject eq true" +
                     " and alex_primarytable eq '" + entityName + "'" +
                     "&$orderby=alex_name";
@@ -683,6 +693,9 @@
                                 allowPrefillEdit: r.alex_allowprefilledit === true,
                                 contactPath: r.alex_contactpath || "",
                                 recipientLocked: r.alex_recipientlocked === true,
+                                hasExpiry: r.alex_hasexpiry === true,
+                                expiryDays: (typeof r.alex_expirydays === "number" ? r.alex_expirydays : null),
+                                allowExpiryOverride: r.alex_allowexpiryoverride === true,
                                 roles: parseRoles(r.alex_rolesjson)
                             };
                         }).filter(function (t) { return t.id && t.name && t.externalId; });
@@ -716,6 +729,9 @@
                 var lc = this.autoContactFor(tpl);
                 var lcUsable = !!(lc && (lc.email || lc.phone));
                 this.recipientLocked = !!(tpl && tpl.recipientLocked);
+                // Seed the per-send validity from the template default (only meaningful
+                // when the template has expiry).
+                this.expiryDays = (tpl && tpl.hasExpiry) ? (tpl.expiryDays || null) : null;
                 if (this.roleMode) {
                     // One fixed slot per signer role. The first slot is pre-filled
                     // with the launch contact (the user can change it); the rest are
@@ -1231,6 +1247,7 @@
             Wizard.prototype.stepSettings = function (t) {
                 var self = this;
                 var cc = this.isCcSend();
+                var tpl = this.findTemplate();
                 var wrap = el("div", { "class": "edo-wz-step" }, [this.heading(t.settingsHeading, t.settingsHint)]);
 
                 // Contact Center: the document is sent over the live conversation, so
@@ -1318,6 +1335,28 @@
                 }
                 var field = el("div", { "class": "edo-wz-field" }, [chLabel, chList]);
                 wrap.appendChild(field);
+
+                // Per-send document validity (days): shown only when the template has
+                // expiry AND permits changing it at send time.
+                if (tpl && tpl.hasExpiry && tpl.allowExpiryOverride) {
+                    var vLabel = el("div", { "class": "edo-wz-field-label", text: t.validityLabel });
+                    var vInput = el("input", {
+                        "class": "edo-wz-num", type: "number", min: "1", max: "3650",
+                        value: (self.expiryDays != null ? String(self.expiryDays) : "")
+                    });
+                    vInput.onchange = function () {
+                        var n = parseInt(vInput.value, 10);
+                        if (isNaN(n)) { self.expiryDays = null; }
+                        else { self.expiryDays = Math.min(3650, Math.max(1, n)); }
+                        vInput.value = (self.expiryDays != null ? String(self.expiryDays) : "");
+                    };
+                    var vRow = el("div", { "class": "edo-wz-num-row" }, [vInput,
+                        el("span", { "class": "edo-wz-num-suffix", text: t.validityDays })
+                    ]);
+                    wrap.appendChild(el("div", { "class": "edo-wz-field" }, [vLabel, vRow,
+                        el("div", { text: t.validityHint, style: "margin:8px 2px 0; font-size:12px; line-height:1.5; color: var(--edo-sub);" })
+                    ]));
+                }
                 return wrap;
             };
 
@@ -1365,6 +1404,11 @@
                     }
                 }
                 addRow(t.reviewChannels, picked.join(", "));
+                // Document validity (only when the template has expiry and the sender
+                // may change it at send time).
+                if (tpl && tpl.hasExpiry && tpl.allowExpiryOverride && this.expiryDays) {
+                    addRow(t.validityLabel, this.expiryDays + " " + t.validityDays);
+                }
                 var editedFields = this.editedFields();
                 if (editedFields.length > 0) {
                     addRow(t.reviewFields, editedFields.map(function (f) { return f.label; }).join(", "));
@@ -1520,12 +1564,18 @@
                     });
                     for (var k in decl) { if (decl.hasOwnProperty(k)) { declaration = decl; break; } }
                 }
+                // Per-send document validity override (days). Only sent when the
+                // template has expiry AND allows changing it at send time; the send
+                // flow ignores it otherwise and uses the template default.
+                var expiryDays = (tpl && tpl.hasExpiry && tpl.allowExpiryOverride && this.expiryDays)
+                    ? this.expiryDays : null;
                 return {
                     templateId: this.demo ? "" : (tpl ? tpl.id : ""),
                     templateExternalId: tpl ? tpl.externalId : "",
                     isDraft: this.isDraft,
                     isRealtime: (!this.isDraft && this.isRealtime),
                     language: this.lang,
+                    expiryDays: expiryDays,
                     recipients: recipients,
                     fieldValues: fieldValues,
                     notifyEmails: recipients.map(function (r) { return { name: r.name, email: r.email }; }),

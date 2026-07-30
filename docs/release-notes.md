@@ -4,6 +4,33 @@
 
 All notable changes to this project are documented here.
 
+## [1.3.0.0] — document validity / expiry (auto-cancel overdue signature requests) (2026-07-30)
+
+### Added
+
+- **Document expiry per signature template.** Three new settings live **inside** the
+  Template Field Mapping PCF config strip (no extra form clutter): **has-expiry**
+  (`alex_hasexpiry`), **validity days** (`alex_expirydays`, 1–3650) and **allow
+  per-send override** (`alex_allowexpiryoverride`). When enabled, the **Send Signature
+  Request** flow stamps a computed **`alex_expireson`** on the request at send time
+  (`addDays(utcNow(), effectiveDays)`).
+- **Per-send validity override in the wizard.** When a template allows it,
+  [sendWizard.html](../src/webresources/sendWizard.html) shows a validity-days input in
+  the settings step and carries the chosen value through `alex_wizardpayload`; the send
+  flow prefers the override and falls back to the template default.
+- **Daily auto-cancel of overdue requests.** New **Expire Overdue Requests** flow
+  ([expire-overdue-requests.flow.json](../src/flows/expire-overdue-requests.flow.json))
+  runs once a day, lists open requests whose `alex_expireson` has passed, cancels the
+  easydo form (`CancelForm`) and marks the request **Expired** (`alex_status` = 626210010,
+  `alex_cancelledon`).
+
+> **בעברית.** נוסף פיצ'ר **תוקף מסמך** לכל תבנית חתימה. שלוש הגדרות חדשות יושבות **בתוך**
+> רצועת ההגדרות של ה‑PCF (בלי להעמיס על הטופס): הפעלת תוקף, מספר ימי תוקף (1–3650), והרשאת
+> **דריסה לכל שליחה**. כשמופעל, זרימת **Send Signature Request** מחשבת וממלאת
+> **`alex_expireson`** ברגע השליחה. בוויזרד ניתן לדרוס את מספר ימי התוקף לשליחה בודדת
+> (עובר דרך `alex_wizardpayload`). זרימה חדשה **Expire Overdue Requests** רצה **פעם ביום**,
+> מאתרת בקשות פתוחות שפג תוקפן, מבטלת את הטופס ב‑easydo ומסמנת את הבקשה כ‑**פג תוקף**.
+
 ## [1.2.0.0] — multi-page read-back (signed-value write-back across all pages) (2026-07-30)
 
 ### Fixed

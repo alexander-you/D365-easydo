@@ -230,6 +230,20 @@
 .edo-flagtext { display: flex; flex-direction: column; gap: 2px; }
 .edo-flaglabel { font-size: 13px; font-weight: 600; color: var(--edo-text); }
 .edo-flagrow .edo-toggle { flex: none; }
+.edo-numinput {
+  flex: none;
+  width: 88px;
+  padding: 7px 10px;
+  border: 1px solid var(--edo-line);
+  border-radius: 8px;
+  background: var(--edo-surface);
+  color: var(--edo-text);
+  font-size: 13px;
+  font-weight: 550;
+  text-align: center;
+}
+.edo-numinput:disabled { opacity: 0.45; pointer-events: none; }
+.edo-numinput:focus { outline: none; border-color: var(--edo-accent); }
 
 /* ---- grid panel --------------------------------------------------- */
 .edo-grid { overflow: hidden; }

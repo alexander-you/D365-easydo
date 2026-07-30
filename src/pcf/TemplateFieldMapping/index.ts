@@ -77,6 +77,10 @@ const I18N: Record<Lang, Record<string, string>> = {
     contactPathLabel: "Path to contact", contactPathNone: "No contact link",
     contactPathHint: "Which lookup on the primary record points to the signer contact",
     recipientLocked: "Lock recipient on send", recipientLockedHint: "The recipient resolved from the record is read-only — the sender cannot change it",
+    expirySettings: "Document expiry",
+    hasExpiry: "Document has expiry", hasExpiryHint: "The sent document is valid for a limited time and expires automatically",
+    expiryDays: "Default validity (days)", expiryDaysHint: "How many days the document stays valid after it is sent",
+    expiryOverride: "Allow changing at send", expiryOverrideHint: "Let the sender change the validity in the send wizard",
     choosePrimary: "Choose a base table…", contactDisplay: "Contact",
     viaSep: "via",
     configHint: "Pick the base table this document is built on. Each field can then map to a column on that table or on a single related record (one lookup hop).",
@@ -117,6 +121,10 @@ const I18N: Record<Lang, Record<string, string>> = {
     contactPathLabel: "נתיב לאיש קשר", contactPathNone: "אין קישור לאיש קשר",
     contactPathHint: "איזה שדה lookup ברשומה הראשית מצביע על איש הקשר החותם",
     recipientLocked: "נעילת הנמען בשליחה", recipientLockedHint: "הנמען שנפתר מהרשומה לקריאה בלבד — השולח לא יכול לשנותו",
+    expirySettings: "תוקף המסמך",
+    hasExpiry: "יש תוקף למסמך", hasExpiryHint: "המסמך שנשלח תקף לזמן מוגבל ופג‑תוקף אוטומטית",
+    expiryDays: "תוקף ברירת מחדל (ימים)", expiryDaysHint: "כמה ימים המסמך נשאר בתוקף לאחר השליחה",
+    expiryOverride: "אפשר שינוי בעת שליחה", expiryOverrideHint: "אפשרו לשולח לשנות את התוקף באשף השליחה",
     choosePrimary: "בחרו טבלת בסיס…", contactDisplay: "איש קשר",
     viaSep: "דרך",
     configHint: "בחרו את טבלת הבסיס שעליה בנוי המסמך. כל שדה יכול להימפות לעמודה בטבלה זו או ברשומה קשורה אחת (קפיצת lookup אחת).",
@@ -183,6 +191,9 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
   private allowSendFromObject = false; // alex_allowsendfromobject (template-level)
   private allowPrefillEdit = false;    // alex_allowprefilledit (template-level)
   private recipientLocked = false;     // alex_recipientlocked (template-level)
+  private hasExpiry = false;           // alex_hasexpiry (template-level)
+  private expiryDays: number | null = null; // alex_expirydays (template-level)
+  private allowExpiryOverride = false; // alex_allowexpiryoverride (template-level)
 
   private tables: TableMeta[] = [];
   private colCache: Record<string, ColMeta[]> = {};
@@ -413,13 +424,16 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
   private async fetchTemplateConfig(): Promise<void> {
     try {
       const rec = await this.context.webAPI.retrieveRecord(
-        TEMPLATE_ENTITY, this.templateId, "?$select=alex_primarytable,alex_contactpath,alex_name,alex_allowsendfromobject,alex_allowprefilledit,alex_recipientlocked"
+        TEMPLATE_ENTITY, this.templateId, "?$select=alex_primarytable,alex_contactpath,alex_name,alex_allowsendfromobject,alex_allowprefilledit,alex_recipientlocked,alex_hasexpiry,alex_expirydays,alex_allowexpiryoverride"
       );
       this.primaryTable = (rec["alex_primarytable"] as string) ?? "";
       this.contactPath = (rec["alex_contactpath"] as string) ?? "";
       this.recipientLocked = rec["alex_recipientlocked"] === true;
       this.allowSendFromObject = rec["alex_allowsendfromobject"] === true;
       this.allowPrefillEdit = rec["alex_allowprefilledit"] === true;
+      this.hasExpiry = rec["alex_hasexpiry"] === true;
+      this.expiryDays = (rec["alex_expirydays"] as number) ?? null;
+      this.allowExpiryOverride = rec["alex_allowexpiryoverride"] === true;
       if (!this.templateName && rec["alex_name"]) this.templateName = rec["alex_name"] as string;
     } catch (e) {
       console.warn("[easydo mapping] config load failed", e);
@@ -472,6 +486,21 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       this.toast(t.saved, "ok");
     } catch (e) {
       console.error("[easydo mapping] flag save failed", e);
+      this.toast(t.saveErr, "err");
+    }
+  }
+
+  // Persist a single template-level number (or null to clear) immediately.
+  private async saveTemplateNumber(field: string, value: number | null): Promise<void> {
+    const t = I18N[this.lang];
+    if (this.demo || !this.templateId) return;
+    try {
+      const body: Record<string, unknown> = {};
+      body[field] = value;
+      await this.context.webAPI.updateRecord(TEMPLATE_ENTITY, this.templateId, body);
+      this.toast(t.saved, "ok");
+    } catch (e) {
+      console.error("[easydo mapping] number save failed", e);
       this.toast(t.saveErr, "err");
     }
   }
@@ -708,17 +737,54 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     ));
     strip.appendChild(g2);
 
+    // Document expiry policy. Managed on the Dynamics side (easydo has no API
+    // knob for it). The days input and the override toggle are disabled unless
+    // "Document has expiry" is on.
+    const g3 = this.el("div", "edo-cfield edo-tplflags");
+    g3.appendChild(this.el("label", "edo-clabel", t.expirySettings));
+    g3.appendChild(this.buildFlagToggle(
+      this.hasExpiry, t.hasExpiry, t.hasExpiryHint,
+      (v) => { this.hasExpiry = v; void this.saveTemplateFlag("alex_hasexpiry", v); this.render(); }
+    ));
+
+    const daysRow = this.el("div", "edo-flagrow");
+    const daysText = this.el("div", "edo-flagtext");
+    daysText.appendChild(this.el("div", "edo-flaglabel", t.expiryDays));
+    daysText.appendChild(this.el("div", "edo-chint", t.expiryDaysHint));
+    const daysInput = this.el("input", "edo-numinput") as HTMLInputElement;
+    daysInput.type = "number";
+    daysInput.min = "1";
+    daysInput.max = "3650";
+    daysInput.value = this.expiryDays != null ? String(this.expiryDays) : "";
+    daysInput.disabled = !this.hasExpiry;
+    daysInput.onchange = () => {
+      const n = parseInt(daysInput.value, 10);
+      this.expiryDays = isNaN(n) ? null : Math.min(3650, Math.max(1, n));
+      daysInput.value = this.expiryDays != null ? String(this.expiryDays) : "";
+      void this.saveTemplateNumber("alex_expirydays", this.expiryDays);
+    };
+    daysRow.appendChild(daysText);
+    daysRow.appendChild(daysInput);
+    g3.appendChild(daysRow);
+
+    g3.appendChild(this.buildFlagToggle(
+      this.allowExpiryOverride, t.expiryOverride, t.expiryOverrideHint,
+      (v) => { this.allowExpiryOverride = v; void this.saveTemplateFlag("alex_allowexpiryoverride", v); },
+      !this.hasExpiry
+    ));
+    strip.appendChild(g3);
+
     return strip;
   }
 
   // A labeled on/off switch for a template-level flag, with a description line.
-  private buildFlagToggle(checked: boolean, label: string, hint: string, onChange: (v: boolean) => void): HTMLElement {
+  private buildFlagToggle(checked: boolean, label: string, hint: string, onChange: (v: boolean) => void, disabled = false): HTMLElement {
     const t = I18N[this.lang];
     const row = this.el("div", "edo-flagrow");
     const text = this.el("div", "edo-flagtext");
     text.appendChild(this.el("div", "edo-flaglabel", label));
     text.appendChild(this.el("div", "edo-chint", hint));
-    const toggle = this.buildBoolToggle(checked, t.onLbl, t.offLbl, onChange);
+    const toggle = this.buildBoolToggle(checked, t.onLbl, t.offLbl, onChange, disabled);
     row.appendChild(text);
     row.appendChild(toggle);
     return row;

@@ -1,0 +1,141 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_alex-5feasydo-5f5849d39a0feaf28d": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "alex_easydo"
+        },
+        "api": {
+          "name": "shared_alex-5feasydo-5f5849d39a0feaf28d",
+          "logicalName": "alex_5Feasydo"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "alex_dataverse_easydo"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "Run_daily": {
+          "metadata": {
+            "operationMetadataId": "e5b0d1e2-0001-4a10-9c01-000000000101"
+          },
+          "type": "Recurrence",
+          "recurrence": {
+            "interval": 1,
+            "frequency": "Day"
+          }
+        }
+      },
+      "actions": {
+        "List_overdue_requests": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "e5b0d1e2-0002-4a10-9c01-000000000102"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "ListRecords",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "alex_signaturerequests",
+              "$select": "alex_signaturerequestid,alex_externalformid,alex_name,alex_status,alex_expireson",
+              "$filter": "@concat('(alex_status eq 626210002 or alex_status eq 626210003 or alex_status eq 626210004 or alex_status eq 626210005) and alex_externalformid ne null and alex_expireson ne null and alex_expireson lt ', utcNow())"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Process_each_overdue_request": {
+          "runAfter": {
+            "List_overdue_requests": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e5b0d1e2-0003-4a10-9c01-000000000103"
+          },
+          "type": "Foreach",
+          "foreach": "@outputs('List_overdue_requests')?['body/value']",
+          "actions": {
+            "Try_to_cancel_the_form": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "e5b0d1e2-0004-4a10-9c01-000000000104"
+              },
+              "type": "Scope",
+              "actions": {
+                "Cancel_the_easydo_form": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "e5b0d1e2-0005-4a10-9c01-000000000105"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_alex-5feasydo-5f5849d39a0feaf28d",
+                      "operationId": "CancelForm",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f5849d39a0feaf28d"
+                    },
+                    "parameters": {
+                      "formId": "@items('Process_each_overdue_request')?['alex_externalformid']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              }
+            },
+            "Mark_request_as_Expired": {
+              "runAfter": {
+                "Try_to_cancel_the_form": [
+                  "Succeeded",
+                  "Failed"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e5b0d1e2-0006-4a10-9c01-000000000106"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "UpdateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "alex_signaturerequests",
+                  "recordId": "@items('Process_each_overdue_request')?['alex_signaturerequestid']",
+                  "item/alex_status": 626210010,
+                  "item/alex_cancelledon": "@utcNow()"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "schemaVersion": "1.0.0.0"
+}
