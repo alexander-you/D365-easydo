@@ -40,9 +40,13 @@
   background: var(--edg-soft); border-radius: 999px; padding: 5px 11px; white-space: nowrap;
 }
 
-/* chips */
+/* filter bar: chips on one side, an elegant grey divider, then the toolbar */
+.edg-filterbar {
+  display: flex; align-items: center; gap: 14px; padding: 0 4px 14px;
+}
 .edg-chips {
-  display: flex; flex-wrap: wrap; gap: 8px; padding: 0 4px 14px;
+  display: flex; flex-wrap: wrap; gap: 8px;
+  flex: 1 1 auto; min-width: 0;
 }
 .edg-chip {
   display: inline-flex; align-items: center; gap: 7px;
@@ -109,9 +113,13 @@
 
 .edg-row-main { min-width: 0; }
 .edg-row-name {
+  display: flex; align-items: center; gap: 7px;
   font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em;
+}
+.edg-row-name > span {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.edg-env-glyph { width: 15px; height: 15px; color: var(--edg-blue); flex: none; }
 .edg-row-tpl {
   font-size: 12.5px; color: var(--edg-sub); margin-top: 3px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -170,3 +178,57 @@
   .edg-row-status { grid-column: 1 / -2; }
   .edg-row-chev { grid-row: 1; grid-column: -1; }
 }
+
+/* toolbar sits at the end of the filter bar, split off by a soft grey rule */
+.edg-actions {
+  display: flex; align-items: center; gap: 8px; flex: none;
+  align-self: stretch;
+  border-inline-start: 1px solid var(--edg-line);
+  padding-inline-start: 14px;
+}
+.edg-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--edg-line); background: var(--edg-bg); color: var(--edg-ink);
+  border-radius: 999px; padding: 6px 13px; cursor: pointer;
+  font-size: 12.5px; font-weight: 600; font-family: inherit;
+  transition: background .15s ease, border-color .15s ease, color .15s ease, transform .08s ease, box-shadow .15s ease;
+}
+.edg-btn svg { width: 15px; height: 15px; flex: none; }
+.edg-btn:hover { background: var(--edg-soft); border-color: #d1d1d6; }
+.edg-btn:active { transform: scale(.97); }
+.edg-btn-primary {
+  background: var(--edg-blue); border-color: var(--edg-blue); color: #fff;
+  box-shadow: 0 1px 2px rgba(0,113,227,.24);
+}
+.edg-btn-primary:hover { background: #0063c8; border-color: #0063c8; }
+.edg-btn-spin {
+  display: none; width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.45); border-top-color: #fff;
+  animation: edg-spin .8s linear infinite;
+}
+.edg-btn.is-busy { pointer-events: none; opacity: .85; }
+.edg-btn.is-busy svg { display: none; }
+.edg-btn.is-busy .edg-btn-spin { display: inline-block; }
+
+/* envelope progress inside a request card */
+.edg-env { display: flex; align-items: center; gap: 9px; margin-top: 8px; }
+.edg-env-track {
+  flex: 1; min-width: 60px; max-width: 200px; height: 5px;
+  background: var(--edg-muted-bg); border-radius: 999px; overflow: hidden;
+}
+.edg-env-fill {
+  display: block; height: 100%; border-radius: 999px;
+  background: var(--edg-blue); transition: width .35s ease;
+}
+.edg-env.is-done .edg-env-fill { background: var(--edg-ok); }
+.edg-env-lbl { font-size: 11.5px; font-weight: 600; color: var(--edg-sub); white-space: nowrap; }
+.edg-env.is-done .edg-env-lbl { color: var(--edg-ok); }
+
+/* toast */
+.edg-toast {
+  position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 12px);
+  background: rgba(29,29,31,.94); color: #fff; font-size: 12.5px; font-weight: 500;
+  padding: 9px 16px; border-radius: 999px; box-shadow: 0 6px 22px rgba(0,0,0,.28);
+  opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease; z-index: 2147483000;
+}
+.edg-toast.is-show { opacity: 1; transform: translate(-50%, 0); }

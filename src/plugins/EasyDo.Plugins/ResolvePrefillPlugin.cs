@@ -7,10 +7,14 @@
   the source record (primary record, or one lookup hop off it).
 
   Input  parameter : SignatureRequestId (String, the request GUID)
+  Input  parameter : PinSourceField     (String, optional; a column on the
+                     primary table whose value is the recipient PIN)
   Output parameter : PrefillData        (String, JSON array of
                      { "name": <easydo field name>,
                        "content_value": <display value>,
                        "read_only": <bool> })
+  Output parameter : PinValue           (String, the resolved PIN value read
+                     from PinSourceField on the primary record, or empty)
 
   The value is taken from the formatted (display) value so option sets, dates,
   money and lookups prefill as human-readable text, matching what a recipient
@@ -41,14 +45,32 @@ namespace EasyDo.Plugins
             if (string.IsNullOrEmpty(requestIdRaw) || !Guid.TryParse(requestIdRaw, out var requestId))
             {
                 ctx.OutputParameters["PrefillData"] = "[]";
+                ctx.OutputParameters["PinValue"] = "";
                 trace.Trace("SignatureRequestId missing or not a GUID; returning empty.");
                 return;
             }
 
             var request = svc.Retrieve("alex_signaturerequest", requestId, new ColumnSet(
                 "alex_templateid", "alex_relatedcontactid", "alex_primaryrecordid"));
-            var templateRef = request.GetAttributeValue<EntityReference>("alex_templateid");
-            if (templateRef == null) { ctx.OutputParameters["PrefillData"] = "[]"; return; }
+
+            // Optional: resolve prefill for a SPECIFIC bundle document (envelope mode).
+            // When the flow passes a member TemplateId, use it instead of the request's
+            // own template so each document in the envelope gets its own prefill_data.
+            var scopedTemplateRaw = ctx.InputParameters.Contains("TemplateId")
+                ? ctx.InputParameters["TemplateId"] as string
+                : null;
+            EntityReference templateRef;
+            Guid scopedTemplateId = Guid.Empty;
+            if (!string.IsNullOrEmpty(scopedTemplateRaw) && Guid.TryParse(scopedTemplateRaw, out scopedTemplateId))
+            {
+                templateRef = new EntityReference("alex_signaturetemplate", scopedTemplateId);
+                trace.Trace("ResolvePrefill scoped to envelope document template {0}.", scopedTemplateId);
+            }
+            else
+            {
+                templateRef = request.GetAttributeValue<EntityReference>("alex_templateid");
+            }
+            if (templateRef == null) { ctx.OutputParameters["PrefillData"] = "[]"; ctx.OutputParameters["PinValue"] = ""; return; }
 
             var template = svc.Retrieve("alex_signaturetemplate", templateRef.Id, new ColumnSet("alex_primarytable"));
             var primaryTable = template.GetAttributeValue<string>("alex_primarytable");
@@ -72,8 +94,9 @@ namespace EasyDo.Plugins
             // Fields the user edited in the wizard are stored as Prefill override rows
             // (alex_signaturefieldvalue, direction 626210000). The send flow already
             // emits those, so we skip the binding for any overridden field to avoid
-            // duplicate prefill_data entries and let the user's edit win.
-            var overridden = LoadOverriddenFieldNames(svc, trace, requestId);
+            // duplicate prefill_data entries and let the user's edit win. In envelope
+            // mode the overrides are scoped to the current document's template.
+            var overridden = LoadOverriddenFieldNames(svc, trace, requestId, scopedTemplateId);
 
             var items = new List<string>();
             foreach (var m in mappings)
@@ -95,12 +118,27 @@ namespace EasyDo.Plugins
 
             ctx.OutputParameters["PrefillData"] = "[" + string.Join(",", items) + "]";
             trace.Trace("ResolvePrefill produced {0} item(s).", items.Count);
+
+            // Variable PIN mode: resolve the recipient PIN from a column on the
+            // primary record (NOT an easydo form field). Read the same way as a
+            // prefill value so option sets / dates / text all come out readable.
+            var pinSourceField = ctx.InputParameters.Contains("PinSourceField")
+                ? ctx.InputParameters["PinSourceField"] as string
+                : null;
+            var pinValue = "";
+            if (!string.IsNullOrWhiteSpace(pinSourceField) && primary != null)
+            {
+                var pv = ReadDisplayValue(svc, trace, primary, pinSourceField.Trim(), sourceCache);
+                pinValue = pv ?? "";
+                trace.Trace("ResolvePrefill resolved PIN from '{0}' (len={1}).", pinSourceField.Trim(), pinValue.Length);
+            }
+            ctx.OutputParameters["PinValue"] = pinValue;
         }
 
         // External field names that already have a manual Prefill override row for
         // this request. Those are skipped by the binding resolver so the user's
         // wizard edit wins and easydo does not get duplicate prefill_data entries.
-        private static HashSet<string> LoadOverriddenFieldNames(IOrganizationService svc, ITracingService trace, Guid requestId)
+        private static HashSet<string> LoadOverriddenFieldNames(IOrganizationService svc, ITracingService trace, Guid requestId, Guid scopedTemplateId)
         {
             var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             try
@@ -112,6 +150,9 @@ namespace EasyDo.Plugins
                 };
                 q.Criteria.AddCondition("alex_signaturerequestid", ConditionOperator.Equal, requestId);
                 q.Criteria.AddCondition("alex_direction", ConditionOperator.Equal, 626210000);
+                // Envelope mode: only overrides belonging to this document's template.
+                if (scopedTemplateId != Guid.Empty)
+                    q.Criteria.AddCondition("alex_templateid", ConditionOperator.Equal, scopedTemplateId);
                 var res = svc.RetrieveMultiple(q);
                 foreach (var e in res.Entities)
                 {

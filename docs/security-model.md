@@ -53,6 +53,35 @@ document. On top of standard record security, the solution defines dedicated
 > רשאי לראות איש קשר, לא יוכל לפתוח את המסמך החתום שלו. בנוסף מוגדרים תפקידי אבטחה
 > ייעודיים לכל סוג משתמש.
 
+## 3a. Recipient authentication — PIN / OTP (2.0.0.0) | אימות נמען
+
+A template can require the **signer** to authenticate before opening the document:
+
+- **`alex_authmethod`** — None / **PIN** / **OTP (SMS)**.
+- **PIN** can be a fixed value (`alex_pinvalue`) or read at send time from a record
+  field (`alex_pinmode = Variable`, `alex_pinsourcefield`); **OTP** is sent to a phone
+  read from `alex_otpphonesource`.
+- Overriding the PIN/phone per send is only allowed when the template opts in
+  (`alex_pinallowsendoverride` / `alex_otpallowsendoverride`).
+- The value actually applied is recorded on the request (`alex_effectiveauthmethod`,
+  `alex_effectivepin`) and passed to easydo via `auth_method` — it is never exposed in
+  the recipient-facing UI.
+
+> תבנית יכולה לדרוש מהחותם **לאמת את עצמו** לפני פתיחת המסמך: ללא / **PIN** / **OTP ב‑SMS**.
+> ה‑PIN יכול להיות קבוע או להישאב משדה ברשומה, וה‑OTP נשלח לטלפון משדה מקור. דריסה בעת
+> שליחה מותרת רק אם התבנית מאפשרת. הערך שהוחל בפועל נחתם על הבקשה ומועבר ל‑easydo דרך
+> `auth_method`.
+
+## 3b. Copy-link governance (2.0.0.0) | ממשל העתקת קישור
+
+Whether an agent may copy a **raw signing link** (bypassing the tracked delivery
+channels) is governed centrally: a global default
+(`alex_easydosettings.alex_allowcopylink`) with a per-template override
+(`alex_signaturetemplate.alex_copylinkmode` — Inherit / Allow / Block).
+
+> העתקת **קישור חתימה גולמי** נשלטת מרכזית: מתג גלובלי + דריסה פר‑תבנית (ברירת מחדל /
+> מותר / חסום).
+
 ## 4. What is recorded | מה מתועד
 
 - The **Integration Log** table records a **safe summary** of each operation —

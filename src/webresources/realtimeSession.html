@@ -40,6 +40,7 @@
 
         .edo-rt {
             display: flex; flex-direction: column; height: 100%; min-height: 0;
+            width: 100%; overflow-x: hidden;
         }
 
         .edo-rt-head {
@@ -51,7 +52,7 @@
         .edo-rt-sub { font-size: 12.5px; opacity: 0.92; margin-top: 3px; }
 
         /* progress rail */
-        .edo-rt-rail { display: flex; align-items: flex-start; gap: 0; padding: 18px 22px 6px; }
+        .edo-rt-rail { display: flex; align-items: flex-start; gap: 0; padding: 18px 22px 6px; overflow: hidden; }
         .edo-rt-node { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; position: relative; text-align: center; }
         .edo-rt-dot {
             width: 26px; height: 26px; border-radius: 50%; background: #fff;
@@ -62,6 +63,7 @@
         .edo-rt-node.done .edo-rt-dot { background: var(--edo-ok); border-color: var(--edo-ok); color: #fff; }
         .edo-rt-node.active .edo-rt-dot { background: var(--edo-accent); border-color: var(--edo-accent); color: #fff; box-shadow: 0 0 0 4px rgba(75, 46, 131, 0.16); }
         .edo-rt-line { position: absolute; top: 13px; height: 2px; background: var(--edo-line); width: 100%; left: -50%; z-index: 0; }
+        [dir="rtl"] .edo-rt-line { left: auto; right: -50%; }
         .edo-rt-node.done .edo-rt-line, .edo-rt-node.active .edo-rt-line { background: var(--edo-ok); }
         .edo-rt-node:first-child .edo-rt-line { display: none; }
         .edo-rt-label { font-size: 11.5px; margin-top: 6px; color: var(--edo-sub); max-width: 92px; }
@@ -74,6 +76,18 @@
         @keyframes edo-spin { to { transform: rotate(360deg); } }
         .edo-rt-wait-title { font-size: 15px; font-weight: 600; color: var(--edo-ink); }
         .edo-rt-wait-hint { font-size: 12.5px; max-width: 360px; line-height: 1.6; }
+
+        .edo-rt-docs { flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; padding: 4px 0 12px; }
+        .edo-rt-docs-title { font-size: 12px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; color: var(--edo-sub); margin-bottom: 2px; }
+        .edo-rt-docrow { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--edo-line); border-radius: 10px; background: var(--edo-bg); }
+        .edo-rt-docmark { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; background: var(--edo-line); color: var(--edo-sub); }
+        .edo-rt-docrow.signed .edo-rt-docmark { background: #dff5e6; color: #1a7f43; }
+        .edo-rt-docrow.declined .edo-rt-docmark { background: #fce4e4; color: #c0392b; }
+        .edo-rt-docname { flex: 1 1 auto; font-size: 13.5px; font-weight: 600; color: var(--edo-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .edo-rt-docstate { flex: 0 0 auto; font-size: 12px; font-weight: 600; color: var(--edo-sub); }
+        .edo-rt-docrow.signed .edo-rt-docstate { color: #1a7f43; }
+        .edo-rt-docrow.declined .edo-rt-docstate { color: #c0392b; }
+        .edo-rt-docs-hint { font-size: 12.5px; color: var(--edo-sub); line-height: 1.6; text-align: center; padding-top: 2px; }
 
         .edo-rt-doc { flex: 1 1 auto; min-height: 0; border: 1px solid var(--edo-line); border-radius: 10px; overflow: hidden; background: var(--edo-bg); }
         .edo-rt-doc object, .edo-rt-doc iframe { width: 100%; height: 100%; border: 0; display: block; }
@@ -117,6 +131,10 @@
                 ST_VIEWED = 626210004, ST_INPROGRESS = 626210005, ST_COMPLETED = 626210006,
                 ST_DECLINED = 626210007;
 
+            // ----- envelope member item status (alex_envelopeitemstatus) -----
+            var IT_PENDING = 626220000, IT_WAITING = 626220001, IT_SIGNED = 626220002,
+                IT_DECLINED = 626220003;
+
             var DICT = {
                 he: {
                     title: "\u05d7\u05ea\u05d9\u05de\u05d4 \u05d1\u05d6\u05de\u05df \u05d0\u05de\u05ea",
@@ -137,7 +155,11 @@
                     resendingH: "\u05e0\u05d5\u05e6\u05e8 \u05de\u05e1\u05de\u05da \u05d7\u05d3\u05e9 \u05dc\u05d7\u05ea\u05d9\u05de\u05d4. \u05d4\u05de\u05e2\u05e7\u05d1 \u05d9\u05ea\u05d7\u05d3\u05e9 \u05d1\u05e8\u05d2\u05e2.",
                     errLoad: "\u05d8\u05e2\u05d9\u05e0\u05ea \u05d4\u05de\u05e1\u05de\u05da \u05e0\u05db\u05e9\u05dc\u05d4.",
                     errNoCtx: "\u05dc\u05d0 \u05e0\u05de\u05e6\u05d0 \u05d4\u05e7\u05e9\u05e8 \u05d4\u05d1\u05e7\u05e9\u05d4.",
-                    declined: "\u05d4\u05dc\u05e7\u05d5\u05d7 \u05d3\u05d7\u05d4 \u05d0\u05ea \u05d4\u05d7\u05ea\u05d9\u05de\u05d4."
+                    declined: "\u05d4\u05dc\u05e7\u05d5\u05d7 \u05d3\u05d7\u05d4 \u05d0\u05ea \u05d4\u05d7\u05ea\u05d9\u05de\u05d4.",
+                    envSub: "\u05de\u05e2\u05d8\u05e4\u05d4 \u05e0\u05e9\u05dc\u05d7\u05d4 \u05dc\u05dc\u05e7\u05d5\u05d7. \u05de\u05e2\u05e7\u05d1 \u05d0\u05d7\u05e8 \u05db\u05dc \u05de\u05e1\u05de\u05da \u05d1\u05d6\u05de\u05df \u05d0\u05de\u05ea\u2026",
+                    envDocsTitle: "\u05de\u05e1\u05de\u05db\u05d9 \u05d4\u05de\u05e2\u05d8\u05e4\u05d4",
+                    envWaitHint: "\u05db\u05dc \u05de\u05e1\u05de\u05da \u05d9\u05e1\u05d5\u05de\u05df \u05db\u05d0\u05df \u05d1\u05e8\u05d2\u05e2 \u05e9\u05d4\u05dc\u05e7\u05d5\u05d7 \u05d9\u05d7\u05ea\u05d5\u05dd \u05e2\u05dc\u05d9\u05d5. \u05d4\u05de\u05e2\u05d8\u05e4\u05d4 \u05d4\u05d7\u05ea\u05d5\u05de\u05d4 \u05ea\u05d5\u05e4\u05d9\u05e2 \u05e2\u05dd \u05e1\u05d9\u05d5\u05dd \u05db\u05dc \u05d4\u05de\u05e1\u05de\u05db\u05d9\u05dd.",
+                    docSigned: "\u05e0\u05d7\u05ea\u05dd", docDeclined: "\u05e0\u05d3\u05d7\u05d4", docPending: "\u05de\u05de\u05ea\u05d9\u05df"
                 },
                 en: {
                     title: "Real-time signing",
@@ -158,7 +180,11 @@
                     resendingH: "A new document was created for signature. Tracking will refresh shortly.",
                     errLoad: "Loading the document failed.",
                     errNoCtx: "Request context was not found.",
-                    declined: "The customer declined the signature."
+                    declined: "The customer declined the signature.",
+                    envSub: "The envelope was sent to the customer. Tracking every document live\u2026",
+                    envDocsTitle: "Envelope documents",
+                    envWaitHint: "Each document turns green as the customer signs it. The signed envelope will appear once all documents are complete.",
+                    docSigned: "Signed", docDeclined: "Declined", docPending: "Pending"
                 }
             };
 
@@ -205,6 +231,8 @@
                 this.doneKind = ""; // approve | reject
                 this.timer = null;
                 this.busy = false;
+                this.isEnvelope = false;
+                this.items = [];
             }
 
             Panel.prototype.start = function () {
@@ -233,15 +261,17 @@
             Panel.prototype.refresh = function () {
                 var self = this;
                 if (this.phase === "done" || this.phase === "resendPrompt") return;
-                var sel = "?$select=alex_status,alex_senton,alex_lastviewedon,alex_completedon,alex_externalformid,alex_realtimesessionactive";
+                var sel = "?$select=alex_status,alex_senton,alex_lastviewedon,alex_completedon,alex_externalformid,alex_externalenvelopeid,alex_ismultidocument,alex_realtimesessionactive";
                 this.xrm.WebApi.retrieveRecord("alex_signaturerequest", this.ctx.requestId, sel).then(
                     function (rec) {
                         self.status = (rec.alex_status === 0 || rec.alex_status) ? rec.alex_status : self.status;
+                        self.isEnvelope = rec.alex_ismultidocument === true ||
+                            !!(rec.alex_externalenvelopeid && !rec.alex_externalformid);
                         if (self.status === ST_DECLINED) {
                             self.stopPolling();
                             self.error = DICT[self.lang].declined;
                             self.phase = "waiting";
-                            self.render();
+                            if (self.isEnvelope) { self.loadItems(); } else { self.render(); }
                             return;
                         }
                         if (self.status === ST_COMPLETED) {
@@ -249,9 +279,22 @@
                             if (self.phase === "waiting") { self.loadDocument(); }
                             return;
                         }
-                        if (self.phase === "waiting") { self.render(); }
+                        if (self.phase === "waiting") {
+                            if (self.isEnvelope) { self.loadItems(); } else { self.render(); }
+                        }
                     },
                     function () { /* transient; keep polling */ }
+                );
+            };
+
+            // Envelope member documents with their live per-document status.
+            Panel.prototype.loadItems = function () {
+                var self = this;
+                var q = "?$select=alex_name,alex_sequence,alex_itemstatus,alex_externalformid&$filter=_alex_signaturerequestid_value eq " +
+                    this.ctx.requestId + "&$orderby=alex_sequence asc";
+                this.xrm.WebApi.retrieveMultipleRecords("alex_signaturerequestitem", q).then(
+                    function (res) { self.items = (res && res.entities) ? res.entities : []; self.render(); },
+                    function () { self.render(); }
                 );
             };
 
@@ -371,6 +414,23 @@
             };
 
             // ----- rendering -----
+            Panel.prototype.docList = function (t) {
+                var wrap = el("div", { "class": "edo-rt-docs" });
+                wrap.appendChild(el("div", { "class": "edo-rt-docs-title", text: t.envDocsTitle }));
+                this.items.forEach(function (it) {
+                    var st = it.alex_itemstatus;
+                    var mark = "\u29B7", cls = "pending", lab = t.docPending;
+                    if (st === IT_SIGNED) { mark = "\u2713"; cls = "signed"; lab = t.docSigned; }
+                    else if (st === IT_DECLINED) { mark = "\u2715"; cls = "declined"; lab = t.docDeclined; }
+                    wrap.appendChild(el("div", { "class": "edo-rt-docrow " + cls }, [
+                        el("span", { "class": "edo-rt-docmark", text: mark }),
+                        el("span", { "class": "edo-rt-docname", text: it.alex_name || "" }),
+                        el("span", { "class": "edo-rt-docstate", text: lab })
+                    ]));
+                });
+                return wrap;
+            };
+
             Panel.prototype.rail = function (t) {
                 var self = this;
                 var stages = [
@@ -401,7 +461,7 @@
 
                 var head = el("div", { "class": "edo-rt-head" }, [
                     el("div", { "class": "edo-rt-title", text: t.title }),
-                    el("div", { "class": "edo-rt-sub", text: t.sub })
+                    el("div", { "class": "edo-rt-sub", text: this.isEnvelope ? t.envSub : t.sub })
                 ]);
                 root.appendChild(head);
 
@@ -426,12 +486,16 @@
                     } else {
                         body.appendChild(el("div", { "class": "edo-rt-error", text: this.error || t.errLoad }));
                     }
+                } else if (this.isEnvelope && this.items && this.items.length) {
+                    // waiting - envelope: per-document status list
+                    body.appendChild(this.docList(t));
+                    body.appendChild(el("div", { "class": "edo-rt-docs-hint", text: this.error ? this.error : t.envWaitHint }));
                 } else {
                     // waiting
                     var wait = el("div", { "class": "edo-rt-wait" }, [
                         el("div", { "class": "edo-rt-spin" }),
                         el("div", { "class": "edo-rt-wait-title", text: this.error ? this.error : t.waitTitle }),
-                        el("div", { "class": "edo-rt-wait-hint", text: t.waitHint })
+                        el("div", { "class": "edo-rt-wait-hint", text: this.isEnvelope ? t.envWaitHint : t.waitHint })
                     ]);
                     body.appendChild(wait);
                 }

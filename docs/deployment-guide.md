@@ -27,6 +27,32 @@
 3. Bind Environment Variables and Connection References per target environment.
 4. Import in the correct order (see [import-order.md](../deployment/import-order.md)).
 
+### Cutting a release | הוצאת גרסה
+
+Both the managed **and** unmanaged packages are produced by
+[40-export-release.ps1](../src/scripts/40-export-release.ps1):
+
+```powershell
+pwsh -NoProfile -File src/scripts/40-export-release.ps1 -Version <x.y.z.0>
+```
+
+It bumps the live solution version, publishes, and writes both zips into
+`deployment/releases/<version>/`. **The export is only half the job** — a folder with no
+index row and no tag is invisible to anyone browsing the repo. Always also:
+
+1. Add a row to the [releases Versions table](../deployment/releases/README.md#versions).
+2. Add a `## [<version>]` entry to [release-notes.md](release-notes.md).
+3. Commit and create the git tag `v<version>` (and push it).
+
+> **בעברית.** גרסה = **חבילה מנוהלת + לא‑מנוהלת** דרך `40-export-release.ps1`, ובנוסף
+> **שורה בטבלת הגרסאות**, **רשומת release‑notes**, ו**תג git `v<version>`** שנדחף. בלי
+> השלושה האלה הגרסה קיימת בתיקייה אבל "לא נראית".
+
+> **PCF components.** The three code components (Template Field Mapping, Template Gallery,
+> Envelope Composition) plus the Documents grid are part of the exported solution. During
+> development they are pushed with `pac pcf push --publisher-prefix alex`; the released
+> zip already contains them, so no separate push is needed on the target.
+
 ## Runtime customizations & managed dependencies
 
 Admins can enable additional **send tables** at runtime from the admin center

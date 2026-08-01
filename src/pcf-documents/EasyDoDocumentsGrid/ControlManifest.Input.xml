@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest>
-  <control namespace="EasyDo" constructor="EasyDoDocumentsGrid" version="0.1.1"
+  <control namespace="EasyDo" constructor="EasyDoDocumentsGrid" version="0.2.1"
            display-name-key="EasyDoDocumentsGrid_Display"
            description-key="EasyDoDocumentsGrid_Desc"
            control-type="standard">
@@ -28,7 +28,7 @@
 
     <feature-usage>
       <uses-feature name="Utility" required="true" />
-      <uses-feature name="WebAPI" required="false" />
+      <uses-feature name="WebAPI" required="true" />
     </feature-usage>
   </control>
 </manifest>

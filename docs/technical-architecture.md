@@ -58,7 +58,8 @@ Signature Recipient · Signature Document · Integration Log
 | Custom Page | Guided send experience | ✅ |
 | Environment Variables | Base URL, sandbox/prod, polling interval, storage mode, feature flags | ✅ |
 | Connection References | Managed connections owned by a service account | ✅ |
-| PCF control | Rich PDF preview / field overlay | ⛔ (only if preview demands) |
+| PCF controls | Template Field Mapping, **Template Gallery**, **Envelope Composition**, Documents grid | ✅ |
+| HTML web resources | Send Wizard, Admin Center, Document Viewer, **Real-time Session** | ✅ |
 | Azure Function | Secure callback, token cache, large files, high volume | ⛔ (future) |
 
 ## Key flows
@@ -95,6 +96,47 @@ Signature Recipient · Signature Document · Integration Log
    stores it in a **Dataverse File** column on `Signature Document`, then surfaces
    it on the Contact (and the side panel shows the decline reason for declined
    requests).
+
+### Multi-document envelopes (2.0.0.0)
+
+1. An **envelope template** (`alex_signaturetemplate.alex_isenvelope = true`) defines its
+   member documents in `alex_envelopetemplateitem`, kept in sync from easydo
+   (`GetEnvelope` → `templates[]`).
+2. Sending an envelope calls **`SendEnvelope`** once; the request is stamped
+   `alex_ismultidocument` + `alex_externalenvelopeid`, and **one
+   `alex_signaturerequestitem`** is created per member document.
+3. Status is tracked **per document**: `GetEnvelope` returns `forms[]` with each member's
+   `status`, mapped to `alex_signaturerequestitem.alex_itemstatus`
+   (`alex_envelopeitemstatus`). The request rolls up to Completed only when **every**
+   member is signed.
+4. On completion the read-back attributes each value to the correct member via
+   `alex_signaturefieldvalue.alex_templateid`, and **`DownloadEnvelope`** returns the
+   **combined** signed PDF, attached to the business record.
+
+### Recipient authentication — PIN / OTP (2.0.0.0)
+
+1. A template declares an `alex_authmethod` (None / PIN / OTP-SMS) and, for PIN, an
+   `alex_pinmode` (fixed value or read from a field). Per-send overrides are gated by
+   `alex_pinallowsendoverride` / `alex_otpallowsendoverride`.
+2. At send time the flow/plugin resolves the **effective** method + PIN, stamps them on
+   the request (`alex_effectiveauthmethod`, `alex_effectivepin`) and passes `auth_method`
+   (+ `pin`) to easydo on `SendTemplate` / `SendEnvelope`.
+
+### Real-time signing (live agent session)
+
+1. A send in **real-time** mode sets `alex_realtimesessionactive = true`; the
+   **Real-time Session** web resource ([realtimeSession.html](../src/webresources/realtimeSession.html))
+   polls Dataverse and shows a progress rail. For envelopes it renders a **per-document
+   checklist** with live Signed / Declined / Pending indicators.
+2. A dedicated poll flow ([realtime-session-poll.flow.json](../src/flows/realtime-session-poll.flow.json))
+   drives the request/item status live and, on completion, reads back fields, downloads
+   the (single or combined) PDF, attaches it, and closes the session.
+
+### On-demand status check (2.0.0.0)
+
+The Documents PCF's **Check status** action stamps `alex_statuscheckrequestedon`, which
+triggers [check-signature-status.flow.json](../src/flows/check-signature-status.flow.json)
+to re-poll easydo immediately instead of waiting for the 5-minute recurrence.
 
 ## Dynamic send-table enablement
 

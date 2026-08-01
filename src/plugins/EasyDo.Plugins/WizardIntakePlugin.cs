@@ -48,6 +48,9 @@ namespace EasyDo.Plugins
         private const int LanguageEnglish = 626210001;
         private const int DirectionPrefill = 626210000;
 
+        // alex_envelopeitemstatus global choice: a bundle document not yet sent.
+        private const int EnvelopeItemStatusPending = 626220000;
+
         // alex_easydochannel global choice (primary easydo channel).
         private const int ChannelEmailOpt = 626210000;
         private const int ChannelSmsOpt = 626210001;
@@ -94,11 +97,12 @@ namespace EasyDo.Plugins
         // ---- PreValidation: shape the request row before it is written ----
         private static void ApplyToTarget(Entity target, WizardPayload p, IOrganizationService svc, ITracingService trace)
         {
+            Entity template = null;
             if (!string.IsNullOrEmpty(p.TemplateExternalId))
             {
-                var templateId = ResolveTemplateId(svc, p.TemplateExternalId, trace);
-                if (templateId != Guid.Empty)
-                    target["alex_templateid"] = new EntityReference("alex_signaturetemplate", templateId);
+                template = ResolveTemplate(svc, p.TemplateExternalId, trace);
+                if (template != null)
+                    target["alex_templateid"] = new EntityReference("alex_signaturetemplate", template.Id);
             }
 
             if (!string.IsNullOrEmpty(p.LaunchEntityName))
@@ -119,6 +123,12 @@ namespace EasyDo.Plugins
 
             if (!string.IsNullOrEmpty(p.RelatedContactId) && Guid.TryParse(p.RelatedContactId, out var contactId))
                 target["alex_relatedcontactid"] = new EntityReference("contact", contactId);
+
+            // Multi-document envelope flag. When set, alex_templateid resolves to the
+            // envelope-template row (its external id is the envelope GUID) and the
+            // documents in the bundle are written as alex_signaturerequestitem rows
+            // at PostOperation.
+            target["alex_ismultidocument"] = p.IsMultiDocument;
 
             // Primary easydo channel snapshot (org-wide setting at send time). easydo
             // sends its native notification on this channel (email / SMS / WhatsApp).
@@ -143,8 +153,17 @@ namespace EasyDo.Plugins
             if (!string.IsNullOrEmpty(p.CcChannel))
                 target["alex_ccchannel"] = p.CcChannel;
 
+            // Human-friendly request/document name. This value is what the send flow
+            // passes to easydo as the form name, so it is what the recipient sees in
+            // the signing email - use the template's display name, not the raw external
+            // id. Fall back to "easydo - {id}" only when the template has no name.
             if (string.IsNullOrEmpty(target.GetAttributeValue<string>("alex_name")))
-                target["alex_name"] = "easydo - " + (p.TemplateExternalId ?? "");
+            {
+                var templateName = template?.GetAttributeValue<string>("alex_name");
+                target["alex_name"] = !string.IsNullOrWhiteSpace(templateName)
+                    ? templateName
+                    : "easydo - " + (p.TemplateExternalId ?? "");
+            }
 
             trace.Trace("WizardIntake: target shaped (template={0}, table={1}, draft={2}, lang={3}).",
                 p.TemplateExternalId, p.LaunchEntityName, p.IsDraft, p.Language);
@@ -155,6 +174,41 @@ namespace EasyDo.Plugins
         {
             if (requestId == Guid.Empty) return;
             var requestRef = new EntityReference("alex_signaturerequest", requestId);
+
+            // Multi-document envelope: one alex_signaturerequestitem row per document
+            // in the bundle. Each carries its member template lookup and signing
+            // order; the read-back flow later fills in the easydo form id/status.
+            var documentTemplateIds = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+            var documentTemplateNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (p.IsMultiDocument && p.Documents != null)
+            {
+                foreach (var d in p.Documents)
+                {
+                    if (string.IsNullOrWhiteSpace(d.TemplateExternalId)) continue;
+                    Guid memberTemplateId;
+                    if (!documentTemplateIds.TryGetValue(d.TemplateExternalId, out memberTemplateId))
+                    {
+                        var memberTemplate = ResolveTemplate(svc, d.TemplateExternalId, trace);
+                        memberTemplateId = memberTemplate?.Id ?? Guid.Empty;
+                        documentTemplateIds[d.TemplateExternalId] = memberTemplateId;
+                        documentTemplateNames[d.TemplateExternalId] = memberTemplate?.GetAttributeValue<string>("alex_name");
+                    }
+
+                    string memberName;
+                    documentTemplateNames.TryGetValue(d.TemplateExternalId, out memberName);
+                    var item = new Entity("alex_signaturerequestitem");
+                    item["alex_name"] = !string.IsNullOrEmpty(d.Name)
+                        ? d.Name
+                        : (!string.IsNullOrWhiteSpace(memberName) ? memberName : "easydo - " + d.TemplateExternalId);
+                    if (memberTemplateId != Guid.Empty)
+                        item["alex_templateid"] = new EntityReference("alex_signaturetemplate", memberTemplateId);
+                    if (d.Sequence > 0) item["alex_sequence"] = d.Sequence;
+                    item["alex_itemstatus"] = new OptionSetValue(EnvelopeItemStatusPending);
+                    item["alex_signaturerequestid"] = requestRef;
+                    try { svc.Create(item); }
+                    catch (Exception ex) { trace.Trace("WizardIntake: envelope item '{0}' create failed: {1}", d.TemplateExternalId, ex.Message); }
+                }
+            }
 
             if (p.Recipients != null)
             {
@@ -191,6 +245,19 @@ namespace EasyDo.Plugins
                     fv["alex_isreadonly"] = f.ReadOnly;
                     fv["alex_direction"] = new OptionSetValue(DirectionPrefill);
                     fv["alex_signaturerequestid"] = requestRef;
+                    // Scope the value to a specific bundle document when the wizard
+                    // tagged it, so a repeated field name across members stays distinct.
+                    if (!string.IsNullOrEmpty(f.DocumentExternalId))
+                    {
+                        Guid docTemplateId;
+                        if (!documentTemplateIds.TryGetValue(f.DocumentExternalId, out docTemplateId))
+                        {
+                            docTemplateId = ResolveTemplateId(svc, f.DocumentExternalId, trace);
+                            documentTemplateIds[f.DocumentExternalId] = docTemplateId;
+                        }
+                        if (docTemplateId != Guid.Empty)
+                            fv["alex_templateid"] = new EntityReference("alex_signaturetemplate", docTemplateId);
+                    }
                     try { svc.Create(fv); }
                     catch (Exception ex) { trace.Trace("WizardIntake: field value '{0}' create failed: {1}", f.Name, ex.Message); }
                 }
@@ -211,26 +278,31 @@ namespace EasyDo.Plugins
             }
         }
 
-        private static Guid ResolveTemplateId(IOrganizationService svc, string externalId, ITracingService trace)
+        private static Entity ResolveTemplate(IOrganizationService svc, string externalId, ITracingService trace)
         {
             try
             {
                 var q = new QueryExpression("alex_signaturetemplate")
                 {
-                    ColumnSet = new ColumnSet(false),
+                    ColumnSet = new ColumnSet("alex_name"),
                     TopCount = 1,
                     Criteria = new FilterExpression()
                 };
                 q.Criteria.AddCondition("alex_externaltemplateid", ConditionOperator.Equal, externalId);
                 var res = svc.RetrieveMultiple(q);
-                if (res.Entities.Count > 0) return res.Entities[0].Id;
+                if (res.Entities.Count > 0) return res.Entities[0];
                 trace.Trace("WizardIntake: no template with external id {0}.", externalId);
             }
             catch (Exception ex)
             {
                 trace.Trace("WizardIntake: template lookup failed for {0}: {1}", externalId, ex.Message);
             }
-            return Guid.Empty;
+            return null;
+        }
+
+        private static Guid ResolveTemplateId(IOrganizationService svc, string externalId, ITracingService trace)
+        {
+            return ResolveTemplate(svc, externalId, trace)?.Id ?? Guid.Empty;
         }
 
         // ---- minimal, order-insensitive JSON reader (sandbox-safe) ----
@@ -258,8 +330,10 @@ namespace EasyDo.Plugins
                 CcChannel = Text(payloadNode, "ccChannel"),
                 IsDraft = string.Equals(Text(payloadNode, "isDraft"), "true", StringComparison.OrdinalIgnoreCase),
                 IsRealtime = string.Equals(Text(payloadNode, "isRealtime"), "true", StringComparison.OrdinalIgnoreCase),
+                IsMultiDocument = string.Equals(Text(payloadNode, "isMultiDocument"), "true", StringComparison.OrdinalIgnoreCase),
                 Recipients = new List<WizardRecipient>(),
-                FieldValues = new List<WizardFieldValue>()
+                FieldValues = new List<WizardFieldValue>(),
+                Documents = new List<WizardDocument>()
             };
 
             // Channels block: { email, sms, whatsapp }. Absent => email only.
@@ -318,8 +392,23 @@ namespace EasyDo.Plugins
                         Name = name,
                         Value = Text(item, "value"),
                         Label = Text(item, "label"),
-                        ReadOnly = string.Equals(Text(item, "readOnly"), "true", StringComparison.OrdinalIgnoreCase)
+                        ReadOnly = string.Equals(Text(item, "readOnly"), "true", StringComparison.OrdinalIgnoreCase),
+                        DocumentExternalId = Text(item, "documentExternalId")
                     });
+                }
+            }
+
+            // Envelope member documents: { templateExternalId, name?, sequence? }.
+            var documents = payloadNode.SelectNodes("documents/item");
+            if (documents != null)
+            {
+                foreach (XmlNode item in documents)
+                {
+                    var ext = Text(item, "templateExternalId");
+                    if (string.IsNullOrWhiteSpace(ext)) continue;
+                    int seq;
+                    int.TryParse(Text(item, "sequence"), out seq);
+                    p.Documents.Add(new WizardDocument { TemplateExternalId = ext, Name = Text(item, "name"), Sequence = seq });
                 }
             }
             return p;
@@ -400,8 +489,10 @@ namespace EasyDo.Plugins
             public bool ChannelSms;
             public bool ChannelWhatsApp;
             public string ChannelDeclaration;
+            public bool IsMultiDocument;
             public List<WizardRecipient> Recipients;
             public List<WizardFieldValue> FieldValues;
+            public List<WizardDocument> Documents;
         }
 
         private sealed class WizardRecipient
@@ -419,6 +510,14 @@ namespace EasyDo.Plugins
             public string Value;
             public string Label;
             public bool ReadOnly;
+            public string DocumentExternalId;
+        }
+
+        private sealed class WizardDocument
+        {
+            public string TemplateExternalId;
+            public string Name;
+            public int Sequence;
         }
     }
 }

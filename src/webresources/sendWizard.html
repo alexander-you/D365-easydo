@@ -240,6 +240,10 @@
                     validityLabel: "תוקף המסמך (ימים)", validityHint: "מספר הימים שהמסמך יישאר בתוקף מרגע השליחה. לאחר מכן הוא ייסגר אוטומטית.", validityDays: "ימים",
                     declVia: "מופץ דרך", declCij: "מסעות לקוח (CIJ)", declFlow: "זרימת Power Automate",
                     declVerify: "ודאו שערוץ ההפצה פעיל לפני השליחה.",
+                    envelopeBadge: "מעטפה", roleRecipient: "נמען ראשי", roleSigner: "חותם",
+                    pinSendLabel: "קוד PIN לנמען", pinSendHint: "הנמען יזין קוד זה כדי לפתוח את המסמך. ניתן לשנותו עבור שליחה זו.", pinSendPlaceholder: "הזינו קוד PIN",
+                    otpSendLabel: "טלפון לקוד חד-פעמי (OTP)", otpSendHint: "הקוד החד-פעמי יישלח למספר זה. ניתן לשנותו עבור שליחה זו.", otpSendPlaceholder: "מספר טלפון",
+                    reviewAuth: "אימות נמען", reviewDocs: "מסמכים במעטפה", authOtpVia: "OTP אל ",
                     reviewHeading: "סקירה ושליחה", reviewHint: "בדקו את הפרטים ולחצו שליחה.",
                     reviewTemplate: "תבנית", reviewRecipients: "נמענים", reviewMode: "אופן השליחה", reviewChannels: "ערוצי שליחה", reviewDistribution: "הפצה", reviewContext: "נשלח מתוך",
                     sending: "שולח...", pickTemplate: "בחרו תבנית כדי להמשיך.",
@@ -297,6 +301,10 @@
                     validityLabel: "Document validity (days)", validityHint: "How many days the document stays valid from the moment it is sent. After that it is closed automatically.", validityDays: "days",
                     declVia: "Distributed via", declCij: "Customer Insights - Journeys (CIJ)", declFlow: "Power Automate flow",
                     declVerify: "Make sure the distribution channel is active before sending.",
+                    envelopeBadge: "Envelope", roleRecipient: "Primary recipient", roleSigner: "Signer",
+                    pinSendLabel: "Recipient PIN code", pinSendHint: "The recipient enters this code to open the document. You can change it for this send.", pinSendPlaceholder: "Enter a PIN code",
+                    otpSendLabel: "Phone for one-time code (OTP)", otpSendHint: "The one-time code is sent to this number. You can change it for this send.", otpSendPlaceholder: "Phone number",
+                    reviewAuth: "Recipient authentication", reviewDocs: "Envelope documents", authOtpVia: "OTP to ",
                     reviewHeading: "Review & send", reviewHint: "Check the details and press Send.",
                     reviewTemplate: "Template", reviewRecipients: "Recipients", reviewMode: "Send mode", reviewChannels: "Send channels", reviewDistribution: "Distribution", reviewContext: "Sent from",
                     sending: "Sending...", pickTemplate: "Pick a template to continue.",
@@ -425,6 +433,18 @@
                 this.fields = [];
                 this.fieldsLoadedFor = null;
                 this.fieldsLoading = false;
+                // Envelope (multi-document) members of the selected template, loaded
+                // from alex_envelopetemplateitem. Empty for single-document templates.
+                this.envMembers = [];
+                this.envMembersFor = "";
+                // Per-send recipient authentication override values (surfaced only
+                // when the template enables PIN/OTP override). pinEdited/otpEdited
+                // guard the record-resolved defaults from clobbering a manual edit.
+                this.pinOverride = "";
+                this.otpPhone = "";
+                this.pinEdited = false;
+                this.otpEdited = false;
+                this.authDefaultsFor = "";
                 this.launchContact = null;
                 // Contacts resolved from the launch record via each template's
                 // contact path (alex_contactpath), keyed by the lookup name.
@@ -466,8 +486,13 @@
                     self.loadPathContacts(res[1]).then(function (map) {
                         self.pathContacts = map;
                         self.applyTemplates(res[1], true);
-                        self.loadFields();
-                        self.render();
+                        var tpl = self.findTemplate();
+                        self.loadEnvelopeMembers(tpl).then(function () {
+                            self.syncRecipientsToTemplate(true);
+                            self.loadFields();
+                            self.loadAuthDefaults(tpl);
+                            self.render();
+                        });
                     });
                 });
             };
@@ -677,7 +702,7 @@
                 var self = this;
                 var entityName = this.ctx.entityName;
                 if (!this.xrm || !entityName) { return Promise.resolve([]); }
-                var query = "?$select=alex_signaturetemplateid,alex_name,alex_externaltemplateid,alex_primarytable,alex_allowprefilledit,alex_rolesjson,alex_contactpath,alex_recipientlocked,alex_hasexpiry,alex_expirydays,alex_allowexpiryoverride" +
+                var query = "?$select=alex_signaturetemplateid,alex_name,alex_externaltemplateid,alex_primarytable,alex_allowprefilledit,alex_rolesjson,alex_contactpath,alex_recipientlocked,alex_hasexpiry,alex_expirydays,alex_allowexpiryoverride,alex_isenvelope,alex_authmethod,alex_pinmode,alex_pinvalue,alex_pinsourcefield,alex_pinallowsendoverride,alex_otpphonesource,alex_otpallowsendoverride" +
                     "&$filter=alex_isactive eq true and statecode eq 0 and alex_allowsendfromobject eq true" +
                     " and alex_primarytable eq '" + entityName + "'" +
                     "&$orderby=alex_name";
@@ -696,6 +721,14 @@
                                 hasExpiry: r.alex_hasexpiry === true,
                                 expiryDays: (typeof r.alex_expirydays === "number" ? r.alex_expirydays : null),
                                 allowExpiryOverride: r.alex_allowexpiryoverride === true,
+                                isEnvelope: r.alex_isenvelope === true,
+                                authMethod: (typeof r.alex_authmethod === "number" ? r.alex_authmethod : null),
+                                pinMode: (typeof r.alex_pinmode === "number" ? r.alex_pinmode : null),
+                                pinValue: r.alex_pinvalue || "",
+                                pinSourceField: r.alex_pinsourcefield || "",
+                                pinAllowSendOverride: r.alex_pinallowsendoverride === true,
+                                otpPhoneSource: r.alex_otpphonesource || "",
+                                otpAllowSendOverride: r.alex_otpallowsendoverride === true,
                                 roles: parseRoles(r.alex_rolesjson)
                             };
                         }).filter(function (t) { return t.id && t.name && t.externalId; });
@@ -719,12 +752,30 @@
                 this.syncRecipientsToTemplate(forceRecips || this.recipients.length === 0);
             };
 
+            // The signer roles for a template. Envelopes derive them from their
+            // member documents (role 1 = primary recipient, 2..N = additional
+            // signers, matching what the Send flow expects); single-document
+            // templates use their named roles from alex_rolesjson.
+            Wizard.prototype.rolesForTemplate = function (tpl) {
+                if (!tpl) return [];
+                if (!tpl.isEnvelope) return namedRoles(tpl);
+                var d = DICT[this.lang];
+                var extra = {};
+                (this.envMembers || []).forEach(function (m) {
+                    if (m.role && m.role >= 2) extra[m.role] = true;
+                });
+                var nums = Object.keys(extra).map(Number).sort(function (a, b) { return a - b; });
+                var roles = [{ name: d.roleRecipient, sequence: 1 }];
+                nums.forEach(function (n) { roles.push({ name: d.roleSigner + " " + n, sequence: n }); });
+                return roles;
+            };
+
             // Build the recipient rows to match the selected template's roles.
             // forceReset rebuilds even when rows already exist (used on template switch).
             Wizard.prototype.syncRecipientsToTemplate = function (forceReset) {
                 var self = this;
                 var tpl = this.findTemplate();
-                var roles = namedRoles(tpl);
+                var roles = this.rolesForTemplate(tpl);
                 this.roleMode = roles.length >= 2;
                 var lc = this.autoContactFor(tpl);
                 var lcUsable = !!(lc && (lc.email || lc.phone));
@@ -757,6 +808,97 @@
                 }
             };
 
+            // Load the member documents of an envelope template (empty for a single-
+            // document template). Resolves once this.envMembers reflects the given
+            // template so recipient roles can be derived from them.
+            Wizard.prototype.loadEnvelopeMembers = function (tpl) {
+                var self = this;
+                if (!tpl || !tpl.isEnvelope || this.demo || !this.xrm) {
+                    this.envMembers = [];
+                    this.envMembersFor = tpl ? tpl.id : "";
+                    return Promise.resolve([]);
+                }
+                if (this.envMembersFor === tpl.id && this.envMembers.length) {
+                    return Promise.resolve(this.envMembers);
+                }
+                var q = "?$select=alex_name,alex_sequence,alex_externaltemplateid,alex_defaultroleid" +
+                    "&$filter=_alex_envelopeid_value eq " + tpl.id +
+                    "&$orderby=alex_sequence";
+                return this.xrm.WebApi.retrieveMultipleRecords("alex_envelopetemplateitem", q).then(
+                    function (res) {
+                        var rows = (res && res.entities) || [];
+                        var members = rows.map(function (r) {
+                            return {
+                                name: r.alex_name || "",
+                                sequence: (typeof r.alex_sequence === "number" ? r.alex_sequence : 0),
+                                externalId: r.alex_externaltemplateid || "",
+                                role: (typeof r.alex_defaultroleid === "number" ? r.alex_defaultroleid : 0)
+                            };
+                        }).filter(function (m) { return m.externalId; });
+                        self.envMembers = members;
+                        self.envMembersFor = tpl.id;
+                        return members;
+                    },
+                    function () { self.envMembers = []; self.envMembersFor = tpl.id; return []; }
+                );
+            };
+
+            // Resolve the default PIN/OTP override values for the selected template
+            // from the launch record. Fixed PIN uses the template value; a variable
+            // PIN and the OTP phone are read from their configured source columns.
+            // The resolved value seeds the settings input unless the sender edited it.
+            Wizard.prototype.loadAuthDefaults = function (tpl) {
+                var self = this;
+                this.pinOverride = "";
+                this.otpPhone = "";
+                this.authDefaultsFor = tpl ? tpl.id : "";
+                if (!tpl || this.demo) return;
+                var wantPinFixed = (tpl.authMethod === 2 && tpl.pinMode === 2);
+                var wantPinVar = (tpl.authMethod === 2 && tpl.pinMode === 3 && !!tpl.pinSourceField);
+                var wantOtpSource = (tpl.authMethod === 3 && !!tpl.otpPhoneSource);
+                if (wantPinFixed && !this.pinEdited) this.pinOverride = tpl.pinValue || "";
+                // OTP falls back to the auto-resolved recipient's phone when no source
+                // column is configured.
+                if (tpl.authMethod === 3 && !tpl.otpPhoneSource && !this.otpEdited) {
+                    var lc = this.autoContactFor(tpl);
+                    this.otpPhone = (lc && lc.phone) || "";
+                }
+                var cols = [];
+                if (wantPinVar) cols.push(tpl.pinSourceField);
+                if (wantOtpSource) cols.push(tpl.otpPhoneSource);
+                if (cols.length === 0 || !this.xrm || !this.ctx.entityName || !this.ctx.recordId) return;
+                this.xrm.WebApi.retrieveRecord(this.ctx.entityName, this.ctx.recordId, "?$select=" + cols.join(",")).then(
+                    function (rec) {
+                        if (self.authDefaultsFor !== (tpl ? tpl.id : "")) return; // template switched
+                        var read = function (c) {
+                            var fmt = rec[c + "@OData.Community.Display.V1.FormattedValue"];
+                            var v = (fmt !== undefined && fmt !== null) ? fmt : rec[c];
+                            return (v !== undefined && v !== null) ? String(v) : "";
+                        };
+                        if (wantPinVar && !self.pinEdited) self.pinOverride = read(tpl.pinSourceField);
+                        if (wantOtpSource && !self.otpEdited) self.otpPhone = read(tpl.otpPhoneSource);
+                        self.render();
+                    },
+                    function () { /* leave the defaults as seeded */ }
+                );
+            };
+
+            // Orchestrate everything that depends on the selected template: load the
+            // envelope members (if any), rebuild recipient roles, load prefill fields
+            // and resolve the auth override defaults, then re-render.
+            Wizard.prototype.onTemplateSelected = function () {
+                var self = this;
+                var tpl = this.findTemplate();
+                this.pinEdited = false;
+                this.otpEdited = false;
+                this.loadEnvelopeMembers(tpl).then(function () {
+                    self.syncRecipientsToTemplate(true);
+                    self.loadFields();
+                    self.loadAuthDefaults(tpl);
+                    self.render();
+                });
+            };
+
             // The ordered list of step keys for the current selection. The "data"
             // step appears only when the template allows prefill editing AND it has
             // visible editable fields resolved from the record.
@@ -765,8 +907,9 @@
                 var keys = ["template", "recipients"];
                 // Show the data step whenever the template has visible prefill
                 // fields, regardless of allowPrefillEdit (which only controls whether
-                // those fields can be edited here).
-                if (tpl && this.fieldsLoadedFor === this.selectedTemplateId && this.fields.length > 0) {
+                // those fields can be edited here). Envelopes skip the data step
+                // entirely — prefill is defined per member document, not here.
+                if (tpl && !tpl.isEnvelope && this.fieldsLoadedFor === this.selectedTemplateId && this.fields.length > 0) {
                     keys.push("data");
                 }
                 keys.push("settings");
@@ -784,9 +927,10 @@
                 var self = this;
                 var tpl = this.findTemplate();
                 this.fields = [];
-                // Load visible prefill fields for ANY non-demo template; whether they
-                // are editable is decided per field (allowPrefillEdit + iseditable).
-                if (!tpl || this.demo || !this.xrm) {
+                // Load visible prefill fields for ANY non-demo single-document
+                // template; whether they are editable is decided per field
+                // (allowPrefillEdit + iseditable). Envelopes have no data step.
+                if (!tpl || tpl.isEnvelope || this.demo || !this.xrm) {
                     this.fieldsLoadedFor = this.selectedTemplateId;
                     return;
                 }
@@ -1027,17 +1171,25 @@
                 this.templates.forEach(function (tpl) {
                     var selected = tpl.id === self.selectedTemplateId;
                     var radio = el("div", { "class": "edo-wz-radio" + (selected ? " on" : "") });
+                    // For envelopes the external id is an internal GUID, so instead of
+                    // the noisy id line we show the "Envelope" tag in its place.
+                    var subEl;
+                    if (tpl.isEnvelope) {
+                        subEl = el("div", { "class": "edo-wz-card-sub" }, [
+                            el("span", { "class": "edo-wz-demo", text: t.envelopeBadge })
+                        ]);
+                    } else {
+                        subEl = el("div", { "class": "edo-wz-card-sub", text: t.idLabel + tpl.externalId });
+                    }
                     var info = el("div", { "class": "edo-wz-card-info" }, [
                         el("div", { "class": "edo-wz-card-title", text: tpl.name }),
-                        el("div", { "class": "edo-wz-card-sub", text: t.idLabel + tpl.externalId })
+                        subEl
                     ]);
                     var card = el("div", { "class": "edo-wz-card" + (selected ? " sel" : "") }, [radio, info]);
                     card.onclick = function () {
                         if (self.selectedTemplateId === tpl.id) return;
                         self.selectedTemplateId = tpl.id;
-                        self.syncRecipientsToTemplate(true);
-                        self.loadFields();
-                        self.render();
+                        self.onTemplateSelected();
                     };
                     list.appendChild(card);
                 });
@@ -1260,9 +1412,14 @@
                 }
 
                 // Send-mode cards (direct vs preview). The preview option is hidden for
-                // Contact Center sends — a live conversation always sends directly.
-                if (cc) {
+                // Contact Center sends — a live conversation always sends directly —
+                // and for envelopes, which are always sent directly.
+                var isEnvelope = !!(tpl && tpl.isEnvelope);
+                if (cc || isEnvelope) {
                     this.isDraft = false;
+                }
+                if (cc) {
+                    // (isDraft already forced above)
                 } else {
                     var modeCards = el("div", { "class": "edo-wz-cards" });
                     var mkMode = function (draft, title, desc) {
@@ -1277,8 +1434,9 @@
                         return card;
                     };
                     modeCards.appendChild(mkMode(false, t.modeSend, t.modeSendDesc));
-                    // The preview option is only offered when the org enabled it.
-                    if (this.settings && this.settings.allowPreview) {
+                    // The preview option is only offered when the org enabled it and the
+                    // template is a single document (envelopes cannot be previewed here).
+                    if (this.settings && this.settings.allowPreview && !isEnvelope) {
                         modeCards.appendChild(mkMode(true, t.modeDraft, t.modeDraftDesc));
                     }
                     wrap.appendChild(modeCards);
@@ -1357,6 +1515,28 @@
                         el("div", { text: t.validityHint, style: "margin:8px 2px 0; font-size:12px; line-height:1.5; color: var(--edo-sub);" })
                     ]));
                 }
+
+                // Per-send recipient authentication override. Surfaced only when the
+                // template both uses the given method AND allows overriding it here.
+                // PIN → sent on the payload (the flow prefers it over the template
+                // value); OTP phone → applied to the primary recipient so the code is
+                // delivered there.
+                if (tpl && tpl.authMethod === 2 && tpl.pinAllowSendOverride) {
+                    var pinLabel = el("div", { "class": "edo-wz-field-label", text: t.pinSendLabel });
+                    var pinInput = el("input", { "class": "edo-wz-input", type: "text", placeholder: t.pinSendPlaceholder, value: this.pinOverride || "" });
+                    pinInput.oninput = function () { self.pinOverride = pinInput.value; self.pinEdited = true; };
+                    wrap.appendChild(el("div", { "class": "edo-wz-field" }, [pinLabel, pinInput,
+                        el("div", { text: t.pinSendHint, style: "margin:8px 2px 0; font-size:12px; line-height:1.5; color: var(--edo-sub);" })
+                    ]));
+                }
+                if (tpl && tpl.authMethod === 3 && tpl.otpAllowSendOverride) {
+                    var otpLabel = el("div", { "class": "edo-wz-field-label", text: t.otpSendLabel });
+                    var otpInput = el("input", { "class": "edo-wz-input", type: "tel", placeholder: t.otpSendPlaceholder, value: this.otpPhone || "" });
+                    otpInput.oninput = function () { self.otpPhone = otpInput.value; self.otpEdited = true; };
+                    wrap.appendChild(el("div", { "class": "edo-wz-field" }, [otpLabel, otpInput,
+                        el("div", { text: t.otpSendHint, style: "margin:8px 2px 0; font-size:12px; line-height:1.5; color: var(--edo-sub);" })
+                    ]));
+                }
                 return wrap;
             };
 
@@ -1408,6 +1588,16 @@
                 // may change it at send time).
                 if (tpl && tpl.hasExpiry && tpl.allowExpiryOverride && this.expiryDays) {
                     addRow(t.validityLabel, this.expiryDays + " " + t.validityDays);
+                }
+                // Envelope: how many member documents are sent together.
+                if (tpl && tpl.isEnvelope && this.envMembers.length > 0) {
+                    addRow(t.reviewDocs, String(this.envMembers.length));
+                }
+                // Recipient authentication (PIN / OTP), when the template uses it.
+                if (tpl && tpl.authMethod === 2 && this.pinOverride) {
+                    addRow(t.reviewAuth, "PIN");
+                } else if (tpl && tpl.authMethod === 3) {
+                    addRow(t.reviewAuth, this.otpPhone ? (t.authOtpVia + this.otpPhone) : "OTP");
                 }
                 var editedFields = this.editedFields();
                 if (editedFields.length > 0) {
@@ -1534,6 +1724,27 @@
                 var fieldValues = this.editedFields().map(function (f) {
                     return { name: f.externalId, value: f.value, label: f.label, readOnly: !!f.readOnly };
                 });
+                // Recipient authentication overrides (see stepSettings). PIN is sent on
+                // the payload — the Send flow prefers it over the template value when
+                // the template allows override. OTP has no dedicated field: apply the
+                // resolved/edited phone to the primary recipient (sequence 1) so the
+                // code is delivered there.
+                var pin = "";
+                if (tpl && tpl.authMethod === 2 && tpl.pinAllowSendOverride && this.pinOverride) {
+                    pin = this.pinOverride;
+                }
+                if (tpl && tpl.authMethod === 3 && this.otpPhone) {
+                    var primaryRec = null;
+                    recipients.forEach(function (r) { if (!primaryRec && r.sequence === 1) primaryRec = r; });
+                    if (!primaryRec && recipients.length) primaryRec = recipients[0];
+                    if (primaryRec) primaryRec.phone = this.otpPhone;
+                }
+                // Envelope (multi-document) send: emit the member documents so the
+                // plugin/flow build one signature-request item per document.
+                var isMultiDocument = !!(tpl && tpl.isEnvelope);
+                var documents = isMultiDocument ? this.envMembers.map(function (m) {
+                    return { templateExternalId: m.externalId, name: m.name, sequence: m.sequence };
+                }) : [];
                 var relatedContactId = this.ctx.entityName === "contact" ? this.ctx.recordId : "";
                 // Channels actually used: the primary easydo channel is always on; the
                 // selected additional channels are honoured only when multi-channel is on.
@@ -1572,6 +1783,9 @@
                 return {
                     templateId: this.demo ? "" : (tpl ? tpl.id : ""),
                     templateExternalId: tpl ? tpl.externalId : "",
+                    isMultiDocument: isMultiDocument,
+                    documents: documents,
+                    pin: pin,
                     isDraft: this.isDraft,
                     isRealtime: (!this.isDraft && this.isRealtime),
                     language: this.lang,

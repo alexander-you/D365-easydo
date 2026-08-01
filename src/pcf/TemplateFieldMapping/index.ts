@@ -40,6 +40,9 @@ interface LookupMeta { logical: string; display: string; targets: string[]; }
 const ENTITY = "alex_templatefieldmapping";
 const TEMPLATE_ENTITY = "alex_signaturetemplate";
 const DIR = { PREFILL: 626210000, READBACK: 626210001, BIDIR: 626210002 };
+// Copy-link governance choice (alex_copylinkmode). Inherit follows the global
+// admin default; Allow/Block override it for this template's documents.
+const COPYLINK = { INHERIT: 626250000, ALLOW: 626250001, BLOCK: 626250002 };
 
 /* ---- i18n --------------------------------------------------------- */
 const I18N: Record<Lang, Record<string, string>> = {
@@ -54,7 +57,18 @@ const I18N: Record<Lang, Record<string, string>> = {
     gridTitle: "Field mappings", gridMeta: "Rows from",
     search: "Search field",
     showSignatures: "Show signature fields",
+    showUnmapped: "Show unmapped only",
+    docLabel: "Document",
     thEasydo: "easydo field", thTable: "Dynamics table", thColumn: "Dynamics column", thType: "Type", thReadOnly: "Locked", thDirection: "Direction", thVisible: "In wizard", thEditable: "Editable on send", thStatus: "Status",
+    tipEasydo: "The field name as defined on the document in easydo. Read-only and kept in sync automatically.",
+    tipTable: "The Dynamics table the value that fills this field is taken from.",
+    tipColumn: "The column on the selected table whose value fills this field in the document.",
+    tipType: "The data type of the field (text, date, signature, and so on).",
+    tipReadOnly: "When on, the value is locked in the document and the signer cannot edit it.",
+    tipDirection: "Whether the value is prefilled into the document, read back after signing, or both.",
+    tipVisible: "Whether this field is shown to the sender in the send wizard.",
+    tipEditable: "When on, the sender can change the value in the wizard before sending; otherwise it stays fixed.",
+    tipStatus: "Shows whether the field is mapped to a Dynamics column or still unmapped.",
     choose: "Choose…",
     locked: "Locked", editable: "Editable",
     shown: "Shown", hidden: "Hidden", editOn: "Editable", editOff: "Fixed",
@@ -77,10 +91,22 @@ const I18N: Record<Lang, Record<string, string>> = {
     contactPathLabel: "Path to contact", contactPathNone: "No contact link",
     contactPathHint: "Which lookup on the primary record points to the signer contact",
     recipientLocked: "Lock recipient on send", recipientLockedHint: "The recipient resolved from the record is read-only — the sender cannot change it",
+    copyLinkLabel: "Signing link", copyLinkHint: "Whether the signing link for documents from this template is shown in the results pane (open and copy)",
+    copyLinkInherit: "Follow global setting", copyLinkAllow: "Always show", copyLinkBlock: "Always hide",
     expirySettings: "Document expiry",
     hasExpiry: "Document has expiry", hasExpiryHint: "The sent document is valid for a limited time and expires automatically",
     expiryDays: "Default validity (days)", expiryDaysHint: "How many days the document stays valid after it is sent",
     expiryOverride: "Allow changing at send", expiryOverrideHint: "Let the sender change the validity in the send wizard",
+    authSection: "Identification & authentication",
+    authMethodLabel: "Authentication method", authMethodHint: "How the recipient authenticates before signing",
+    authNone: "None", authPin: "PIN", authOtp: "OTP (SMS)",
+    pinModeLabel: "PIN", pinModeHint: "How the recipient PIN is determined",
+    pinNone: "No PIN", pinFixed: "Fixed PIN", pinVariable: "Variable PIN (from field)",
+    pinValueLabel: "Fixed PIN value", pinValueHint: "The PIN the recipient must enter", pinValuePlaceholder: "Enter a PIN…",
+    pinSourceLabel: "PIN source field (primary table)", pinSourceHint: "A column on the primary record whose value is used as the PIN", pinSourceNone: "Choose a column…",
+    pinOverride: "Allow changing PIN at send", pinOverrideHint: "Let the sender enter or change the PIN in the send wizard",
+    otpPhoneLabel: "OTP phone source field (primary table)", otpPhoneHint: "A column on the primary record whose value is the phone number for the OTP SMS", otpPhoneNone: "Choose a column…",
+    otpOverride: "Allow changing OTP phone at send", otpOverrideHint: "Let the sender enter or change the OTP phone number in the send wizard",
     choosePrimary: "Choose a base table…", contactDisplay: "Contact",
     viaSep: "via",
     configHint: "Pick the base table this document is built on. Each field can then map to a column on that table or on a single related record (one lookup hop).",
@@ -98,7 +124,18 @@ const I18N: Record<Lang, Record<string, string>> = {
     gridTitle: "מיפויי שדות", gridMeta: "שורות מתוך",
     search: "חיפוש שדה",
     showSignatures: "הצג שדות חתימה",
+    showUnmapped: "הצג לא ממופים בלבד",
+    docLabel: "מסמך",
     thEasydo: "שדה easydo", thTable: "טבלת Dynamics", thColumn: "עמודת Dynamics", thType: "סוג", thReadOnly: "נעול", thDirection: "כיוון", thVisible: "באשף", thEditable: "עריכה בשליחה", thStatus: "סטטוס",
+    tipEasydo: "שם השדה כפי שהוגדר במסמך ב‑easydo. לקריאה בלבד ומסונכרן אוטומטית.",
+    tipTable: "הטבלה ב‑Dynamics שממנה נשלף הערך שימלא את השדה.",
+    tipColumn: "העמודה בטבלה שנבחרה, שהערך שלה ממלא את השדה במסמך.",
+    tipType: "סוג הנתון של השדה (טקסט, תאריך, חתימה וכדומה).",
+    tipReadOnly: "כשמופעל, הערך ננעל במסמך והחותם לא יוכל לערוך אותו.",
+    tipDirection: "האם הערך ממולא מראש למסמך, נקרא בחזרה לאחר החתימה, או שניהם.",
+    tipVisible: "האם השדה מוצג לשולח באשף השליחה.",
+    tipEditable: "כשמופעל, השולח יכול לשנות את הערך באשף לפני השליחה; אחרת הוא נשאר קבוע.",
+    tipStatus: "מציין אם השדה ממופה לעמודה ב‑Dynamics או עדיין לא ממופה.",
     choose: "בחר…",
     locked: "נעול", editable: "ניתן לעריכה",
     shown: "מוצג", hidden: "מוסתר", editOn: "ניתן לעריכה", editOff: "קבוע",
@@ -121,10 +158,22 @@ const I18N: Record<Lang, Record<string, string>> = {
     contactPathLabel: "נתיב לאיש קשר", contactPathNone: "אין קישור לאיש קשר",
     contactPathHint: "איזה שדה lookup ברשומה הראשית מצביע על איש הקשר החותם",
     recipientLocked: "נעילת הנמען בשליחה", recipientLockedHint: "הנמען שנפתר מהרשומה לקריאה בלבד — השולח לא יכול לשנותו",
+    copyLinkLabel: "קישור חתימה", copyLinkHint: "האם קישור החתימה של מסמכי תבנית זו מוצג בחלונית התוצאות (פתיחה והעתקה)",
+    copyLinkInherit: "לפי הגדרת ברירת המחדל", copyLinkAllow: "הצג תמיד", copyLinkBlock: "הסתר תמיד",
     expirySettings: "תוקף המסמך",
     hasExpiry: "יש תוקף למסמך", hasExpiryHint: "המסמך שנשלח תקף לזמן מוגבל ופג‑תוקף אוטומטית",
     expiryDays: "תוקף ברירת מחדל (ימים)", expiryDaysHint: "כמה ימים המסמך נשאר בתוקף לאחר השליחה",
     expiryOverride: "אפשר שינוי בעת שליחה", expiryOverrideHint: "אפשרו לשולח לשנות את התוקף באשף השליחה",
+    authSection: "הזדהות ואימות",
+    authMethodLabel: "שיטת אימות", authMethodHint: "כיצד הנמען מאמת את זהותו לפני החתימה",
+    authNone: "ללא", authPin: "PIN", authOtp: "OTP (SMS)",
+    pinModeLabel: "PIN", pinModeHint: "כיצד נקבע ה‑PIN של הנמען",
+    pinNone: "ללא PIN", pinFixed: "PIN קבוע", pinVariable: "PIN משתנה (משדה)",
+    pinValueLabel: "ערך PIN קבוע", pinValueHint: "ה‑PIN שהנמען חייב להזין", pinValuePlaceholder: "הזינו PIN…",
+    pinSourceLabel: "שדה מקור ל‑PIN (טבלה ראשית)", pinSourceHint: "עמודה ברשומה הראשית שערכה משמש כ‑PIN", pinSourceNone: "בחרו עמודה…",
+    pinOverride: "אפשר שינוי PIN בעת שליחה", pinOverrideHint: "אפשרו לשולח להזין או לשנות את ה‑PIN באשף השליחה",
+    otpPhoneLabel: "שדה מקור לטלפון OTP (טבלה ראשית)", otpPhoneHint: "עמודה ברשומה הראשית שערכה הוא מספר הטלפון עבור ה‑SMS של ה‑OTP", otpPhoneNone: "בחרו עמודה…",
+    otpOverride: "אפשר שינוי טלפון OTP בעת שליחה", otpOverrideHint: "אפשרו לשולח להזין או לשנות את מספר הטלפון ל‑OTP באשף השליחה",
     choosePrimary: "בחרו טבלת בסיס…", contactDisplay: "איש קשר",
     viaSep: "דרך",
     configHint: "בחרו את טבלת הבסיס שעליה בנוי המסמך. כל שדה יכול להימפות לעמודה בטבלה זו או ברשומה קשורה אחת (קפיצת lookup אחת).",
@@ -194,12 +243,21 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
   private hasExpiry = false;           // alex_hasexpiry (template-level)
   private expiryDays: number | null = null; // alex_expirydays (template-level)
   private allowExpiryOverride = false; // alex_allowexpiryoverride (template-level)
+  private authMethod: number | null = null;   // alex_authmethod (template-level)
+  private pinMode: number | null = null;       // alex_pinmode (template-level)
+  private pinValue = "";                        // alex_pinvalue (template-level)
+  private pinSourceField = "";                  // alex_pinsourcefield (template-level)
+  private pinAllowSendOverride = false;         // alex_pinallowsendoverride (template-level)
+  private otpPhoneSource = "";                  // alex_otpphonesource (template-level)
+  private otpAllowSendOverride = false;         // alex_otpallowsendoverride (template-level)
+  private copyLinkMode: number | null = null;   // alex_copylinkmode (template-level, Inherit/Allow/Block)
 
   private tables: TableMeta[] = [];
   private colCache: Record<string, ColMeta[]> = {};
   private rows: MappingRow[] = [];
   private filter = "";
   private showSignatures = false;   // signature fields are hidden by default
+  private showUnmappedOnly = false; // when on, only rows without table+column
 
   private primaryTable = "";
   private contactPath = "";
@@ -242,6 +300,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       this.allowSendFromObject = false;
       this.allowPrefillEdit = false;
       this.recipientLocked = false;
+      this.copyLinkMode = null;
       this.lookups = [];
       this.renderLoading(I18N[this.lang].loadingMeta);
       void this.bootstrap();
@@ -313,6 +372,8 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       if (this.primaryTable) {
         try { this.lookups = await this.fetchLookups(this.primaryTable); }
         catch (e) { console.warn("[easydo mapping] lookups load failed", e); }
+        try { await this.fetchColumns(this.primaryTable); }
+        catch (e) { console.warn("[easydo mapping] primary columns load failed", e); }
       }
       this.renderLoading(I18N[this.lang].loadingRows);
       this.rows = await this.fetchRows();
@@ -424,7 +485,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
   private async fetchTemplateConfig(): Promise<void> {
     try {
       const rec = await this.context.webAPI.retrieveRecord(
-        TEMPLATE_ENTITY, this.templateId, "?$select=alex_primarytable,alex_contactpath,alex_name,alex_allowsendfromobject,alex_allowprefilledit,alex_recipientlocked,alex_hasexpiry,alex_expirydays,alex_allowexpiryoverride"
+        TEMPLATE_ENTITY, this.templateId, "?$select=alex_primarytable,alex_contactpath,alex_name,alex_allowsendfromobject,alex_allowprefilledit,alex_recipientlocked,alex_hasexpiry,alex_expirydays,alex_allowexpiryoverride,alex_authmethod,alex_pinmode,alex_pinvalue,alex_pinsourcefield,alex_pinallowsendoverride,alex_otpphonesource,alex_otpallowsendoverride,alex_copylinkmode"
       );
       this.primaryTable = (rec["alex_primarytable"] as string) ?? "";
       this.contactPath = (rec["alex_contactpath"] as string) ?? "";
@@ -434,6 +495,14 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       this.hasExpiry = rec["alex_hasexpiry"] === true;
       this.expiryDays = (rec["alex_expirydays"] as number) ?? null;
       this.allowExpiryOverride = rec["alex_allowexpiryoverride"] === true;
+      this.authMethod = (rec["alex_authmethod"] as number) ?? null;
+      this.pinMode = (rec["alex_pinmode"] as number) ?? null;
+      this.pinValue = (rec["alex_pinvalue"] as string) ?? "";
+      this.pinSourceField = (rec["alex_pinsourcefield"] as string) ?? "";
+      this.pinAllowSendOverride = rec["alex_pinallowsendoverride"] === true;
+      this.otpPhoneSource = (rec["alex_otpphonesource"] as string) ?? "";
+      this.otpAllowSendOverride = rec["alex_otpallowsendoverride"] === true;
+      this.copyLinkMode = (rec["alex_copylinkmode"] as number) ?? null;
       if (!this.templateName && rec["alex_name"]) this.templateName = rec["alex_name"] as string;
     } catch (e) {
       console.warn("[easydo mapping] config load failed", e);
@@ -505,6 +574,21 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     }
   }
 
+  // Persist a single template-level string (or null to clear) immediately.
+  private async saveTemplateString(field: string, value: string): Promise<void> {
+    const t = I18N[this.lang];
+    if (this.demo || !this.templateId) return;
+    try {
+      const body: Record<string, unknown> = {};
+      body[field] = value || null;
+      await this.context.webAPI.updateRecord(TEMPLATE_ENTITY, this.templateId, body);
+      this.toast(t.saved, "ok");
+    } catch (e) {
+      console.error("[easydo mapping] string save failed", e);
+      this.toast(t.saveErr, "err");
+    }
+  }
+
   /* ---- auto-save (immediate persistence) ------------------------ */
   // Each field change is persisted directly to Dataverse right away. This is
   // far more reliable than hooking the form OnSave (which races with Save&Close
@@ -543,12 +627,6 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
   }
 
   /* ---- actions --------------------------------------------------- */
-  private validate(): void {
-    const t = I18N[this.lang];
-    const bad = this.rows.some(r => (r.table && !r.column) || (!r.table && r.column));
-    this.toast(bad ? t.validFail : t.validOk, bad ? "err" : "ok");
-  }
-
   private async refresh(): Promise<void> {
     this.colCache = {};
     this.renderLoading(I18N[this.lang].loadingMeta);
@@ -660,13 +738,15 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     const t = I18N[this.lang];
     const bar = this.el("div", "edo-card edo-cmdbar");
 
-    const validate = this.btn("◇", t.validate);
-    validate.onclick = () => this.validate();
-    bar.appendChild(validate);
-
-    const refresh = this.btn("↻", t.refresh);
-    refresh.onclick = () => void this.refresh();
-    bar.appendChild(refresh);
+    if (this.templateName) {
+      const doc = this.el("div", "edo-doctitle");
+      doc.appendChild(this.el("span", "edo-doctitle-ico", "\u2637"));
+      const dtext = this.el("div", "edo-doctitle-text");
+      dtext.appendChild(this.el("span", "edo-doctitle-kicker", t.docLabel));
+      dtext.appendChild(this.el("span", "edo-doctitle-name", this.templateName));
+      doc.appendChild(dtext);
+      bar.appendChild(doc);
+    }
 
     bar.appendChild(this.el("div", "edo-spacer"));
 
@@ -692,6 +772,11 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
   private buildConfigStrip(): HTMLElement {
     const t = I18N[this.lang];
     const strip = this.el("div", "edo-card edo-config");
+    // Two columns so the short primary-table / contact-path fields share a
+    // narrow column with document expiry (filling the white space), while the
+    // taller auth + template-settings blocks take the wider column.
+    const colA = this.el("div", "edo-config-col");
+    const colB = this.el("div", "edo-config-col");
 
     const g1 = this.el("div", "edo-cfield");
     g1.appendChild(this.el("label", "edo-clabel", t.primaryTableLabel));
@@ -702,7 +787,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     );
     g1.appendChild(tableSel);
     g1.appendChild(this.el("div", "edo-chint", t.primaryHint));
-    strip.appendChild(g1);
+    colA.appendChild(g1);
 
     // Path to the signer contact: which lookup on the primary record points to
     // the contact. Only lookups that target the contact table are offered.
@@ -717,7 +802,11 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     );
     gc.appendChild(contactSel);
     gc.appendChild(this.el("div", "edo-chint", t.contactPathHint));
-    strip.appendChild(gc);
+    colA.appendChild(gc);
+
+    // Identification & authentication (recipient PIN + auth method). Admin
+    // defaults stored on the template; injected into the easydo send later.
+    colB.appendChild(this.buildAuthSection());
 
     // Template-level flags (moved here from the hidden "General" form tab so the
     // admin can configure everything from the one visible control).
@@ -735,7 +824,32 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       this.recipientLocked, t.recipientLocked, t.recipientLockedHint,
       (v) => { this.recipientLocked = v; void this.saveTemplateFlag("alex_recipientlocked", v); }
     ));
-    strip.appendChild(g2);
+
+    // Copy-link governance (Inherit / Allow / Block). Inherit follows the global
+    // admin default (alex_easydosettings.alex_allowcopylink); Allow/Block are a
+    // per-template override read by the results viewer when it renders the
+    // "copy signing link" action. Inherit is an explicit selectable option so
+    // the admin can always revert to the global default.
+    const copyOpts = [
+      { value: String(COPYLINK.INHERIT), label: t.copyLinkInherit },
+      { value: String(COPYLINK.ALLOW), label: t.copyLinkAllow },
+      { value: String(COPYLINK.BLOCK), label: t.copyLinkBlock }
+    ];
+    const copyRow = this.el("div", "edo-flagrow");
+    const copyText = this.el("div", "edo-flagtext");
+    copyText.appendChild(this.el("div", "edo-flaglabel", t.copyLinkLabel));
+    copyText.appendChild(this.el("div", "edo-chint", t.copyLinkHint));
+    copyRow.appendChild(copyText);
+    const copySel = String(this.copyLinkMode != null ? this.copyLinkMode : COPYLINK.INHERIT);
+    copyRow.appendChild(this.buildCombo(
+      copyOpts, copySel, t.copyLinkInherit,
+      (v) => {
+        this.copyLinkMode = v ? parseInt(v, 10) : COPYLINK.INHERIT;
+        void this.saveTemplateNumber("alex_copylinkmode", this.copyLinkMode);
+      }
+    ));
+    g2.appendChild(copyRow);
+    colB.appendChild(g2);
 
     // Document expiry policy. Managed on the Dynamics side (easydo has no API
     // knob for it). The days input and the override toggle are disabled unless
@@ -772,9 +886,161 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       (v) => { this.allowExpiryOverride = v; void this.saveTemplateFlag("alex_allowexpiryoverride", v); },
       !this.hasExpiry
     ));
-    strip.appendChild(g3);
+    colA.appendChild(g3);
 
+    strip.appendChild(colA);
+    strip.appendChild(colB);
     return strip;
+  }
+
+  // Identification & authentication section: recipient PIN + auth method.
+  // These are admin DEFAULTS on the template/envelope, PUT-updatable in easydo
+  // and injected by the send flow (with an optional per-send override).
+  private buildAuthSection(): HTMLElement {
+    const t = I18N[this.lang];
+    const g = this.el("div", "edo-cfield edo-tplflags");
+    g.appendChild(this.el("label", "edo-clabel", t.authSection));
+
+    // Authentication method (None / PIN / OTP-SMS). Selecting a method reveals
+    // only the settings relevant to it; switching away clears the other method's
+    // configuration so no stale PIN/OTP values linger.
+    const authOpts = [
+      { value: "1", label: t.authNone },
+      { value: "2", label: t.authPin },
+      { value: "3", label: t.authOtp }
+    ];
+    const authRow = this.el("div", "edo-flagrow");
+    const authText = this.el("div", "edo-flagtext");
+    authText.appendChild(this.el("div", "edo-flaglabel", t.authMethodLabel));
+    authText.appendChild(this.el("div", "edo-chint", t.authMethodHint));
+    authRow.appendChild(authText);
+    authRow.appendChild(this.buildCombo(
+      authOpts, this.authMethod != null ? String(this.authMethod) : "", t.authNone,
+      (v) => { this.onAuthMethodChanged(v ? parseInt(v, 10) : null); }
+    ));
+    g.appendChild(authRow);
+
+    // PIN settings — shown ONLY when the method is PIN.
+    if (this.authMethod === 2) this.buildPinSettings(g);
+
+    // OTP settings — shown ONLY when the method is OTP.
+    if (this.authMethod === 3) this.buildOtpSettings(g);
+
+    return g;
+  }
+
+  // Apply an authentication-method change and clear the other method's config.
+  private onAuthMethodChanged(n: number | null): void {
+    this.authMethod = n;
+    void this.saveTemplateNumber("alex_authmethod", n);
+    if (n !== 2) {
+      // Leaving PIN — clear all PIN configuration.
+      if (this.pinMode != null) { this.pinMode = null; void this.saveTemplateNumber("alex_pinmode", null); }
+      if (this.pinValue) { this.pinValue = ""; void this.saveTemplateString("alex_pinvalue", ""); }
+      if (this.pinSourceField) { this.pinSourceField = ""; void this.saveTemplateString("alex_pinsourcefield", ""); }
+      if (this.pinAllowSendOverride) { this.pinAllowSendOverride = false; void this.saveTemplateFlag("alex_pinallowsendoverride", false); }
+    } else if (this.pinMode !== 2 && this.pinMode !== 3) {
+      // Entering PIN — default to Fixed PIN.
+      this.pinMode = 2; void this.saveTemplateNumber("alex_pinmode", 2);
+    }
+    if (n !== 3) {
+      // Leaving OTP — clear all OTP configuration.
+      if (this.otpPhoneSource) { this.otpPhoneSource = ""; void this.saveTemplateString("alex_otpphonesource", ""); }
+      if (this.otpAllowSendOverride) { this.otpAllowSendOverride = false; void this.saveTemplateFlag("alex_otpallowsendoverride", false); }
+    }
+    this.render();
+  }
+
+  // PIN configuration block (mode = Fixed / Variable, value or source, override).
+  private buildPinSettings(g: HTMLElement): void {
+    const t = I18N[this.lang];
+    const mode = (this.pinMode === 2 || this.pinMode === 3) ? this.pinMode : 2;
+
+    // PIN mode (Fixed / Variable-from-field). There is no "No PIN" here — the
+    // method itself is PIN, so a PIN is always required.
+    const pinOpts = [
+      { value: "2", label: t.pinFixed },
+      { value: "3", label: t.pinVariable }
+    ];
+    const pinRow = this.el("div", "edo-flagrow");
+    const pinText = this.el("div", "edo-flagtext");
+    pinText.appendChild(this.el("div", "edo-flaglabel", t.pinModeLabel));
+    pinText.appendChild(this.el("div", "edo-chint", t.pinModeHint));
+    pinRow.appendChild(pinText);
+    pinRow.appendChild(this.buildCombo(
+      pinOpts, String(mode), t.pinFixed,
+      (v) => { this.pinMode = v ? parseInt(v, 10) : 2; void this.saveTemplateNumber("alex_pinmode", this.pinMode); this.render(); }
+    ));
+    g.appendChild(pinRow);
+
+    // Fixed PIN value (only when mode = Fixed).
+    if (mode === 2) {
+      const valRow = this.el("div", "edo-flagrow");
+      const valText = this.el("div", "edo-flagtext");
+      valText.appendChild(this.el("div", "edo-flaglabel", t.pinValueLabel));
+      valText.appendChild(this.el("div", "edo-chint", t.pinValueHint));
+      const valInput = this.el("input", "edo-numinput") as HTMLInputElement;
+      valInput.type = "text";
+      valInput.style.width = "120px";
+      valInput.value = this.pinValue;
+      valInput.placeholder = t.pinValuePlaceholder;
+      valInput.onchange = () => { this.pinValue = valInput.value.trim(); void this.saveTemplateString("alex_pinvalue", this.pinValue); };
+      valRow.appendChild(valText);
+      valRow.appendChild(valInput);
+      g.appendChild(valRow);
+    }
+
+    // Variable PIN source field (only when mode = Variable) - pick a column of
+    // the PRIMARY TABLE (a field of the main record, not an easydo form field).
+    if (mode === 3) {
+      const cols = this.demo
+        ? (DEMO_COLS[this.lang][this.primaryTable] ?? [])
+        : (this.colCache[this.primaryTable] ?? []);
+      const srcOpts = cols.map(c => ({ value: c.logical, label: c.display }));
+      const srcRow = this.el("div", "edo-flagrow");
+      const srcText = this.el("div", "edo-flagtext");
+      srcText.appendChild(this.el("div", "edo-flaglabel", t.pinSourceLabel));
+      srcText.appendChild(this.el("div", "edo-chint", t.pinSourceHint));
+      srcRow.appendChild(srcText);
+      srcRow.appendChild(this.buildCombo(
+        srcOpts, this.pinSourceField, t.pinSourceNone,
+        (v) => { this.pinSourceField = v; void this.saveTemplateString("alex_pinsourcefield", this.pinSourceField); }
+      ));
+      g.appendChild(srcRow);
+    }
+
+    // Allow the sender to change/enter the PIN at send time.
+    g.appendChild(this.buildFlagToggle(
+      this.pinAllowSendOverride, t.pinOverride, t.pinOverrideHint,
+      (v) => { this.pinAllowSendOverride = v; void this.saveTemplateFlag("alex_pinallowsendoverride", v); }
+    ));
+  }
+
+  // OTP (SMS) configuration block — phone source column + send-time override.
+  private buildOtpSettings(g: HTMLElement): void {
+    const t = I18N[this.lang];
+
+    // OTP phone source field - a column of the PRIMARY TABLE holding the phone.
+    const cols = this.demo
+      ? (DEMO_COLS[this.lang][this.primaryTable] ?? [])
+      : (this.colCache[this.primaryTable] ?? []);
+    const srcOpts = cols.map(c => ({ value: c.logical, label: c.display }));
+    const srcRow = this.el("div", "edo-flagrow");
+    const srcText = this.el("div", "edo-flagtext");
+    srcText.appendChild(this.el("div", "edo-flaglabel", t.otpPhoneLabel));
+    srcText.appendChild(this.el("div", "edo-chint", t.otpPhoneHint));
+    srcRow.appendChild(srcText);
+    srcRow.appendChild(this.buildCombo(
+      srcOpts, this.otpPhoneSource, t.otpPhoneNone,
+      (v) => { this.otpPhoneSource = v; void this.saveTemplateString("alex_otpphonesource", this.otpPhoneSource); }
+    ));
+    g.appendChild(srcRow);
+
+    // Allow the sender to change/enter the OTP phone at send time.
+    g.appendChild(this.buildFlagToggle(
+      this.otpAllowSendOverride, t.otpOverride, t.otpOverrideHint,
+      (v) => { this.otpAllowSendOverride = v; void this.saveTemplateFlag("alex_otpallowsendoverride", v); }
+    ));
   }
 
   // A labeled on/off switch for a template-level flag, with a description line.
@@ -794,6 +1060,9 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     this.primaryTable = table;
     this.contactPath = "";
     this.lookups = [];
+    // A new base table invalidates the variable-PIN and OTP source columns too.
+    if (this.pinSourceField) { this.pinSourceField = ""; void this.saveTemplateString("alex_pinsourcefield", ""); }
+    if (this.otpPhoneSource) { this.otpPhoneSource = ""; void this.saveTemplateString("alex_otpphonesource", ""); }
     // Picking a new base table invalidates per-field mappings to old sources.
     const cleared: MappingRow[] = [];
     this.rows.forEach(r => {
@@ -802,6 +1071,8 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     if (table) {
       try { this.lookups = await this.fetchLookups(table); }
       catch (e) { console.warn("[easydo mapping] lookups load failed", e); }
+      try { await this.fetchColumns(table); }
+      catch (e) { console.warn("[easydo mapping] primary columns load failed", e); }
     }
     await this.persistConfig(true);
     for (const r of cleared) await this.persistRow(r, true);
@@ -843,13 +1114,19 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     titleBox.appendChild(this.el("div", "edo-gridtitle", t.gridTitle));
     bar.appendChild(titleBox);
 
+    // Search box sits right next to the title (item ג).
     const search = this.el("div", "edo-search");
     search.appendChild(this.el("span", "edo-ico", "⌕"));
     const input = this.el("input") as HTMLInputElement;
     input.type = "text";
     input.placeholder = t.search;
     input.value = this.filter;
+    search.appendChild(input);
     bar.appendChild(search);
+
+    bar.appendChild(this.el("div", "edo-spacer"));
+    const filters = this.el("div", "edo-gridfilters");
+    bar.appendChild(filters);
     grid.appendChild(bar);
 
     if (!this.primaryTable) {
@@ -857,7 +1134,6 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       state.appendChild(this.el("div", "t", t.choosePrimary));
       state.appendChild(this.el("div", "d", t.configHint));
       grid.appendChild(state);
-      search.appendChild(input);
       return grid;
     }
 
@@ -866,7 +1142,6 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
       state.appendChild(this.el("div", "t", t.noRows));
       state.appendChild(this.el("div", "d", t.noRowsDesc));
       grid.appendChild(state);
-      search.appendChild(input);
       return grid;
     }
 
@@ -874,8 +1149,11 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     const table = this.el("table", "edo-table");
     const thead = this.el("thead");
     const htr = this.el("tr");
-    [t.thEasydo, t.thTable, t.thColumn, t.thType, t.thReadOnly, t.thDirection, t.thVisible, t.thEditable, t.thStatus]
-      .forEach(h => htr.appendChild(this.el("th", undefined, h)));
+    ([
+      [t.thEasydo, t.tipEasydo], [t.thTable, t.tipTable], [t.thColumn, t.tipColumn],
+      [t.thType, t.tipType], [t.thReadOnly, t.tipReadOnly], [t.thDirection, t.tipDirection],
+      [t.thVisible, t.tipVisible], [t.thEditable, t.tipEditable], [t.thStatus, t.tipStatus]
+    ] as [string, string][]).forEach(([h, tip]) => htr.appendChild(this.buildTh(h, tip)));
     thead.appendChild(htr);
     table.appendChild(thead);
     const tbody = this.el("tbody");
@@ -884,23 +1162,111 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     grid.appendChild(wrap);
 
     input.oninput = () => { this.filter = input.value; this.refreshTableBody(tbody); };
-    search.appendChild(input);
 
-    const sigToggle = this.el("label", "edo-sigtoggle");
-    const sigCb = this.el("input") as HTMLInputElement;
-    sigCb.type = "checkbox";
-    sigCb.checked = this.showSignatures;
-    sigCb.onchange = () => { this.showSignatures = sigCb.checked; this.refreshTableBody(tbody); };
-    sigToggle.appendChild(sigCb);
-    sigToggle.appendChild(this.el("span", undefined, t.showSignatures));
-    bar.appendChild(sigToggle);
+    // Filters, styled as yes/no switches (items ד).
+    filters.appendChild(this.buildFilterSwitch(
+      t.showSignatures, this.showSignatures,
+      (v) => { this.showSignatures = v; this.refreshTableBody(tbody); }
+    ));
+    filters.appendChild(this.buildFilterSwitch(
+      t.showUnmapped, this.showUnmappedOnly,
+      (v) => { this.showUnmappedOnly = v; this.refreshTableBody(tbody); }
+    ));
 
     this.refreshTableBody(tbody);
     return grid;
   }
 
+  // A column header with its centered label plus a small info icon that opens
+  // an explanatory bubble on click (item ג).
+  private buildTh(label: string, tip: string): HTMLElement {
+    const th = this.el("th");
+    const inner = this.el("div", "edo-th-inner");
+    inner.appendChild(this.el("span", "edo-th-label", label));
+    if (tip) {
+      const info = this.el("span", "edo-th-info", "i");
+      info.setAttribute("role", "button");
+      info.setAttribute("tabindex", "0");
+      info.setAttribute("aria-label", tip);
+      info.title = tip;
+      info.onclick = (e) => { e.stopPropagation(); this.showTip(info, tip); };
+      info.onkeydown = (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.showTip(info, tip); }
+      };
+      inner.appendChild(info);
+    }
+    th.appendChild(inner);
+    return th;
+  }
+
+  private tipEl: HTMLElement | null = null;
+  private tipAnchor: HTMLElement | null = null;
+  private tipDismiss: ((ev: Event) => void) | null = null;
+
+  private hideTip(): void {
+    if (this.tipDismiss) {
+      window.removeEventListener("mousedown", this.tipDismiss, true);
+      window.removeEventListener("scroll", this.tipDismiss, true);
+      window.removeEventListener("resize", this.tipDismiss, true);
+      this.tipDismiss = null;
+    }
+    if (this.tipEl) { this.tipEl.remove(); this.tipEl = null; }
+    this.tipAnchor = null;
+  }
+
+  private showTip(anchor: HTMLElement, text: string): void {
+    const reopen = this.tipAnchor === anchor;
+    this.hideTip();
+    if (reopen) return; // clicking the same icon again closes the bubble
+
+    const tip = this.el("div", "edo-tip");
+    tip.dir = I18N[this.lang].dir;
+    tip.textContent = text;
+    document.body.appendChild(tip);
+
+    const r = anchor.getBoundingClientRect();
+    const rtl = this.lang === "he";
+    const w = tip.offsetWidth;
+    tip.style.top = `${Math.round(r.bottom + 8)}px`;
+    let left = rtl ? r.right - w : r.left;
+    left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
+    tip.style.left = `${Math.round(left)}px`;
+
+    this.tipEl = tip;
+    this.tipAnchor = anchor;
+    const dismiss = (ev: Event) => {
+      if (ev.type === "mousedown" && anchor.contains(ev.target as Node)) return;
+      this.hideTip();
+    };
+    this.tipDismiss = dismiss;
+    setTimeout(() => {
+      window.addEventListener("mousedown", dismiss, true);
+      window.addEventListener("scroll", dismiss, true);
+      window.addEventListener("resize", dismiss, true);
+    }, 0);
+  }
+
+  // A compact yes/no switch with a fixed label, used for the grid filters.
+  private buildFilterSwitch(label: string, checked: boolean, onChange: (v: boolean) => void): HTMLElement {
+    const wrap = this.el("label", "edo-toggle edo-filtertoggle");
+    const sw = this.el("span", "edo-switch");
+    const cb = this.el("input") as HTMLInputElement;
+    cb.type = "checkbox";
+    cb.checked = checked;
+    cb.onchange = () => onChange(cb.checked);
+    sw.appendChild(cb);
+    sw.appendChild(this.el("span", "edo-slider"));
+    wrap.appendChild(sw);
+    wrap.appendChild(this.el("span", "edo-toggle-label", label));
+    return wrap;
+  }
+
   private isSignatureRow(r: MappingRow): boolean {
     return (r.type || "").toLowerCase().indexOf("signature") >= 0;
+  }
+
+  private isUnmappedRow(r: MappingRow): boolean {
+    return !(r.table && r.column);
   }
 
   private refreshTableBody(tbody: HTMLElement): void {
@@ -909,6 +1275,7 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     tbody.innerHTML = "";
     const list = this.rows.filter(r =>
       (this.showSignatures || !this.isSignatureRow(r)) &&
+      (!this.showUnmappedOnly || this.isUnmappedRow(r)) &&
       (!q || r.external.toLowerCase().includes(q) || r.externalId.toLowerCase().includes(q)));
     list.forEach((r, i) => tbody.appendChild(this.buildRow(r, i + 1, t)));
   }
@@ -1105,6 +1472,10 @@ export class TemplateFieldMapping implements ComponentFramework.StandardControl<
     input.onblur = () => { setTimeout(() => { input.value = labelFor(current); input.classList.toggle("empty", !current); close(); }, 160); };
 
     wrap.appendChild(input);
+    const caret = this.el("span", "edo-combo-caret");
+    caret.setAttribute("aria-hidden", "true");
+    caret.onmousedown = (e: MouseEvent) => { e.preventDefault(); if (disabled) return; if (open) { close(); } else { input.focus(); openPop(); } };
+    wrap.appendChild(caret);
     return wrap;
   }
 

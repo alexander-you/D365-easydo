@@ -6,7 +6,8 @@ signed results back into the originating record — powered by the
 [easydo](https://easydoc.stoplight.io/docs/easydoc) signing service and Microsoft
 Power Platform.
 
-> Status: **MVP** — see [docs/release-notes.md](docs/release-notes.md).
+> Status: **v2.0.0.0** — multi-document envelopes, recipient authentication (PIN/OTP),
+> template gallery & on-demand status. See [docs/release-notes.md](docs/release-notes.md).
 
 > הפרויקט מאפשר למשתמש עסקי לשלוח מסמך לחתימה דיגיטלית ישירות מתוך רשומת
 > Dynamics 365, למלא מראש שדות מהרשומה, לעקוב אחר הסטטוס, ולקבל בחזרה את
@@ -28,10 +29,12 @@ experience — built on native Power Platform capabilities (no Azure resources).
 | Source record | **Any table** — the template declares its primary table; an optional single lookup hop reaches related records |
 | Prefill | Values are resolved from the source record(s) and pushed to easydo before the recipient opens the form |
 | Write-back | When the form is **Completed**, signed field values are written back to the originating Dynamics record automatically |
-| Status tracking | **Polling** (scheduled flow) using easydo GET status/PDF endpoints |
+| Multi-document | **Envelopes** — bundle several documents into one signing package with per-document status |
+| Authentication | Optional signer **PIN** or **SMS OTP** before signing |
+| Status tracking | **Polling** (scheduled flow) + **on-demand** status check + **real-time** live session |
 | Preview before send | **Yes** — easydo draft document (`draft:true`) |
 | Integration layer | Custom Connector + Power Automate + Dataverse plug-ins (no Azure Function) |
-| Field mapping UI | **PCF control** on the signature-template model-driven form |
+| UI | **PCF controls** (field mapping, template gallery, envelope composition, documents grid) + HTML web resources (send wizard, admin center, document viewer, real-time session) |
 | Languages | Hebrew + English |
 
 ## High-level architecture

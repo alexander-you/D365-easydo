@@ -49,7 +49,8 @@
               "subscriptionRequest/message": 4,
               "subscriptionRequest/entityname": "alex_signaturerequest",
               "subscriptionRequest/scope": 4,
-              "subscriptionRequest/filteringattributes": "alex_status"
+              "subscriptionRequest/filteringattributes": "alex_status",
+              "subscriptionRequest/filterexpression": "alex_status eq 626210001"
             },
             "authentication": "@parameters('$authentication')"
           },
@@ -77,9 +78,29 @@
             ]
           }
         },
-        "Process_only_when_Ready_to_Send": {
+        "Initialize_the_envelope_templates": {
           "runAfter": {
             "Initialize_the_binding_prefill": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b2f0c1e2-00e1-4a10-9c01-0000000000e1"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "envelope_templates",
+                "type": "array",
+                "value": []
+              }
+            ]
+          }
+        },
+        "Process_only_when_Ready_to_Send": {
+          "runAfter": {
+            "Initialize_the_envelope_templates": [
               "Succeeded"
             ]
           },
@@ -132,9 +153,19 @@
                   "type": "If",
                   "expression": {
                     "not": {
-                      "equals": [
-                        "@coalesce(outputs('Get_the_current_request_state')?['body/alex_externalformid'], '')",
-                        ""
+                      "and": [
+                        {
+                          "equals": [
+                            "@coalesce(outputs('Get_the_current_request_state')?['body/alex_externalformid'], '')",
+                            ""
+                          ]
+                        },
+                        {
+                          "equals": [
+                            "@coalesce(outputs('Get_the_current_request_state')?['body/alex_externalenvelopeid'], '')",
+                            ""
+                          ]
+                        }
                       ]
                     }
                   },
@@ -416,6 +447,312 @@
                   },
                   "else": {
                     "actions": {
+                      "Route_by_document_mode": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "b2f0c1e2-00e0-4a10-9c01-0000000000e0"
+                        },
+                        "type": "If",
+                        "expression": {
+                          "equals": [
+                            "@coalesce(outputs('Get_the_current_request_state')?['body/alex_ismultidocument'], false)",
+                            true
+                          ]
+                        },
+                        "actions": {
+                          "Get_the_envelope_definition": {
+                            "runAfter": {},
+                            "metadata": {
+                              "operationMetadataId": "b2f0c1e2-00e2-4a10-9c01-0000000000e2"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_alex-5feasydo-5f5849d39a0feaf28d",
+                                "operationId": "GetEnvelope",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f5849d39a0feaf28d"
+                              },
+                              "parameters": {
+                                "envelopeId": "@string(outputs('Get_the_signature_template')?['body/alex_externaltemplateid'])"
+                              },
+                              "authentication": "@parameters('$authentication')"
+                            }
+                          },
+                          "List_the_envelope_documents": {
+                            "runAfter": {
+                              "Get_the_envelope_definition": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "b2f0c1e2-00e3-4a10-9c01-0000000000e3"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_commondataserviceforapps",
+                                "operationId": "ListRecords",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                              },
+                              "parameters": {
+                                "entityName": "alex_signaturerequestitems",
+                                "$select": "alex_sequence,alex_name,_alex_templateid_value",
+                                "$expand": "alex_TemplateId($select=alex_externaltemplateid)",
+                                "$filter": "@concat('_alex_signaturerequestid_value eq ', triggerOutputs()?['body/alex_signaturerequestid'])",
+                                "$orderby": "alex_sequence asc"
+                              },
+                              "authentication": "@parameters('$authentication')"
+                            }
+                          },
+                          "Reset_the_envelope_templates": {
+                            "runAfter": {
+                              "List_the_envelope_documents": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "b2f0c1e2-00e4-4a10-9c01-0000000000e4"
+                            },
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "envelope_templates",
+                              "value": []
+                            }
+                          },
+                          "Build_each_envelope_document": {
+                            "foreach": "@outputs('List_the_envelope_documents')?['body/value']",
+                            "runAfter": {
+                              "Reset_the_envelope_templates": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "b2f0c1e2-00e5-4a10-9c01-0000000000e5"
+                            },
+                            "type": "Foreach",
+                            "runtimeConfiguration": {
+                              "concurrency": {
+                                "repetitions": 1
+                              }
+                            },
+                            "actions": {
+                              "Resolve_document_prefill": {
+                                "runAfter": {},
+                                "metadata": {
+                                  "operationMetadataId": "b2f0c1e2-00e6-4a10-9c01-0000000000e6"
+                                },
+                                "type": "OpenApiConnection",
+                                "inputs": {
+                                  "host": {
+                                    "connectionName": "shared_commondataserviceforapps",
+                                    "operationId": "PerformUnboundAction",
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                                  },
+                                  "parameters": {
+                                    "actionName": "alex_ResolvePrefill",
+                                    "item/SignatureRequestId": "@triggerOutputs()?['body/alex_signaturerequestid']",
+                                    "item/TemplateId": "@items('Build_each_envelope_document')?['_alex_templateid_value']"
+                                  },
+                                  "authentication": "@parameters('$authentication')"
+                                }
+                              },
+                              "Find_document_definition": {
+                                "runAfter": {
+                                  "Resolve_document_prefill": [
+                                    "Succeeded"
+                                  ]
+                                },
+                                "metadata": {
+                                  "operationMetadataId": "b2f0c1e2-00e7-4a10-9c01-0000000000e7"
+                                },
+                                "type": "Query",
+                                "inputs": {
+                                  "from": "@coalesce(outputs('Get_the_envelope_definition')?['body/templates'], json('[]'))",
+                                  "where": "@equals(string(item()?['id']), string(items('Build_each_envelope_document')?['alex_TemplateId']?['alex_externaltemplateid']))"
+                                }
+                              },
+                              "Extract_document_role_ids": {
+                                "runAfter": {
+                                  "Find_document_definition": [
+                                    "Succeeded"
+                                  ]
+                                },
+                                "metadata": {
+                                  "operationMetadataId": "b2f0c1e2-00e8-4a10-9c01-0000000000e8"
+                                },
+                                "type": "Select",
+                                "inputs": {
+                                  "from": "@coalesce(first(body('Find_document_definition'))?['assignees'], json('[]'))",
+                                  "select": "@item()?['role_id']"
+                                }
+                              },
+                              "Filter_document_extra_signers": {
+                                "runAfter": {
+                                  "Extract_document_role_ids": [
+                                    "Succeeded"
+                                  ]
+                                },
+                                "metadata": {
+                                  "operationMetadataId": "b2f0c1e2-00e9-4a10-9c01-0000000000e9"
+                                },
+                                "type": "Query",
+                                "inputs": {
+                                  "from": "@outputs('List_the_recipients')?['body/value']",
+                                  "where": "@and(greaterOrEquals(coalesce(item()?['alex_signingorder'], 1), 2), contains(body('Extract_document_role_ids'), coalesce(item()?['alex_signingorder'], 0)))"
+                                }
+                              },
+                              "Shape_document_assignees": {
+                                "runAfter": {
+                                  "Filter_document_extra_signers": [
+                                    "Succeeded"
+                                  ]
+                                },
+                                "metadata": {
+                                  "operationMetadataId": "b2f0c1e2-00ea-4a10-9c01-0000000000ea"
+                                },
+                                "type": "Select",
+                                "inputs": {
+                                  "from": "@body('Filter_document_extra_signers')",
+                                  "select": {
+                                    "role_id": "@item()?['alex_signingorder']",
+                                    "name": "@item()?['alex_name']",
+                                    "email": "@item()?['alex_email']",
+                                    "phone": "@item()?['alex_phone']"
+                                  }
+                                }
+                              },
+                              "Append_document_template": {
+                                "runAfter": {
+                                  "Shape_document_assignees": [
+                                    "Succeeded"
+                                  ]
+                                },
+                                "metadata": {
+                                  "operationMetadataId": "b2f0c1e2-00eb-4a10-9c01-0000000000eb"
+                                },
+                                "type": "AppendToArrayVariable",
+                                "inputs": {
+                                  "name": "envelope_templates",
+                                  "value": "@if(empty(body('Shape_document_assignees')), addProperty(addProperty(json('{}'), 'id', int(items('Build_each_envelope_document')?['alex_TemplateId']?['alex_externaltemplateid'])), 'prefill_data', json(coalesce(outputs('Resolve_document_prefill')?['body/PrefillData'], '[]'))), addProperty(addProperty(addProperty(json('{}'), 'id', int(items('Build_each_envelope_document')?['alex_TemplateId']?['alex_externaltemplateid'])), 'assignees', body('Shape_document_assignees')), 'prefill_data', json(coalesce(outputs('Resolve_document_prefill')?['body/PrefillData'], '[]'))))"
+                                }
+                              }
+                            }
+                          },
+                          "Resolve_the_envelope_PIN_source": {
+                            "runAfter": {
+                              "Build_each_envelope_document": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "b2f0c1e2-00f0-4a10-9c01-0000000000f0"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_commondataserviceforapps",
+                                "operationId": "PerformUnboundAction",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                              },
+                              "parameters": {
+                                "actionName": "alex_ResolvePrefill",
+                                "item/SignatureRequestId": "@triggerOutputs()?['body/alex_signaturerequestid']",
+                                "item/PinSourceField": "@if(equals(coalesce(outputs('Get_the_signature_template')?['body/alex_pinmode'], 1), 3), coalesce(outputs('Get_the_signature_template')?['body/alex_pinsourcefield'], ''), '')"
+                              },
+                              "authentication": "@parameters('$authentication')"
+                            }
+                          },
+                          "Compute_the_envelope_effective_PIN": {
+                            "runAfter": {
+                              "Resolve_the_envelope_PIN_source": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "b2f0c1e2-00f1-4a10-9c01-0000000000f1"
+                            },
+                            "type": "Compose",
+                            "inputs": "@if(and(coalesce(outputs('Get_the_signature_template')?['body/alex_pinallowsendoverride'], false), greater(length(coalesce(json(coalesce(triggerOutputs()?['body/alex_wizardpayload'], '{}'))?['payload']?['pin'], '')), 0)), string(json(triggerOutputs()?['body/alex_wizardpayload'])?['payload']?['pin']), if(equals(coalesce(outputs('Get_the_signature_template')?['body/alex_pinmode'], 1), 2), coalesce(outputs('Get_the_signature_template')?['body/alex_pinvalue'], ''), if(equals(coalesce(outputs('Get_the_signature_template')?['body/alex_pinmode'], 1), 3), string(coalesce(outputs('Resolve_the_envelope_PIN_source')?['body/PinValue'], '')), '')))"
+                          },
+                          "Compute_the_envelope_effective_auth_method": {
+                            "runAfter": {
+                              "Compute_the_envelope_effective_PIN": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "b2f0c1e2-00f2-4a10-9c01-0000000000f2"
+                            },
+                            "type": "Compose",
+                            "inputs": "@if(equals(coalesce(outputs('Get_the_signature_template')?['body/alex_authmethod'], 1), 2), 'pin', if(equals(coalesce(outputs('Get_the_signature_template')?['body/alex_authmethod'], 1), 3), 'otp', if(greater(length(string(outputs('Compute_the_envelope_effective_PIN'))), 0), 'pin', '')))"
+                          },
+                          "Send_the_envelope": {
+                            "runAfter": {
+                              "Compute_the_envelope_effective_auth_method": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "b2f0c1e2-00ec-4a10-9c01-0000000000ec"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_alex-5feasydo-5f5849d39a0feaf28d",
+                                "operationId": "SendEnvelope",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f5849d39a0feaf28d"
+                              },
+                              "parameters": {
+                                "envelopeId": "@string(outputs('Get_the_signature_template')?['body/alex_externaltemplateid'])",
+                                "body/recipient/name": "@first(outputs('List_the_recipients')?['body/value'])?['alex_name']",
+                                "body/recipient/email": "@first(outputs('List_the_recipients')?['body/value'])?['alex_email']",
+                                "body/recipient/phone": "@first(outputs('List_the_recipients')?['body/value'])?['alex_phone']",
+                                "body/templates": "@variables('envelope_templates')",
+                                "body/pin": "@if(greater(length(string(outputs('Compute_the_envelope_effective_PIN'))), 0), string(outputs('Compute_the_envelope_effective_PIN')), null)",
+                                "body/auth_method": "@if(greater(length(string(outputs('Compute_the_envelope_effective_auth_method'))), 0), string(outputs('Compute_the_envelope_effective_auth_method')), null)",
+                                "body/meta_data/client": {
+                                  "d365_request_id": "@triggerOutputs()?['body/alex_signaturerequestid']",
+                                  "d365_table": "alex_signaturerequest",
+                                  "easydo_envelope_id": "@string(outputs('Get_the_signature_template')?['body/alex_externaltemplateid'])"
+                                }
+                              },
+                              "authentication": "@parameters('$authentication')"
+                            }
+                          },
+                          "Mark_envelope_request_as_Sent": {
+                            "runAfter": {
+                              "Send_the_envelope": [
+                                "Succeeded"
+                              ]
+                            },
+                            "metadata": {
+                              "operationMetadataId": "b2f0c1e2-00ed-4a10-9c01-0000000000ed"
+                            },
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_commondataserviceforapps",
+                                "operationId": "UpdateRecord",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                              },
+                              "parameters": {
+                                "entityName": "alex_signaturerequests",
+                                "recordId": "@triggerOutputs()?['body/alex_signaturerequestid']",
+                                "item/alex_status": 626210002,
+                                "item/alex_externalenvelopeid": "@string(outputs('Send_the_envelope')?['body/id'])",
+                                "item/alex_envelopefillurl": "@outputs('Send_the_envelope')?['body/fill_url']",
+                                "item/alex_signinglink": "@outputs('Send_the_envelope')?['body/fill_url']",
+                                "item/alex_senton": "@utcNow()",
+                                "item/alex_effectivepin": "@if(greater(length(string(outputs('Compute_the_envelope_effective_PIN'))), 0), string(outputs('Compute_the_envelope_effective_PIN')), null)",
+                                "item/alex_effectiveauthmethod": "@if(equals(string(outputs('Compute_the_envelope_effective_auth_method')), 'pin'), 2, if(equals(string(outputs('Compute_the_envelope_effective_auth_method')), 'otp'), 3, 1))",
+                                "item/alex_realtimesessionactive": "@coalesce(triggerOutputs()?['body/alex_isrealtime'], false)"
+                              },
+                              "authentication": "@parameters('$authentication')"
+                            }
+                          }
+                        },
+                        "else": {
+                          "actions": {
                       "List_the_prefill_values": {
                         "runAfter": {},
                         "metadata": {
@@ -473,7 +810,8 @@
                           },
                           "parameters": {
                             "actionName": "alex_ResolvePrefill",
-                            "item/SignatureRequestId": "@triggerOutputs()?['body/alex_signaturerequestid']"
+                            "item/SignatureRequestId": "@triggerOutputs()?['body/alex_signaturerequestid']",
+                            "item/PinSourceField": "@if(equals(coalesce(outputs('Get_the_signature_template')?['body/alex_pinmode'], 1), 3), coalesce(outputs('Get_the_signature_template')?['body/alex_pinsourcefield'], ''), '')"
                           },
                           "authentication": "@parameters('$authentication')"
                         }
@@ -493,9 +831,45 @@
                           "value": "@json(coalesce(outputs('Resolve_field_bindings_from_the_source_records')?['body/PrefillData'], '[]'))"
                         }
                       },
-                      "Send_the_template_for_signature": {
+                      "Find_the_PIN_source_value": {
                         "runAfter": {
                           "Remember_the_binding_prefill": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "b2f0c1e2-0040-4a10-9c01-000000000040"
+                        },
+                        "type": "Compose",
+                        "inputs": "@string(coalesce(outputs('Resolve_field_bindings_from_the_source_records')?['body/PinValue'], ''))"
+                      },
+                      "Compute_the_effective_PIN": {
+                        "runAfter": {
+                          "Find_the_PIN_source_value": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "b2f0c1e2-0041-4a10-9c01-000000000041"
+                        },
+                        "type": "Compose",
+                        "inputs": "@if(and(coalesce(outputs('Get_the_signature_template')?['body/alex_pinallowsendoverride'], false), greater(length(coalesce(json(coalesce(triggerOutputs()?['body/alex_wizardpayload'], '{}'))?['payload']?['pin'], '')), 0)), string(json(triggerOutputs()?['body/alex_wizardpayload'])?['payload']?['pin']), if(equals(coalesce(outputs('Get_the_signature_template')?['body/alex_pinmode'], 1), 2), coalesce(outputs('Get_the_signature_template')?['body/alex_pinvalue'], ''), if(equals(coalesce(outputs('Get_the_signature_template')?['body/alex_pinmode'], 1), 3), string(outputs('Find_the_PIN_source_value')), '')))"
+                      },
+                      "Compute_the_effective_auth_method": {
+                        "runAfter": {
+                          "Compute_the_effective_PIN": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "b2f0c1e2-0042-4a10-9c01-000000000042"
+                        },
+                        "type": "Compose",
+                        "inputs": "@if(equals(coalesce(outputs('Get_the_signature_template')?['body/alex_authmethod'], 1), 2), 'pin', if(equals(coalesce(outputs('Get_the_signature_template')?['body/alex_authmethod'], 1), 3), 'otp', if(greater(length(string(outputs('Compute_the_effective_PIN'))), 0), 'pin', '')))"
+                      },
+                      "Send_the_template_for_signature": {
+                        "runAfter": {
+                          "Compute_the_effective_auth_method": [
                             "Succeeded"
                           ]
                         },
@@ -514,6 +888,8 @@
                             "body/name": "@triggerOutputs()?['body/alex_name']",
                             "body/assignees": "@body('Build_the_assignees_list')",
                             "body/prefill_data": "@union(body('Build_the_prefill_data'), variables('binding_prefill'))",
+                            "body/pin": "@if(greater(length(string(outputs('Compute_the_effective_PIN'))), 0), string(outputs('Compute_the_effective_PIN')), null)",
+                            "body/auth_method": "@if(greater(length(string(outputs('Compute_the_effective_auth_method'))), 0), string(outputs('Compute_the_effective_auth_method')), null)",
                             "body/meta_data/client": {
                               "d365_request_id": "@triggerOutputs()?['body/alex_signaturerequestid']",
                               "d365_table": "alex_signaturerequest",
@@ -546,12 +922,17 @@
                             "item/alex_externalformid": "@string(outputs('Send_the_template_for_signature')?['body/id'])",
                             "item/alex_signinglink": "@first(outputs('Send_the_template_for_signature')?['body/assignees'])?['fill_url']",
                             "item/alex_senton": "@utcNow()",
+                            "item/alex_effectivepin": "@if(greater(length(string(outputs('Compute_the_effective_PIN'))), 0), string(outputs('Compute_the_effective_PIN')), null)",
+                            "item/alex_effectiveauthmethod": "@if(equals(string(outputs('Compute_the_effective_auth_method')), 'pin'), 2, if(equals(string(outputs('Compute_the_effective_auth_method')), 'otp'), 3, 1))",
                             "item/alex_expireson": "@if(and(coalesce(outputs('Get_the_signature_template')?['body/alex_hasexpiry'], false), greater(int(if(and(coalesce(outputs('Get_the_signature_template')?['body/alex_allowexpiryoverride'], false), greater(length(coalesce(triggerOutputs()?['body/alex_wizardpayload'], '')), 0)), coalesce(json(triggerOutputs()?['body/alex_wizardpayload'])?['payload']?['expiryDays'], coalesce(outputs('Get_the_signature_template')?['body/alex_expirydays'], 0)), coalesce(outputs('Get_the_signature_template')?['body/alex_expirydays'], 0))), 0)), addDays(utcNow(), int(if(and(coalesce(outputs('Get_the_signature_template')?['body/alex_allowexpiryoverride'], false), greater(length(coalesce(triggerOutputs()?['body/alex_wizardpayload'], '')), 0)), coalesce(json(triggerOutputs()?['body/alex_wizardpayload'])?['payload']?['expiryDays'], coalesce(outputs('Get_the_signature_template')?['body/alex_expirydays'], 0)), coalesce(outputs('Get_the_signature_template')?['body/alex_expirydays'], 0)))), null)",
                             "item/alex_realtimesessionactive": "@coalesce(triggerOutputs()?['body/alex_isrealtime'], false)"
                           },
                           "authentication": "@parameters('$authentication')"
                         }
                       }
+                        }
+                      }
+                    }
                     }
                   }
                 }

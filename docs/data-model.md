@@ -1,9 +1,13 @@
 # Data Model | מודל נתונים
 
 > מסמך זה מתאר את מודל הנתונים שנבנה בפועל ב-Dataverse עבור פתרון
-> חתימה דיגיטלית מול easydo. הוא כולל 6 טבלאות (5 רגילות וטבלת יומן מסוג Elastic),
-> רשימות בחירה גלובליות, קשרים, טפסים ותצוגות — הכל עם תוויות ותיאורים בעברית
-> ובאנגלית.
+> חתימה דיגיטלית מול easydo. הוא כולל את טבלאות החתימה (רגילות + טבלת יומן מסוג Elastic),
+> טבלאות ה**מעטפה** הרב‑מסמכית, רשימות בחירה גלובליות, קשרים, טפסים ותצוגות — הכל עם
+> תוויות ותיאורים בעברית ובאנגלית.
+>
+> **גרסה 2.0.0.0** הוסיפה את טבלאות המעטפה (`alex_envelopetemplateitem`,
+> `alex_signaturerequestitem`), עמודות **אימות נמען** (PIN/OTP), ועמודות מעטפה על
+> התבנית והבקשה. ראה [release-notes.md](release-notes.md).
 
 All tables, columns, choices, relationships, forms and views carry **English (1033)
 and Hebrew (1037)** labels and descriptions. All components use the publisher prefix
@@ -25,6 +29,16 @@ The model is reproducible via the scripts in [src/scripts/](../src/scripts/):
 | `07-create-file-column.ps1` | Dataverse File column for the document binary |
 | `08-create-forms-views.ps1` | Main forms + system views, then publish |
 | `09-create-fieldvalue-table.ps1` | Per-request field value table (prefill / read-back) + its choice, columns and lookup |
+| `45-create-envelope-item-table.ps1` | Runtime `alex_signaturerequestitem` table + `alex_envelopeitemstatus` choice + envelope columns on request/template/field-value |
+| `46-create-envelope-template-item-table.ps1` | `alex_envelopetemplateitem` table (envelope definition) |
+| `47/54-add-…-auth/otp-columns.ps1` | Template authentication columns + `alex_authmethod` / `alex_pinmode` choices |
+| `48-add-request-effective-auth-columns.ps1` | Effective auth method / PIN stamped on each request |
+| `49/50-…-envelope-pcf…` | Envelope Composition PCF host column + template-form tab wiring |
+| `55-add-template-deleted-status.ps1` | Template **Deleted** status reason (soft-delete) |
+| `56-add-statuscheck-columns.ps1` | On-demand status-check columns on the request |
+| `57-create-item-form.ps1` | Read-only form + views for `alex_signaturerequestitem` |
+| `59-lockdown-forms-and-assoc-views.ps1` | Read-only main forms + bilingual associated views |
+| `60-add-copylink-columns.ps1` | Copy-link governance columns + `alex_copylinkmode` choice |
 
 ## Global choices
 
@@ -39,6 +53,10 @@ The model is reproducible via the scripts in [src/scripts/](../src/scripts/):
 | `alex_logdirection` | Integration direction | Outbound, Inbound |
 | `alex_logresult` | Integration outcome | Success, Warning, Failure, Info |
 | `alex_fielddirection` | Field value direction | Prefill (626210000), Read Back (626210001) |
+| `alex_envelopeitemstatus` | Per-document envelope item status | Pending (626220000), Waiting For Signature (626220001), Signed (626220002), Declined (626220003), Expired (626220004), Error (626220005) |
+| `alex_authmethod` | Recipient authentication method | None (1), PIN (2), OTP-SMS (3) |
+| `alex_pinmode` | PIN mode | No PIN (1), Fixed PIN (2), Variable PIN from field (3) |
+| `alex_copylinkmode` | Copy signing-link governance | Inherit (626250000), Allow (626250001), Block (626250002) |
 
 ## Tables
 
@@ -56,9 +74,25 @@ Reusable easydo template configuration.
 | `alex_isactive` | Yes/No (Active/Inactive) | Available for use |
 | `alex_supportspreview` | Yes/No | Preview before send |
 | `alex_supportsmultiplesigners` | Yes/No | Multi-signer |
-| `alex_templateversion` | Text | Version label |
 | `alex_templatesummary` | Multiline | Business description |
 | `alex_lastsyncedon` | DateTime | Last refresh from easydo |
+| `alex_isenvelope` | Yes/No (Envelope/Single Document) | Template is a multi-document **envelope** |
+| `alex_envelopehost` | Text | Anchor column for the Envelope Composition PCF |
+| `alex_authmethod` | Choice (`alex_authmethod`) | Recipient authentication — None / PIN / OTP |
+| `alex_pinmode` | Choice (`alex_pinmode`) | No PIN / Fixed PIN / Variable PIN from field |
+| `alex_pinvalue` | Text (50) | Fixed PIN value |
+| `alex_pinsourcefield` | Text (200) | Field the variable PIN is read from |
+| `alex_pinallowsendoverride` | Yes/No | Allow changing the PIN at send time |
+| `alex_otpphonesource` | Text (200) | Field the OTP phone number is read from |
+| `alex_otpallowsendoverride` | Yes/No | Allow changing the OTP phone at send time |
+| `alex_copylinkmode` | Choice (`alex_copylinkmode`) | Copy-link governance — Inherit / Allow / Block |
+| `alex_hasexpiry` | Yes/No | Enforce a validity window on sent requests |
+| `alex_expirydays` | Number (1–3650) | Validity days used to compute `alex_expireson` |
+| `alex_allowexpiryoverride` | Yes/No | Allow overriding validity days per send |
+
+> **Soft-delete.** Templates removed from easydo are **deactivated** with the status
+> reason **Deleted** (`626210000`, `statecode = Inactive`), not hard-deleted
+> ([55-add-template-deleted-status.ps1](../src/scripts/55-add-template-deleted-status.ps1)).
 
 ### `alex_signaturerequest` — Signature Request (Standard)
 
@@ -83,6 +117,16 @@ Central record for a single signature request.
 | `alex_retrycount` | Number | Retry count (support) |
 | `alex_errorcode` / `alex_errormessage` | Text / Multiline | Last error (support) |
 | `alex_declinereason` | Multiline | Recipient's decline reason (from easydo assignee `decline_reason`) |
+| `alex_ismultidocument` | Yes/No (Envelope/Single Document) | This request is a multi-document **envelope** |
+| `alex_externalenvelopeid` | Text (100) | easydo envelope instance id (support) |
+| `alex_envelopefillurl` | URL | Combined envelope signing link |
+| `alex_effectiveauthmethod` | Choice (`alex_authmethod`) | Authentication actually applied for this send |
+| `alex_effectivepin` | Text (50) | PIN actually sent (support) |
+| `alex_expireson` | DateTime | Computed validity deadline (auto-cancel after) |
+| `alex_statuscheckrequestedon` | DateTime | Set by the Documents "Check status" action (trigger) |
+| `alex_statuschecklastrunon` | DateTime | When the on-demand status check last ran |
+| `alex_statuscheckstatus` | Text (400) | Result of the on-demand status check |
+| `alex_realtimesessionactive` | Yes/No | A live (real-time) signing session is in progress |
 
 ### `alex_templatefieldmapping` — Template Field Mapping (Standard)
 
@@ -179,6 +223,44 @@ the `Prefill` rows for a request and builds the `prefill_data` array (see
 | `alex_value` | Multiline (4000) | Value to prefill / value read back. Checkbox = `checked` / `unchecked` |
 | `alex_direction` | Choice (`alex_fielddirection`), required | Prefill / Read Back |
 | `alex_isreadonly` | Yes/No (Locked/Editable), default No | Lock the value for the recipient → `prefill_data.read_only` |
+| `alex_templateid` | Lookup → Signature Template | Member document a value belongs to (envelope read-back attribution) |
+
+### `alex_envelopetemplateitem` — Envelope Item / פריט מעטפה (Standard)
+
+The **definition** of an envelope: which document templates compose an envelope
+template, in what order. One row per member document, kept in sync from easydo
+([46](../src/scripts/46-create-envelope-template-item-table.ps1),
+[51](../src/scripts/51-sync-envelope-members.ps1)).
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `alex_name` | Text | Primary name — Document Name / שם מסמך |
+| `alex_envelopeid` | Lookup → Signature Template (**envelope**), required | The parent envelope template |
+| `alex_templateid` | Lookup → Signature Template (document) | The member document template |
+| `alex_sequence` | Number (0–1000) | Order in the envelope |
+| `alex_externaltemplateid` | Text (100) | easydo template id of the member |
+| `alex_defaultroleid` | Number | Default signing role for the member |
+| `alex_lastsyncedon` | DateTime | Last refresh from easydo |
+
+### `alex_signaturerequestitem` — Signature Request Item / פריט בקשת חתימה (Standard)
+
+The **runtime** per-document row inside a **sent** envelope — one row per member
+document, carrying its own easydo form id, signing link and live status
+([45](../src/scripts/45-create-envelope-item-table.ps1)). Form + views are read-only
+([57](../src/scripts/57-create-item-form.ps1)).
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `alex_name` | Text | Primary name — Item Name / שם פריט |
+| `alex_signaturerequestid` | Lookup → Signature Request, required | Parent envelope request |
+| `alex_templateid` | Lookup → Signature Template, required | Member document template |
+| `alex_sequence` | Number (0–1000) | Signing order |
+| `alex_itemstatus` | Choice (`alex_envelopeitemstatus`), required | Per-document status (Pending/Signed/Declined…) |
+| `alex_externalformid` | Text (100) | easydo form id for this member (support) |
+| `alex_stepid` | Text (100) | easydo step id (support) |
+| `alex_formslug` | Text (100) | easydo form slug (support) |
+| `alex_fillurl` | URL (400) | Per-document signing link |
+| `alex_signedon` | DateTime | When this member was signed |
 
 ```text
 Signature Template 1 ──< Template Field Mapping   (alex_templateid, required)
@@ -188,6 +270,11 @@ Signature Request  1 ──< Signature Document       (alex_signaturerequestid, 
 Contact            1 ──< Signature Recipient      (alex_contactid)
 Contact            1 ──< Signature Request        (alex_relatedcontactid)
 Signature Request  1 ──< Signature Field Value    (alex_signaturerequestid, required)
+Signature Template 1 ──< Envelope Template Item   (alex_envelopeid, required — the envelope)
+Signature Template 1 ──< Envelope Template Item   (alex_templateid — the member document)
+Signature Request  1 ──< Signature Request Item   (alex_signaturerequestid, required — envelope runtime)
+Signature Template 1 ──< Signature Request Item   (alex_templateid — member document)
+Signature Template 1 ──< Signature Field Value    (alex_templateid — envelope read-back attribution)
 Integration Log → Signature Request               (string reference; elastic, no lookup)
 ```
 

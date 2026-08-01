@@ -155,10 +155,10 @@ $t = 'alex_signaturetemplate'
 Write-Output "== $t =="
 New-MainForm -Table $t -Meta $m[$t] -NameEn "Information" -NameHe "מידע" -DescEn "Main form for a signature template." -DescHe "טופס ראשי לתבנית חתימה." -Sections @(
     @{ En="Template Details"; He="פרטי תבנית"; Fields=@('alex_name','alex_templatesummary','alex_isactive','alex_language','alex_defaultdeliverymethod') }
-    @{ En="easydo Configuration"; He="תצורת easydo"; Fields=@('alex_externaltemplateid','alex_templateversion','alex_relateddynamicstable','alex_supportspreview','alex_supportsmultiplesigners','alex_lastsyncedon') }
+    @{ En="easydo Configuration"; He="תצורת easydo"; Fields=@('alex_externaltemplateid','alex_relateddynamicstable','alex_supportspreview','alex_supportsmultiplesigners','alex_lastsyncedon') }
 )
 New-PublicView -Table $t -Meta $m[$t] -NameEn "Active Signature Templates" -DescEn "All active signature templates available for use." -Columns @('alex_name','alex_isactive','alex_language','alex_defaultdeliverymethod','alex_externaltemplateid') -IsDefault $true
-New-PublicView -Table $t -Meta $m[$t] -NameEn "All Signature Templates" -DescEn "Every signature template regardless of status." -Columns @('alex_name','alex_isactive','alex_templateversion','alex_lastsyncedon')
+New-PublicView -Table $t -Meta $m[$t] -NameEn "All Signature Templates" -DescEn "Every signature template regardless of status." -Columns @('alex_name','alex_isactive','alex_lastsyncedon')
 
 # ---------------- Signature Request ----------------
 $t = 'alex_signaturerequest'

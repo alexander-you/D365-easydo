@@ -241,8 +241,7 @@
     }
 
     /* ===== Steps wizard ===== */
-    .steps { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 20px; }
-    @media (max-width: 680px){ .steps{ grid-template-columns: 1fr; } }
+    .status-stack { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
     .step {
       background: var(--surface);
       -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
@@ -348,7 +347,19 @@
     .step-foot .ghost-btn.primary { background:var(--blue); color:#fff; border-color:transparent; }
     .step-foot .ghost-btn.primary:hover{ background:var(--blue-press); }
     .step-foot .ghost-btn:disabled{ opacity:.55; cursor:default; }
+    /* grouped checklist sections inside a single status card */
+    .group + .group { margin-top:18px; padding-top:18px; border-top:1px solid var(--hairline); }
+    .group-label { font-size:12px; font-weight:700; color:var(--text-3); letter-spacing:.02em; margin:0 2px 8px; }
+    .group-btn { margin-top:12px; }
+    .group-btn .ghost-btn { width:100%; justify-content:center; }
+    .group-btn .ghost-btn.primary { background:var(--blue); color:#fff; border-color:transparent; }
+    .group-btn .ghost-btn.primary:hover{ background:var(--blue-press); }
+    .group-btn .ghost-btn:disabled{ opacity:.55; cursor:default; }
+    .opt-note { font-size:13px; color:var(--text-2); line-height:1.5; margin:0 0 14px;
+      padding:11px 13px; border-radius:12px; background:var(--hairline);
+      border:1px solid var(--hairline-strong); }
     /* progress */
+    .status-progress { margin-top:16px; }
     .progress { margin: 6px 4px 0; }
     .pbar { height:7px; border-radius:980px; background:var(--hairline-strong); overflow:hidden; }
     .pbar-fill { height:100%; width:0; border-radius:980px; background:var(--green);
@@ -547,7 +558,9 @@
       transition:opacity .2s ease;
     }
     .gs-row.disabled { opacity:.5; }
-    .gs-row .gs-main { flex:1 1 auto; min-width:0; }
+    /* The text block fills the row so the switch always sits flush at the edge,
+       regardless of how short the description is (keeps every toggle aligned). */
+    .gs-row .gs-main, .gs-master > .gs-main { flex:1 1 auto; min-width:0; }
     .gs-row .gs-name { font-size:14.5px; font-weight:600; }
     .gs-row .gs-desc { font-size:12px; color:var(--text-3); margin-top:3px; line-height:1.45; }
     .switch {
@@ -634,51 +647,58 @@
     </div>
 
     <section class="hero">
-      <div class="hero-eyebrow">הגדרה ראשונית · פעולה חד-פעמית</div>
+      <div class="hero-eyebrow" id="heroEyebrow">הגדרה ראשונית · פעולה חד-פעמית</div>
       <h1 id="heroTitle">בדיקת מוכנות easydo</h1>
       <p class="hero-sub" id="heroSub">שני שלבים קצרים לוודא שהאינטגרציה מחוברת ופעילה.</p>
     </section>
 
-    <div class="steps">
-      <div class="step" id="step1">
-        <div class="step-head" data-toggle="step1">
-          <div class="step-num">1</div>
-          <div class="step-title">בדיקת חיבורים</div>
-          <span class="pill muted" id="step1Pill"><span class="pdot"></span>בודק…</span>
+    <div class="status-stack">
+      <div class="step" id="statusCard">
+        <div class="step-head" data-toggle="statusCard">
+          <span class="pill muted" id="statusPill"><span class="pdot"></span>בודק…</span>
+          <div class="step-title">התקנה ותקינות</div>
           <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="step-body"><div class="step-body-inner">
-          <div class="step-desc">מוודאים שהחיבורים שהזרימות מסתמכות עליהם — easydo ו-Dataverse — מחוברים.</div>
-          <div class="checklist" id="step1Checks"></div>
-          <div class="step-foot">
-            <button class="ghost-btn" id="manageConnBtn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 0 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-              <span>ניהול חיבורים</span>
-            </button>
+          <div class="step-desc">החיבורים והזרימות הנדרשים להפעלת easydo. כאן מוודאים שהכול מותקן ופעיל — ואפשר לחזור לבדוק מה תקין בכל עת.</div>
+          <div class="group">
+            <div class="group-label">חיבורים</div>
+            <div class="checklist" id="connChecks"></div>
+            <div class="group-btn">
+              <button class="ghost-btn" id="manageConnBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 0 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                <span>ניהול חיבורים</span>
+              </button>
+            </div>
+          </div>
+          <div class="group">
+            <div class="group-label">זרימות נדרשות</div>
+            <div class="checklist" id="reqFlowChecks"></div>
+            <div class="group-btn">
+              <button class="ghost-btn primary" id="enableAllBtn"><span>הפעל הכל</span></button>
+            </div>
+          </div>
+          <div class="status-progress">
+            <div class="pbar"><div class="pbar-fill" id="pbarFill"></div></div>
+            <div class="progress-label" id="progressLabel">בודק…</div>
           </div>
         </div></div>
       </div>
 
-      <div class="step" id="step2">
-        <div class="step-head" data-toggle="step2">
-          <div class="step-num">2</div>
-          <div class="step-title">בדיקת זרימות</div>
-          <span class="pill muted" id="step2Pill"><span class="pdot"></span>בודק…</span>
+      <div class="step" id="optionalCard">
+        <div class="step-head" data-toggle="optionalCard">
+          <span class="pill muted" id="optPill"><span class="pdot"></span>בודק…</span>
+          <div class="step-title">זרימות אופציונליות</div>
           <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="step-body"><div class="step-body-inner">
-          <div class="step-desc">חמש זרימות האוטומציה שמפעילות שליחה, סנכרון תבניות (ידני ואוטומטי), קריאת תוצאות וחתימה בזמן אמת.</div>
-          <div class="checklist" id="step2Checks"></div>
-          <div class="step-foot">
-            <button class="ghost-btn primary" id="enableAllBtn"><span>הפעל הכל</span></button>
+          <div class="opt-note">תוספות לא חובה — שליחת עותק חתום ללקוח בדוא״ל, ב-SMS או בוואטסאפ. אינן נדרשות לפעולה הבסיסית ואינן משפיעות על מצב המוכנות.</div>
+          <div class="checklist" id="optFlowChecks"></div>
+          <div class="group-btn">
+            <button class="ghost-btn primary" id="enableAllOptBtn"><span>הפעל הכל</span></button>
           </div>
         </div></div>
       </div>
-    </div>
-
-    <div class="progress">
-      <div class="pbar"><div class="pbar-fill" id="pbarFill"></div></div>
-      <div class="progress-label" id="progressLabel">בודק…</div>
     </div>
 
     <div class="send-card" id="sendCard">
@@ -814,6 +834,14 @@
             <div class="gs-desc">כאשר מופעל, אשף השליחה מאפשר למשתמש לצפות במסמך החתימה המעובד (עם הנתונים שמולאו) לפני שליחתו בפועל לחתימה.</div>
           </div>
           <button class="switch" id="swAllowPreview" role="switch" aria-label="תצוגה מקדימה לפני שליחה"></button>
+        </div>
+        <!-- Show signing link (global default). Templates may override this per-template. -->
+        <div class="gs-master">
+          <div class="gs-main">
+            <div class="gs-name">הצגת קישור חתימה</div>
+            <div class="gs-desc">ברירת מחדל ארגונית: כאשר מופעל, קישור החתימה מוצג בחלונית התוצאות (פתיחה והעתקה) וניתן לשלוח אותו ידנית. תבנית בודדת יכולה לעקוף הגדרה זו (להציג תמיד או להסתיר) דרך שדה “קישור חתימה”.</div>
+          </div>
+          <button class="switch" id="swAllowCopyLink" role="switch" aria-label="הצגת קישור חתימה"></button>
         </div>
         <!-- Real-time mode (optional). When on, the agent can send a document live and wait for the signed result in a floating modal. -->
         <div class="gs-master">
@@ -1072,13 +1100,24 @@
         { logical: "alex_easydo", he: "חיבור easydo" },
         { logical: "alex_dataverse_easydo", he: "חיבור Dynamics 365 (Dataverse)" }
       ];
-      var FLOWS = [
-        { id: "0fc45c36-f96a-f111-ab0d-000d3a66fdf4", he: "קריאת תוצאות חתימה" },
-        { id: "c7533576-826a-f111-ab0c-7ced8d72428a", he: "סנכרון תבניות easydo" },
-        { id: "50007ad1-876a-f111-ab0c-7ced8d72428a", he: "שליחת בקשת חתימה" },
-        { id: "bd967ede-ae6d-f111-ab0e-7ced8d726840", he: "חתימה בזמן אמת" },
-        { id: "bf47806d-d16e-f111-ab0c-7ced8d726840", he: "סנכרון תבניות אוטומטי" }
-      ];
+      // Flows are discovered live from the solution (no hard-coded ids). This map
+      // only supplies friendly Hebrew labels; unknown flows fall back to their name.
+      var FLOW_LABELS = {
+        "Send Signature Request": "שליחת בקשת חתימה",
+        "Read Signature Results": "קריאת תוצאות חתימה",
+        "Real-Time Session Poll": "חתימה בזמן אמת",
+        "Sync EasyDoc Templates": "סנכרון תבניות easydo",
+        "Auto Sync EasyDo Templates": "סנכרון תבניות אוטומטי",
+        "Check Signature Status": "בדיקת מצב חתימה",
+        "Expire Overdue Requests": "פקיעת בקשות שחלף זמנן",
+        "easydo - Send Copy Email": "שליחת עותק בדוא\u201Cל",
+        "easydo - Send Copy SMS": "שליחת עותק ב-SMS",
+        "easydo - Send Copy WhatsApp": "שליחת עותק בוואטסאפ"
+      };
+      function flowLabel(name) { return FLOW_LABELS[name] || name; }
+      // Copy-to-recipient and SharePoint entry flows are optional add-ons that
+      // must not gate the overall readiness state.
+      function isOptionalFlow(name) { return /copy|sharepoint|עותק/i.test(name || ""); }
 
       // ---- Xrm + helpers ----
       function getXrm() {
@@ -1193,12 +1232,12 @@
       var state, connHandles, flowHandles;
 
       function initChecks() {
-        var l1 = $("step1Checks"); l1.innerHTML = "";
+        var l1 = $("connChecks"); l1.innerHTML = "";
         connHandles = {};
         CONNECTIONS.forEach(function (c) { connHandles[c.logical] = addCheck(l1, c.he); });
-        var l2 = $("step2Checks"); l2.innerHTML = "";
         flowHandles = {};
-        FLOWS.forEach(function (f) { flowHandles[f.id] = addCheck(l2, f.he); });
+        $("reqFlowChecks").innerHTML = "";
+        $("optFlowChecks").innerHTML = "";
       }
 
       // ---- Connections (step 1) ----
@@ -1260,24 +1299,66 @@
         }, function () { go(fallback, false); });
       }
 
-      // ---- Flows (step 2) ----
-      function loadFlows() {
-        return Promise.all(FLOWS.map(loadOneFlow));
+      // ---- Flows (discovered live from the solution) ----
+      var _solutionIdCache = null;
+      function getSolutionId() {
+        if (_solutionIdCache !== null) return Promise.resolve(_solutionIdCache);
+        return xrm.WebApi.retrieveMultipleRecords(
+          "solution", "?$select=solutionid&$filter=uniquename eq '" + SOLUTION_UNIQUE + "'"
+        ).then(function (res) {
+          var sol = res.entities && res.entities[0];
+          _solutionIdCache = (sol && sol.solutionid) || "";
+          return _solutionIdCache;
+        }, function () { _solutionIdCache = ""; return ""; });
       }
-      function loadOneFlow(f) {
-        var q = "?$select=statecode&$filter=workflowid eq " + f.id;
-        return xrm.WebApi.retrieveMultipleRecords("workflow", q).then(function (res) {
-          var rec = res.entities[0];
-          var on = !!(rec && rec.statecode === 1);
-          state.flows[f.id] = on;
-          renderFlow(f, on, false);
-        }, function () {
-          state.flows[f.id] = false;
-          renderFlow(f, false, true);
+      function byHe(a, b) { return a.he < b.he ? -1 : (a.he > b.he ? 1 : 0); }
+      function ingestFlows(entities) {
+        var req = [], opt = [];
+        entities.forEach(function (e) {
+          var item = { id: e.workflowid, name: e.name, he: flowLabel(e.name), on: e.statecode === 1 };
+          state.flows[item.id] = item.on;
+          if (isOptionalFlow(e.name)) opt.push(item); else req.push(item);
         });
+        req.sort(byHe); opt.sort(byHe);
+        state.reqFlows = req; state.optFlows = opt; state.flowsLoaded = true;
+        buildFlowChecks();
+        req.concat(opt).forEach(function (f) { renderFlow(f, f.on, false); });
+        recompute();
+      }
+      function buildFlowChecks() {
+        flowHandles = {};
+        var lr = $("reqFlowChecks"); lr.innerHTML = "";
+        state.reqFlows.forEach(function (f) { flowHandles[f.id] = addCheck(lr, f.he); });
+        var lo = $("optFlowChecks"); lo.innerHTML = "";
+        state.optFlows.forEach(function (f) { flowHandles[f.id] = addCheck(lo, f.he); });
+      }
+      function loadFlows() {
+        return getSolutionId().then(function (sid) {
+          if (sid) {
+            return xrm.WebApi.retrieveMultipleRecords(
+              "solutioncomponent",
+              "?$select=objectid&$filter=_solutionid_value eq " + sid + " and componenttype eq 29"
+            ).then(function (res) {
+              var ids = res.entities.map(function (e) { return e.objectid; });
+              if (!ids.length) { ingestFlows([]); return; }
+              var orf = ids.map(function (id) { return "workflowid eq " + id; }).join(" or ");
+              return xrm.WebApi.retrieveMultipleRecords(
+                "workflow",
+                "?$select=workflowid,name,statecode&$filter=(" + orf + ") and category eq 5 and type eq 1"
+              ).then(function (r2) { ingestFlows(r2.entities); });
+            });
+          }
+          // Fallback: no solution id — pick known flows from all cloud flows.
+          return xrm.WebApi.retrieveMultipleRecords(
+            "workflow", "?$select=workflowid,name,statecode&$filter=category eq 5 and type eq 1"
+          ).then(function (res) {
+            ingestFlows(res.entities.filter(function (e) { return FLOW_LABELS.hasOwnProperty(e.name); }));
+          });
+        }, function () { ingestFlows([]); });
       }
       function renderFlow(f, on, errored) {
         var h = flowHandles[f.id];
+        if (!h) return;
         setCheck(h, on ? "ok" : "bad", f.he + (on ? "" : (errored ? " — לא נבדקה" : " — כבויה")));
         if (on) {
           var b = miniButton("פעילה", SVG_CHECK_SM, function () {});
@@ -1312,10 +1393,10 @@
           if (e) window.open("https://make.powerautomate.com/environments/" + e + "/flows/" + f.id + "/details", "_blank");
         });
       }
-      function enableAll() {
-        var offs = FLOWS.filter(function (f) { return state.flows[f.id] !== true; });
+      function enableList(list, eb, doneMsg) {
+        var offs = list.filter(function (f) { return state.flows[f.id] !== true; });
         if (!offs.length) return;
-        var eb = $("enableAllBtn"); eb.disabled = true; eb.querySelector("span").textContent = "מפעיל…";
+        eb.disabled = true; eb.querySelector("span").textContent = "מפעיל…";
         var chain = Promise.resolve();
         offs.forEach(function (f) {
           chain = chain.then(function () {
@@ -1324,10 +1405,12 @@
             });
           });
         });
-        chain.then(function () { toast("כל הזרימות הופעלו"); }, function () {
+        chain.then(function () { toast(doneMsg); }, function () {
           eb.disabled = false; toast("חלק מהזרימות לא הופעלו"); recompute();
         });
       }
+      function enableAll() { enableList(state.reqFlows || [], $("enableAllBtn"), "כל הזרימות הופעלו"); }
+      function enableAllOpt() { enableList(state.optFlows || [], $("enableAllOptBtn"), "הזרימות האופציונליות הופעלו"); }
 
       // ---- Send-enable tables (entity config) ----
       var drawerOpen = false;
@@ -1424,6 +1507,7 @@
       function freshSettings() {
         return {
           id: null, primaryChannel: "email", multiChannel: false, allowPreview: false, realtimeEnabled: false,
+          allowCopyLink: true,
           ccEnabled: false, ccAgentReview: false, ccRealtime: false, ccDefaultCase: false, ccMessageTemplate: "",
           allow: { email: false, sms: false, whatsapp: false },
           method: { email: null, sms: null, whatsapp: null },
@@ -1444,7 +1528,7 @@
       function loadSettings() {
         var q = "?$select=alex_easydosettingsid,alex_easydochannel,alex_multichannelenabled,alex_allowpreview,alex_realtimeenabled," +
           "alex_contactcenterenabled,alex_ccagentreview,alex_ccrealtimeresults,alex_ccdefaultcase,alex_ccmessagetemplate," +
-          "alex_allowemail,alex_allowsms,alex_allowwhatsapp," +
+          "alex_allowemail,alex_allowsms,alex_allowwhatsapp,alex_allowcopylink," +
           "alex_emailmethod,alex_emailjourneyname,_alex_emailflowid_value," +
           "alex_smsmethod,alex_smsjourneyname,_alex_smsflowid_value," +
           "alex_whatsappmethod,alex_whatsappjourneyname,_alex_whatsappflowid_value&$top=1";
@@ -1460,6 +1544,7 @@
               primaryChannel: pc || "email",
               multiChannel: e.alex_multichannelenabled === true,
               allowPreview: e.alex_allowpreview === true,
+              allowCopyLink: e.alex_allowcopylink !== false,
               realtimeEnabled: e.alex_realtimeenabled === true,
               ccEnabled: e.alex_contactcenterenabled === true,
               ccAgentReview: e.alex_ccagentreview === true,
@@ -1519,6 +1604,7 @@
           alex_easydochannel: CH_OPT[s.primaryChannel],
           alex_multichannelenabled: s.multiChannel,
           alex_allowpreview: s.allowPreview === true,
+          alex_allowcopylink: s.allowCopyLink !== false,
           alex_realtimeenabled: s.realtimeEnabled === true,
           alex_contactcenterenabled: s.ccEnabled === true,
           alex_ccagentreview: s.ccAgentReview === true,
@@ -1588,6 +1674,15 @@
       function toggleAllowPreview() {
         var s = currentSettings();
         s.allowPreview = !s.allowPreview;
+        state.settings = s;
+        saveSettings();
+      }
+
+      // Global default for the envelope "copy signing link" capability. Templates
+      // may override this per-template via alex_copylinkmode.
+      function toggleAllowCopyLink() {
+        var s = currentSettings();
+        s.allowCopyLink = !(s.allowCopyLink !== false);
         state.settings = s;
         saveSettings();
       }
@@ -1727,6 +1822,7 @@
         var s = currentSettings();
         renderPrimary();
         setSwitch("swAllowPreview", s.allowPreview, false);
+        setSwitch("swAllowCopyLink", s.allowCopyLink !== false, false);
         setSwitch("swRealtime", s.realtimeEnabled, false);
         setSwitch("swMultiChannel", s.multiChannel, false);
         // Additional channels are disabled until the master toggle is on.
@@ -2631,46 +2727,73 @@
         });
       }
 
-      // ---- Recompute step status + progress ----
+      // ---- Recompute status + progress ----
       function recompute() {
         var connArr = CONNECTIONS.map(function (c) { return state.conns[c.logical]; });
-        var step1Loaded = connArr.filter(function (v) { return v !== undefined; }).length === CONNECTIONS.length;
+        var connLoaded = connArr.filter(function (v) { return v !== undefined; }).length === CONNECTIONS.length;
         var connsOn = connArr.filter(function (v) { return v === true; }).length;
-        var step1Done = step1Loaded && connsOn === CONNECTIONS.length;
-        var flowsArr = FLOWS.map(function (f) { return state.flows[f.id]; });
-        var flowsLoaded = flowsArr.filter(function (v) { return v !== undefined; }).length === FLOWS.length;
-        var flowsOn = flowsArr.filter(function (v) { return v === true; }).length;
-        var step2Done = flowsLoaded && flowsOn === FLOWS.length;
+        var connDone = connLoaded && connsOn === CONNECTIONS.length;
 
-        var p1 = $("step1Pill");
-        if (!step1Loaded) pill(p1, "muted", "בודק…");
-        else if (step1Done) pill(p1, "ok", "מוכן");
-        else pill(p1, "bad", connsOn + "/" + CONNECTIONS.length);
-        $("step1").classList.toggle("done", step1Done);
+        var req = state.reqFlows || [];
+        var opt = state.optFlows || [];
+        var reqOn = req.filter(function (f) { return state.flows[f.id] === true; }).length;
+        var optOn = opt.filter(function (f) { return state.flows[f.id] === true; }).length;
+        var reqDone = state.flowsLoaded && req.length > 0 && reqOn === req.length;
 
-        var p2 = $("step2Pill");
-        if (!flowsLoaded) pill(p2, "muted", "בודק…");
-        else if (step2Done) pill(p2, "ok", "מוכן");
-        else pill(p2, "bad", flowsOn + "/" + FLOWS.length);
-        $("step2").classList.toggle("done", step2Done);
+        var loaded = connLoaded && state.flowsLoaded;
+        var done = connDone && reqDone;
 
+        // Overall status pill on the unified card.
+        var sp = $("statusPill");
+        if (!loaded) pill(sp, "muted", "בודק…");
+        else if (done) pill(sp, "ok", "הכול תקין");
+        else pill(sp, "bad", "נדרש טיפול · " + ((CONNECTIONS.length - connsOn) + (req.length - reqOn)));
+        $("statusCard").classList.toggle("done", done);
+
+        // Optional-flows pill (non-gating, amber when partial).
+        var op = $("optPill");
+        if (!state.flowsLoaded) pill(op, "muted", "בודק…");
+        else if (!opt.length) pill(op, "muted", "—");
+        else if (optOn === opt.length) pill(op, "ok", "הכול פעיל");
+        else pill(op, "warn", optOn + "/" + opt.length);
+        $("optionalCard").classList.toggle("done", state.flowsLoaded && opt.length > 0 && optOn === opt.length);
+
+        // Enable-all buttons.
         var eb = $("enableAllBtn");
-        if (step2Done) { eb.disabled = true; eb.classList.remove("primary"); eb.querySelector("span").textContent = "כל הזרימות פעילות"; }
-        else if (flowsLoaded) { eb.disabled = false; eb.classList.add("primary"); eb.querySelector("span").textContent = "הפעל הכל"; }
+        if (state.flowsLoaded) {
+          if (req.length > 0 && reqOn === req.length) { eb.disabled = true; eb.classList.remove("primary"); eb.querySelector("span").textContent = "כל הזרימות פעילות"; }
+          else { eb.disabled = false; eb.classList.add("primary"); eb.querySelector("span").textContent = "הפעל הכל"; }
+        }
+        var eo = $("enableAllOptBtn");
+        if (state.flowsLoaded) {
+          if (!opt.length) { eo.disabled = true; eo.classList.remove("primary"); eo.querySelector("span").textContent = "אין זרימות"; }
+          else if (optOn === opt.length) { eo.disabled = true; eo.classList.remove("primary"); eo.querySelector("span").textContent = "כולן פעילות"; }
+          else { eo.disabled = false; eo.classList.add("primary"); eo.querySelector("span").textContent = "הפעל הכל"; }
+        }
 
-        var loaded = step1Loaded && flowsLoaded;
-        var done = (step1Done ? 1 : 0) + (step2Done ? 1 : 0);
-        $("pbarFill").style.width = (done / 2 * 100) + "%";
-        $("pbarFill").style.background = done === 2 ? "var(--green)" : (done > 0 ? "var(--amber)" : "var(--red)");
-        $("progressLabel").textContent = loaded ? ("הושלמו " + done + " מתוך 2 שלבים") : "בודק…";
+        // Progress bar counts connections + required flows only.
+        var total = CONNECTIONS.length + req.length;
+        var doneCount = connsOn + reqOn;
+        $("pbarFill").style.width = (loaded && total ? (doneCount / total * 100) : 0) + "%";
+        $("pbarFill").style.background = done ? "var(--green)" : (doneCount > 0 ? "var(--amber)" : "var(--red)");
+        $("progressLabel").textContent = loaded ? (done ? "המערכת מוכנה" : ("הושלמו " + doneCount + " מתוך " + total)) : "בודק…";
 
+        // Onboarding chrome + auto layout (apply collapse/expand once, then leave it to the user).
         if (loaded) {
-          if (done === 2) {
-            $("heroTitle").textContent = "הכול מוכן";
-            $("heroSub").textContent = "החיבור פעיל וכל הזרימות מופעלות. המערכת מוכנה לשליחת מסמכים לחתימה.";
+          var eyebrow = $("heroEyebrow");
+          if (done) {
+            if (eyebrow) eyebrow.style.display = "none";
+            $("heroTitle").textContent = "מרכז ניהול easydo";
+            $("heroSub").textContent = "הכול מחובר ופעיל. המערכת מוכנה לשליחת מסמכים לחתימה.";
           } else {
+            if (eyebrow) eyebrow.style.display = "";
             $("heroTitle").textContent = "נדרשת השלמה";
-            $("heroSub").textContent = "יש שלב אחד או יותר שדורש טיפול לפני שהמערכת מוכנה.";
+            $("heroSub").textContent = "יש חיבור או זרימה נדרשת שדורשים טיפול לפני שהמערכת מוכנה.";
+          }
+          if (!state.laidOut) {
+            state.laidOut = true;
+            $("statusCard").classList.toggle("open", !done);
+            $("optionalCard").classList.remove("open");
           }
         }
       }
@@ -2682,7 +2805,7 @@
           $("heroSub").textContent = "פתח את מרכז הניהול מתוך אפליקציית easydo כדי לראות נתונים חיים.";
           return;
         }
-        state = { conns: {}, flows: {}, configs: {}, metaTables: null, settings: null, cloudFlows: [], autoSync: null };
+        state = { conns: {}, flows: {}, configs: {}, metaTables: null, settings: null, cloudFlows: [], autoSync: null, reqFlows: [], optFlows: [], flowsLoaded: false, laidOut: false };
         initChecks();
         recompute();
         renderSendSummary();
@@ -2699,6 +2822,7 @@
       $("refreshBtn").addEventListener("click", refresh);
       $("manageConnBtn").addEventListener("click", openConnections);
       $("enableAllBtn").addEventListener("click", enableAll);
+      $("enableAllOptBtn").addEventListener("click", enableAllOpt);
       $("manageTablesBtn").addEventListener("click", openDrawer);
       $("drawerClose").addEventListener("click", closeDrawer);
       $("drawerOverlay").addEventListener("click", closeDrawer);
@@ -2726,6 +2850,7 @@
         if (btn && btn.getAttribute("data-ch")) setPrimary(btn.getAttribute("data-ch"));
       });
       $("swAllowPreview").addEventListener("click", toggleAllowPreview);
+      $("swAllowCopyLink").addEventListener("click", toggleAllowCopyLink);
       $("swRealtime").addEventListener("click", toggleRealtime);
       $("swMultiChannel").addEventListener("click", toggleMultiChannel);
       $("swEmail").addEventListener("click", function () { toggleChannel("email"); });
@@ -2747,15 +2872,11 @@
         if (ccOpen) closeCc();
       });
 
-      // accordion: cards stay in sync — toggling one toggles all
+      // accordion: each card toggles independently
       var heads = document.querySelectorAll(".step-head[data-toggle]");
       for (var i = 0; i < heads.length; i++) {
         heads[i].addEventListener("click", function () {
-          var willOpen = !$(this.getAttribute("data-toggle")).classList.contains("open");
-          var steps = document.querySelectorAll(".step");
-          for (var j = 0; j < steps.length; j++) {
-            steps[j].classList.toggle("open", willOpen);
-          }
+          $(this.getAttribute("data-toggle")).classList.toggle("open");
         });
       }
 

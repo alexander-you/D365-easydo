@@ -186,6 +186,21 @@
 .edo-btn.ghost { border-color: transparent; background: transparent; }
 .edo-btn.ghost:hover { background: var(--edo-surface-2); border-color: var(--edo-line); }
 
+/* Document title shown inline on the command-bar row (item ו). */
+.edo-doctitle { display: inline-flex; align-items: center; gap: 9px; min-width: 0; }
+.edo-doctitle-ico {
+  width: 30px; height: 30px; border-radius: 8px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(79,70,229,.10); color: var(--edo-primary); font-size: 15px;
+}
+.edo-doctitle-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.edo-doctitle-kicker { font-size: 10.5px; font-weight: 600; color: var(--edo-faint); text-transform: uppercase; letter-spacing: .03em; }
+.edo-doctitle-name {
+  font-size: 14px; font-weight: 700; color: var(--edo-text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px;
+}
+.edo-cmdsep { width: 1px; height: 26px; background: var(--edo-line-2); margin: 0 4px; flex: none; }
+
 /* ---- body grid ---------------------------------------------------- */
 .edo-body {
   display: grid;
@@ -197,13 +212,16 @@
 
 /* ---- config strip ------------------------------------------------- */
 .edo-config {
-  display: flex;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(340px, 1.35fr);
+  align-items: start;
   gap: 18px;
   padding: 16px 18px;
-  flex-wrap: wrap;
 }
-.edo-cfield { display: flex; flex-direction: column; gap: 6px; min-width: 240px; flex: 1; }
+.edo-config-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.edo-config-col > .edo-cfield { flex: none; min-width: 0; }
+@media (max-width: 900px) { .edo-config { grid-template-columns: 1fr; } }
+.edo-cfield { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .edo-clabel { font-size: 12px; font-weight: 650; color: var(--edo-muted); }
 .edo-chint { font-size: 11.5px; color: var(--edo-faint); }
 .edo-carrow {
@@ -250,7 +268,6 @@
 .edo-gridbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
   border-bottom: 1px solid var(--edo-line);
@@ -260,7 +277,12 @@
 .edo-gridtitle { font-weight: 650; font-size: 15px; }
 .edo-gridmeta { font-size: 12px; color: var(--edo-muted); margin-top: 2px; }
 .edo-gridmeta code { font-family: var(--edo-mono); font-size: 11.5px; color: var(--edo-faint); }
-.edo-search { position: relative; width: 250px; max-width: 100%; }
+.edo-gridfilters { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.edo-filtertoggle {
+  display: inline-flex; align-items: center; gap: 8px;
+  cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--edo-muted);
+}
+.edo-search { position: relative; width: 230px; max-width: 100%; }
 .edo-search .edo-ico {
   position: absolute; top: 50%; transform: translateY(-50%);
   inset-inline-start: 11px; color: var(--edo-faint); font-size: 14px; pointer-events: none;
@@ -281,17 +303,40 @@
 .edo-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 980px; }
 .edo-table th {
   position: sticky; top: 0; z-index: 2;
-  height: 44px;
+  height: 38px;
   background: var(--edo-surface-2);
   color: var(--edo-muted);
   font-size: 11.5px;
   font-weight: 650;
   letter-spacing: .02em;
   text-transform: uppercase;
-  text-align: start;
+  text-align: center;
   padding: 0 12px;
   white-space: nowrap;
   border-bottom: 1px solid var(--edo-line-2);
+}
+.edo-th-inner { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.edo-th-label { line-height: 1.2; }
+.edo-th-info {
+  flex: none; width: 15px; height: 15px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; font-style: italic; line-height: 1;
+  text-transform: none; letter-spacing: 0; font-family: Georgia, "Times New Roman", serif;
+  color: var(--edo-muted); background: var(--edo-surface);
+  border: 1px solid var(--edo-line-2); cursor: pointer;
+  transition: color .12s, border-color .12s, background .12s;
+}
+.edo-th-info:hover, .edo-th-info:focus-visible {
+  color: var(--edo-primary); border-color: var(--edo-primary);
+  background: rgba(79,70,229,.08); outline: none;
+}
+.edo-tip {
+  position: fixed; z-index: 9999; max-width: 280px;
+  padding: 10px 12px; border-radius: 10px;
+  background: #1f2430; color: #f3f4f6;
+  font-size: 12.5px; font-weight: 500; line-height: 1.5;
+  letter-spacing: normal; text-transform: none; white-space: normal;
+  box-shadow: 0 10px 30px rgba(15,23,42,.28); border: 1px solid rgba(255,255,255,.06);
 }
 .edo-table td {
   padding: 10px 12px;
@@ -347,18 +392,27 @@
   border: 1px solid var(--edo-line-2);
   border-radius: 10px;
   background: #fff;
-  padding-inline: 11px 28px;
+  padding-inline: 11px 30px;
   font: inherit;
   color: #111418;
   font-weight: 550;
   outline: none; cursor: text;
-  background-image: linear-gradient(45deg, transparent 50%, #6b7280 50%), linear-gradient(135deg, #6b7280 50%, transparent 50%);
-  background-position: calc(100% - 16px) 15px, calc(100% - 11px) 15px;
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
   transition: border-color .15s, box-shadow .15s;
 }
-.edo-root[dir="rtl"] .edo-combo-input { background-position: 16px 15px, 11px 15px; }
+/* Dropdown chevron: a border triangle placed at the inline-end so it renders
+   correctly in both LTR and RTL (the old dual-gradient hack was invisible). */
+.edo-combo-caret {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: 12px;
+  transform: translateY(-50%);
+  width: 0; height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid #6b7280;
+  cursor: pointer;
+}
+.edo-combo.disabled .edo-combo-caret { opacity: .4; cursor: not-allowed; }
 .edo-combo-input::placeholder { color: var(--edo-faint); font-weight: 400; }
 .edo-combo-input.empty { color: var(--edo-muted); font-weight: 400; }
 .edo-combo-input:hover { border-color: #cdd3dd; }

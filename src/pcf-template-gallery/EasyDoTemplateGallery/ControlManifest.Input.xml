@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest>
+  <control namespace="EasyDo" constructor="EasyDoTemplateGallery" version="0.2.1"
+           display-name-key="EasyDoTemplateGallery_Display"
+           description-key="EasyDoTemplateGallery_Desc"
+           control-type="standard">
+    <external-service-usage enabled="false">
+    </external-service-usage>
+
+    <!-- Dataset bound to a view / home-grid of alex_signaturetemplate. The view
+         controls which records + their order/filter; the control enriches each
+         record over the Web API and renders an Apple-style gallery of cards
+         distinguishing envelopes from single-document templates, their status
+         (active / inactive / removed from easydo) and last sync. -->
+    <data-set name="records" display-name-key="Records_Display">
+    </data-set>
+
+    <!-- Language override: auto (follow user UI), en, or he. -->
+    <property name="language" display-name-key="Language_Display" description-key="Language_Desc"
+              of-type="Enum" usage="input" required="false" default-value="auto">
+      <value name="auto" display-name-key="Language_Auto">auto</value>
+      <value name="en" display-name-key="Language_En">en</value>
+      <value name="he" display-name-key="Language_He">he</value>
+    </property>
+
+    <resources>
+      <code path="index.ts" order="1" />
+      <css path="css/EasyDoTemplateGallery.css" order="1" />
+    </resources>
+
+    <feature-usage>
+      <uses-feature name="Utility" required="true" />
+      <uses-feature name="WebAPI" required="true" />
+    </feature-usage>
+  </control>
+</manifest>

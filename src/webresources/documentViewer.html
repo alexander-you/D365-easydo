@@ -98,6 +98,13 @@
     }
     .btn-pdf:hover { background: var(--bg-2); }
     .btn-pdf svg { width: 16px; height: 16px; }
+    .btn-copylink .ic { display: inline-flex; }
+    .btn-copylink .ic svg { width: 16px; height: 16px; }
+    .btn-copylink.copied {
+      background: rgba(52,199,89,.12);
+      border-color: rgba(52,199,89,.45);
+      color: #1d7a33;
+    }
 
     /* Send copy section */
     .v-copy-section {
@@ -133,6 +140,68 @@
       background: var(--bad-bg); color: var(--bad); padding: 16px; border-radius: 12px;
       text-align: center; font-size: 14px;
     }
+
+    /* Envelope progress */
+    .v-progress { display: flex; align-items: center; gap: 12px; }
+    .v-progress-track {
+      flex: 1; height: 7px; background: var(--muted-bg);
+      border-radius: 999px; overflow: hidden;
+    }
+    .v-progress-track span {
+      display: block; height: 100%; border-radius: 999px;
+      background: var(--blue); transition: width .35s ease;
+    }
+    .v-progress.is-done .v-progress-track span { background: var(--ok); }
+    .v-progress-lbl { font-size: 12.5px; font-weight: 700; color: var(--sub); white-space: nowrap; }
+    .v-progress.is-done .v-progress-lbl { color: var(--ok); }
+
+    /* Envelope member list */
+    .v-items { display: flex; flex-direction: column; gap: 8px; }
+    .v-items-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .v-item-empty {
+      font-size: 13px; color: var(--sub); text-align: center;
+      padding: 20px; background: var(--bg-2); border-radius: 12px;
+    }
+    .v-item {
+      display: flex; align-items: center; gap: 12px;
+      border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+      background: var(--bg); cursor: pointer;
+      transition: background .15s ease, border-color .15s ease, transform .08s ease;
+    }
+    .v-item:hover { background: var(--bg-2); border-color: #d1d1d6; }
+    .v-item:active { transform: scale(.995); }
+    .v-item:focus { outline: 2px solid var(--blue); outline-offset: 2px; }
+    .v-item-seq {
+      width: 26px; height: 26px; flex: none; border-radius: 8px;
+      background: var(--bg-2); color: var(--sub);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12.5px; font-weight: 700;
+    }
+    .v-item-main { flex: 1; min-width: 0; }
+    .v-item-name {
+      font-size: 14px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .v-item-sub { font-size: 12px; color: var(--sub); margin-top: 2px; }
+    .v-item-chev { width: 18px; height: 18px; color: var(--sub); flex: none; }
+    .v-item-chev svg { width: 18px; height: 18px; }
+    [dir="rtl"] .v-item-chev svg { transform: scaleX(-1); }
+
+    /* Back button + note */
+    .v-back {
+      display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
+      border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+      border-radius: 999px; padding: 7px 14px; cursor: pointer;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      transition: background .15s ease, border-color .15s ease;
+    }
+    .v-back:hover { background: var(--bg-2); border-color: #d1d1d6; }
+    .v-back svg { width: 16px; height: 16px; }
+    [dir="rtl"] .v-back svg { transform: scaleX(-1); }
+    .v-note {
+      font-size: 12.5px; color: var(--sub); background: var(--bg-2);
+      border-radius: 10px; padding: 12px 14px; line-height: 1.5;
+    }
   </style>
 </head>
 <body>
@@ -147,6 +216,8 @@
     var SVG_DOC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
     var SVG_DOWNLOAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
     var SVG_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+    var SVG_COPY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+    var SVG_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
     var SVG_SMS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
     var SVG_EMAIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>';
     var SVG_WHATSAPP = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
@@ -166,9 +237,25 @@
       626210011: { cls: "warn", he: "ממתין לניסיון חוזר", en: "Pending Retry" }
     };
 
+    // Per-document status inside an envelope (alex_envelopeitemstatus)
+    var ITEM_STATUS_MAP = {
+      626220000: { cls: "muted", he: "ממתין", en: "Pending" },
+      626220001: { cls: "info", he: "ממתין לחתימה", en: "Waiting for signature" },
+      626220002: { cls: "ok", he: "נחתם", en: "Signed" },
+      626220003: { cls: "bad", he: "נדחה", en: "Declined" },
+      626220004: { cls: "warn", he: "פג תוקף", en: "Expired" },
+      626220005: { cls: "bad", he: "שגיאה", en: "Error" }
+    };
+
+    var SVG_ENVELOPE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>';
+    var SVG_CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+    var SVG_BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+
     var requestId = null;
     var requestData = null;
     var noteData = null;
+    var itemsData = null;
+    var viewItemId = null;
     var lang = "he";
 
     function $(id) { return document.getElementById(id); }
@@ -232,6 +319,73 @@
       el.textContent = msg;
       el.classList.add("show");
       setTimeout(function () { el.classList.remove("show"); }, 2500);
+    }
+
+    // ---- Signing-link governance (global default + per-template override) ----
+    // The mode controls whether the signing link is SHOWN at all (both the open
+    // and copy actions). Option values from the alex_copylinkmode choice.
+    var COPY_ALLOW = 626250001, COPY_BLOCK = 626250002;
+    var globalAllowCopy = true;
+    function loadCopyPolicy() {
+      return apiGet("alex_easydosettings?$select=alex_allowcopylink&$top=1")
+        .then(function (d) {
+          var e = d && d.value && d.value[0];
+          globalAllowCopy = e ? (e.alex_allowcopylink !== false) : true;
+        })
+        .catch(function () { globalAllowCopy = true; });
+    }
+    // Whether the signing link is shown for a given template's copy-link mode.
+    // Allow -> shown; Block -> hidden; Inherit/unset -> follow the global default.
+    function canShowLink(mode) {
+      if (mode === COPY_ALLOW) return true;
+      if (mode === COPY_BLOCK) return false;
+      return globalAllowCopy; // Inherit / not set
+    }
+    // Build the signing-link action row: open + copy. Only called when the link
+    // is allowed to be shown (see canShowLink at each call site).
+    function linkActionsHtml(url, openLabel) {
+      var h = '<div class="v-pdf-actions">';
+      h += '<a class="btn-pdf" href="' + esc(url) + '" target="_blank" rel="noopener">' +
+        SVG_OPEN + '<span>' + openLabel + '</span></a>';
+      h += '<button class="btn-pdf btn-copylink" data-copy="' + esc(url) + '">' +
+        '<span class="ic">' + SVG_COPY + '</span><span>' + (lang === "he" ? "העתק קישור" : "Copy link") + '</span></button>';
+      h += '</div>';
+      return h;
+    }
+    function fallbackCopy(text, cb) {
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        document.execCommand("copy"); document.body.removeChild(ta);
+        cb();
+      } catch (e) { toast(lang === "he" ? "ההעתקה נכשלה" : "Copy failed"); }
+    }
+    function doCopyLink(btn) {
+      var url = btn.getAttribute("data-copy");
+      if (!url) return;
+      function done() {
+        var span = btn.querySelectorAll("span")[1];
+        var ic = btn.querySelector(".ic");
+        if (!span.getAttribute("data-orig")) span.setAttribute("data-orig", span.textContent);
+        btn.classList.add("copied");
+        span.textContent = lang === "he" ? "הועתק" : "Copied";
+        if (ic) ic.innerHTML = SVG_CHECK;
+        setTimeout(function () {
+          btn.classList.remove("copied");
+          span.textContent = span.getAttribute("data-orig");
+          if (ic) ic.innerHTML = SVG_COPY;
+        }, 1600);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(done, function () { fallbackCopy(url, done); });
+      } else { fallbackCopy(url, done); }
+    }
+    function wireCopyButtons() {
+      var btns = document.querySelectorAll(".btn-copylink");
+      Array.prototype.forEach.call(btns, function (b) {
+        b.addEventListener("click", function () { doCopyLink(b); });
+      });
     }
 
     function esc(s) {
@@ -306,8 +460,24 @@
         return Promise.reject("no id");
       }
       var select = "alex_name,alex_status,alex_senton,alex_completedon,alex_laststatuscheckon,alex_signednoteid,alex_primaryrecordid,alex_declinereason";
+      select += ",alex_ismultidocument,alex_externalenvelopeid,alex_envelopefillurl,alex_signinglink";
       select += ",_alex_templateid_value,_alex_relatedcontactid_value";
-      return apiGet("alex_signaturerequests(" + requestId + ")?$select=" + select + "&$expand=alex_TemplateId($select=alex_name),alex_RelatedContactId($select=fullname,emailaddress1,mobilephone)");
+      return apiGet("alex_signaturerequests(" + requestId + ")?$select=" + select + "&$expand=alex_TemplateId($select=alex_name,alex_copylinkmode),alex_RelatedContactId($select=fullname,emailaddress1,mobilephone)");
+    }
+
+    function loadItems() {
+      if (!requestId) return Promise.resolve([]);
+      var sel = "alex_signaturerequestitemid,alex_name,alex_sequence,alex_itemstatus,alex_externalformid,alex_fillurl,alex_signedon,_alex_templateid_value";
+      var q = "alex_signaturerequestitems?$select=" + sel +
+        "&$expand=alex_TemplateId($select=alex_name,alex_copylinkmode)" +
+        "&$filter=_alex_signaturerequestid_value eq " + requestId +
+        "&$orderby=alex_sequence";
+      return apiGet(q).then(function (d) { return (d && d.value) || []; }).catch(function () { return []; });
+    }
+
+    function isEnvelope() {
+      return !!(requestData && (requestData.alex_ismultidocument === true ||
+        requestData.alex_externalenvelopeid || (itemsData && itemsData.length)));
     }
 
     function loadNote(noteId) {
@@ -331,6 +501,171 @@
     }
 
     function render() {
+      if (isEnvelope()) {
+        if (viewItemId) renderItemDetail(viewItemId);
+        else renderEnvelope();
+        return;
+      }
+      renderSingle();
+    }
+
+    function metaItem(lbl, val) {
+      return '<div class="meta-item"><div class="meta-lbl">' + esc(lbl) +
+        '</div><div class="meta-val">' + esc(val) + '</div></div>';
+    }
+
+    function recipientName() {
+      var d = requestData;
+      return (d.alex_RelatedContactId && d.alex_RelatedContactId.fullname) ||
+        (d["_alex_relatedcontactid_value@OData.Community.Display.V1.FormattedValue"]) || "—";
+    }
+
+    function renderEnvelope() {
+      var v = $("viewer");
+      var d = requestData;
+      var st = STATUS_MAP[d.alex_status] || { cls: "muted", he: "לא ידוע", en: "Unknown" };
+      var statusLabel = lang === "he" ? st.he : st.en;
+      var name = d.alex_name || "—";
+      var items = itemsData || [];
+      var total = items.length;
+      var signed = 0;
+      for (var i = 0; i < items.length; i++) { if (items[i].alex_itemstatus === 626220002) signed++; }
+      var pct = total ? Math.round((signed / total) * 100) : 0;
+      var done = total > 0 && signed >= total;
+      var isSigned = d.alex_status === 626210006;
+      var hasPdf = noteData && noteData.documentbody;
+      var envUrl = d.alex_envelopefillurl;
+
+      var html = "";
+
+      html += '<div class="v-head">';
+      html += '<div class="v-icon">' + SVG_ENVELOPE + '</div>';
+      html += '<div class="v-title-wrap">';
+      html += '<div class="v-title">' + esc(name) + '</div>';
+      html += '<div class="v-template">' + (lang === "he" ? "מעטפה · " : "Envelope · ") + total + ' ' +
+        (lang === "he" ? "מסמכים" : "documents") + '</div>';
+      html += '</div>';
+      html += '<span class="badge ' + st.cls + '">' + esc(statusLabel) + '</span>';
+      html += '</div>';
+
+      html += '<div class="v-progress' + (done ? ' is-done' : '') + '">';
+      html += '<div class="v-progress-track"><span style="width:' + pct + '%"></span></div>';
+      html += '<div class="v-progress-lbl">' + signed + ' / ' + total + ' ' +
+        (lang === "he" ? "נחתמו" : "signed") + '</div>';
+      html += '</div>';
+
+      html += '<div class="v-meta">';
+      html += metaItem(lang === "he" ? "נמען" : "Recipient", recipientName());
+      html += metaItem(lang === "he" ? "תאריך שליחה" : "Sent", fmtDate(d.alex_senton));
+      html += metaItem(lang === "he" ? "נבדק לאחרונה" : "Last Check", fmtDate(d.alex_laststatuscheckon));
+      html += metaItem(lang === "he" ? "הושלם" : "Completed", fmtDate(d.alex_completedon));
+      html += '</div>';
+
+      if (envUrl && !isSigned) {
+        var envMode = requestData.alex_TemplateId && requestData.alex_TemplateId.alex_copylinkmode;
+        if (canShowLink(envMode)) {
+          html += linkActionsHtml(envUrl, lang === "he" ? "פתח קישור חתימה" : "Open signing link");
+        }
+      }
+
+      html += '<div class="v-items">';
+      html += '<div class="v-items-title">' + (lang === "he" ? "מסמכי המעטפה" : "Envelope documents") + '</div>';
+      if (!total) {
+        html += '<div class="v-item-empty">' + (lang === "he" ? "אין עדיין מסמכים במעטפה" : "No documents in this envelope yet") + '</div>';
+      }
+      for (var j = 0; j < items.length; j++) {
+        var it = items[j];
+        var ist = ITEM_STATUS_MAP[it.alex_itemstatus] || { cls: "muted", he: "—", en: "—" };
+        var iname = (it.alex_TemplateId && it.alex_TemplateId.alex_name) || it.alex_name || "—";
+        var signedOn = it.alex_signedon ? fmtDate(it.alex_signedon) : "";
+        html += '<div class="v-item" data-item="' + esc(it.alex_signaturerequestitemid) + '" tabindex="0" role="button">';
+        html += '<div class="v-item-seq">' + (it.alex_sequence != null ? esc(String(it.alex_sequence)) : "") + '</div>';
+        html += '<div class="v-item-main"><div class="v-item-name">' + esc(iname) + '</div>';
+        if (signedOn) html += '<div class="v-item-sub">' + (lang === "he" ? "נחתם · " : "Signed · ") + esc(signedOn) + '</div>';
+        html += '</div>';
+        html += '<span class="badge ' + ist.cls + '">' + esc(lang === "he" ? ist.he : ist.en) + '</span>';
+        html += '<div class="v-item-chev">' + SVG_CHEVRON + '</div>';
+        html += '</div>';
+      }
+      html += '</div>';
+
+      if (isSigned) {
+        html += '<div class="v-pdf-section">';
+        html += '<div class="v-pdf-title">' + (lang === "he" ? "מסמך חתום (מעטפה מלאה)" : "Signed document (full envelope)") + '</div>';
+        if (hasPdf) {
+          var pdfData = "data:" + (noteData.mimetype || "application/pdf") + ";base64," + noteData.documentbody;
+          html += '<div class="v-pdf-frame"><iframe id="pdfFrame" src="' + pdfData + '"></iframe></div>';
+          html += '<div class="v-pdf-actions">';
+          html += '<button class="btn-pdf" id="btnDownload">' + SVG_DOWNLOAD + '<span>' + (lang === "he" ? "הורדה" : "Download") + '</span></button>';
+          html += '<button class="btn-pdf" id="btnOpen">' + SVG_OPEN + '<span>' + (lang === "he" ? "פתיחה בחלון חדש" : "Open in new tab") + '</span></button>';
+          html += '</div>';
+        } else {
+          html += '<div class="v-pdf-frame"><div class="v-pdf-empty"><div class="v-pdf-empty-icon">📄</div><div>' + (lang === "he" ? "הקובץ החתום לא נמצא" : "Signed file not found") + '</div></div></div>';
+        }
+        html += '</div>';
+      }
+
+      v.innerHTML = html;
+      wireEnvelope();
+    }
+
+    function renderItemDetail(id) {
+      var items = itemsData || [];
+      var it = null;
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].alex_signaturerequestitemid === id) { it = items[i]; break; }
+      }
+      if (!it) { viewItemId = null; renderEnvelope(); return; }
+
+      var v = $("viewer");
+      var ist = ITEM_STATUS_MAP[it.alex_itemstatus] || { cls: "muted", he: "—", en: "—" };
+      var iname = (it.alex_TemplateId && it.alex_TemplateId.alex_name) || it.alex_name || "—";
+
+      var html = "";
+      html += '<button class="v-back" id="btnBack">' + SVG_BACK + '<span>' + (lang === "he" ? "חזרה למעטפה" : "Back to envelope") + '</span></button>';
+      html += '<div class="v-head">';
+      html += '<div class="v-icon">' + SVG_DOC + '</div>';
+      html += '<div class="v-title-wrap"><div class="v-title">' + esc(iname) + '</div>';
+      html += '<div class="v-template">' + (lang === "he" ? "מסמך במעטפה" : "Envelope document") + '</div></div>';
+      html += '<span class="badge ' + ist.cls + '">' + esc(lang === "he" ? ist.he : ist.en) + '</span>';
+      html += '</div>';
+
+      html += '<div class="v-meta">';
+      html += metaItem(lang === "he" ? "סדר חתימה" : "Signing order", it.alex_sequence != null ? String(it.alex_sequence) : "—");
+      html += metaItem(lang === "he" ? "נחתם" : "Signed on", it.alex_signedon ? fmtDate(it.alex_signedon) : "—");
+      html += metaItem(lang === "he" ? "מזהה טופס easydo" : "easydo form id", it.alex_externalformid || "—");
+      html += '</div>';
+
+      if (it.alex_fillurl) {
+        var itMode = it.alex_TemplateId && it.alex_TemplateId.alex_copylinkmode;
+        if (canShowLink(itMode)) {
+          html += linkActionsHtml(it.alex_fillurl, lang === "he" ? "פתח קישור חתימה למסמך" : "Open document signing link");
+        }
+      }
+
+      html += '<div class="v-note">' + (lang === "he"
+        ? "המסמך החתום זמין כקובץ מאוחד ברמת המעטפה."
+        : "The signed copy is available as one combined file at the envelope level.") + '</div>';
+
+      v.innerHTML = html;
+      wireCopyButtons();
+      var back = $("btnBack");
+      if (back) back.addEventListener("click", function () { viewItemId = null; render(); });
+    }
+
+    function wireEnvelope() {
+      wirePdfButtons();
+      wireCopyButtons();
+      var els = document.querySelectorAll(".v-item");
+      Array.prototype.forEach.call(els, function (el) {
+        el.addEventListener("click", function () { viewItemId = el.getAttribute("data-item"); render(); });
+        el.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); viewItemId = el.getAttribute("data-item"); render(); }
+        });
+      });
+    }
+
+    function renderSingle() {
       var v = $("viewer");
       var d = requestData;
       var statusVal = d.alex_status;
@@ -375,6 +710,19 @@
         html += '</div>';
       }
 
+      // Signing link — available BEFORE signing so it can be shared with the
+      // signer. Shown only when the template's mode (or the global default)
+      // allows it; Block hides the whole link (both open and copy).
+      if (!isSigned && d.alex_signinglink) {
+        var singleMode = d.alex_TemplateId && d.alex_TemplateId.alex_copylinkmode;
+        if (canShowLink(singleMode)) {
+          html += '<div class="v-pdf-section">';
+          html += '<div class="v-pdf-title">' + (lang === "he" ? "קישור חתימה" : "Signing link") + '</div>';
+          html += linkActionsHtml(d.alex_signinglink, lang === "he" ? "פתח קישור חתימה" : "Open signing link");
+          html += '</div>';
+        }
+      }
+
       // PDF section
       html += '<div class="v-pdf-section">';
       html += '<div class="v-pdf-title">' + (lang === "he" ? "מסמך חתום" : "Signed Document") + '</div>';
@@ -409,12 +757,9 @@
       wireEvents();
     }
 
-    function wireEvents() {
+    function wirePdfButtons() {
       var btnDownload = $("btnDownload");
       var btnOpen = $("btnOpen");
-      var btnSms = $("btnSms");
-      var btnEmail = $("btnEmail");
-      var btnWhatsapp = $("btnWhatsapp");
 
       if (btnDownload && noteData) {
         btnDownload.addEventListener("click", function () {
@@ -435,6 +780,14 @@
           window.open(url, "_blank");
         });
       }
+    }
+
+    function wireEvents() {
+      wirePdfButtons();
+      wireCopyButtons();
+      var btnSms = $("btnSms");
+      var btnEmail = $("btnEmail");
+      var btnWhatsapp = $("btnWhatsapp");
 
       if (btnSms) {
         btnSms.addEventListener("click", function () { triggerCopy("sms", btnSms); });
@@ -504,24 +857,28 @@
     function init() {
       detectLang();
       parseParams();
-      loadRequest()
+      loadCopyPolicy().then(loadRequest)
         .then(function (d) {
           console.log("documentViewer: loadRequest success, data =", d);
           requestData = d;
-          // Only a signed/completed request has a signed document. For any other
-          // status (sent, delivered, etc.) we must NOT show a PDF.
-          if (d.alex_status !== 626210006) {
-            return null;
+          var isEnv = d.alex_ismultidocument === true || !!d.alex_externalenvelopeid;
+          if (isEnv) {
+            // Envelope: load member documents, plus the combined PDF when completed.
+            return loadItems().then(function (items) {
+              itemsData = items;
+              if (d.alex_status === 626210006) {
+                var envNote = d.alex_signednoteid;
+                return (envNote ? loadNote(envNote) : findNoteFallback()).then(function (n) { noteData = n; });
+              }
+              return null;
+            });
           }
+          // Single document: only a completed request has a signed PDF.
+          if (d.alex_status !== 626210006) return null;
           var noteId = d.alex_signednoteid;
-          if (noteId) {
-            return loadNote(noteId);
-          } else {
-            return findNoteFallback();
-          }
+          return (noteId ? loadNote(noteId) : findNoteFallback()).then(function (n) { noteData = n; });
         })
-        .then(function (n) {
-          noteData = n;
+        .then(function () {
           render();
         })
         .catch(function (e) {

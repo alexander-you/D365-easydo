@@ -379,6 +379,290 @@
           "else": {
             "actions": {}
           }
+        },
+        "Only_when_an_envelope_session_is_active": {
+          "runAfter": {},
+          "metadata": { "operationMetadataId": "e50b2c00-0001-4a10-9c01-000000000001" },
+          "type": "If",
+          "expression": {
+            "and": [
+              { "equals": [ "@coalesce(triggerOutputs()?['body/alex_realtimesessionactive'], false)", true ] },
+              { "equals": [ "@coalesce(triggerOutputs()?['body/alex_externalformid'], '')", "" ] },
+              { "not": { "equals": [ "@coalesce(triggerOutputs()?['body/alex_externalenvelopeid'], '')", "" ] } }
+            ]
+          },
+          "actions": {
+            "List_the_envelope_items": {
+              "runAfter": {},
+              "metadata": { "operationMetadataId": "e50b2c00-0002-4a10-9c01-000000000002" },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": { "connectionName": "shared_commondataserviceforapps", "operationId": "ListRecords", "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps" },
+                "parameters": {
+                  "entityName": "alex_signaturerequestitems",
+                  "$select": "alex_signaturerequestitemid,alex_sequence,_alex_templateid_value",
+                  "$expand": "alex_TemplateId($select=alex_externaltemplateid)",
+                  "$filter": "@concat('_alex_signaturerequestid_value eq ', triggerOutputs()?['body/alex_signaturerequestid'])"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Poll_the_envelope_until_complete": {
+              "runAfter": { "List_the_envelope_items": [ "Succeeded" ] },
+              "metadata": { "operationMetadataId": "e50b2c00-0003-4a10-9c01-000000000003" },
+              "type": "Until",
+              "expression": "@or(greater(length(body('Any_declined_forms')), 0), and(greater(length(coalesce(body('Get_the_envelope_status')?['forms'], json('[]'))), 0), equals(length(body('All_signed_forms')), length(coalesce(body('Get_the_envelope_status')?['forms'], json('[]'))))))",
+              "limit": { "count": 200, "timeout": "PT10M" },
+              "actions": {
+                "Get_the_envelope_status": {
+                  "runAfter": {},
+                  "metadata": { "operationMetadataId": "e50b2c00-0004-4a10-9c01-000000000004" },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": { "connectionName": "shared_alex-5feasydo-5f5849d39a0feaf28d", "operationId": "GetEnvelope", "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f5849d39a0feaf28d" },
+                    "parameters": { "envelopeId": "@triggerOutputs()?['body/alex_externalenvelopeid']" },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "All_signed_forms": {
+                  "runAfter": { "Get_the_envelope_status": [ "Succeeded" ] },
+                  "metadata": { "operationMetadataId": "e50b2c00-0005-4a10-9c01-000000000005" },
+                  "type": "Query",
+                  "inputs": { "from": "@coalesce(body('Get_the_envelope_status')?['forms'], json('[]'))", "where": "@equals(item()?['status'], 'signed')" }
+                },
+                "Any_declined_forms": {
+                  "runAfter": { "All_signed_forms": [ "Succeeded" ] },
+                  "metadata": { "operationMetadataId": "e50b2c00-0006-4a10-9c01-000000000006" },
+                  "type": "Query",
+                  "inputs": { "from": "@coalesce(body('Get_the_envelope_status')?['forms'], json('[]'))", "where": "@equals(item()?['status'], 'decline')" }
+                },
+                "Update_the_envelope_live_status": {
+                  "runAfter": { "Any_declined_forms": [ "Succeeded" ] },
+                  "metadata": { "operationMetadataId": "e50b2c00-0007-4a10-9c01-000000000007" },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": { "connectionName": "shared_commondataserviceforapps", "operationId": "UpdateRecord", "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps" },
+                    "parameters": {
+                      "entityName": "alex_signaturerequests",
+                      "recordId": "@triggerOutputs()?['body/alex_signaturerequestid']",
+                      "item/alex_laststatuscheckon": "@utcNow()",
+                      "item/alex_status": "@if(and(greater(length(coalesce(body('Get_the_envelope_status')?['forms'], json('[]'))), 0), equals(length(body('All_signed_forms')), length(coalesce(body('Get_the_envelope_status')?['forms'], json('[]'))))), 626210006, if(greater(length(body('Any_declined_forms')), 0), 626210007, if(greater(length(body('All_signed_forms')), 0), 626210004, 626210002)))"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Update_each_envelope_item": {
+                  "runAfter": { "Update_the_envelope_live_status": [ "Succeeded" ] },
+                  "metadata": { "operationMetadataId": "e50b2c00-0008-4a10-9c01-000000000008" },
+                  "type": "Foreach",
+                  "foreach": "@coalesce(body('Get_the_envelope_status')?['forms'], json('[]'))",
+                  "runtimeConfiguration": { "concurrency": { "repetitions": 1 } },
+                  "actions": {
+                    "Find_item_for_live_status": {
+                      "runAfter": {},
+                      "metadata": { "operationMetadataId": "e50b2c00-0009-4a10-9c01-000000000009" },
+                      "type": "Query",
+                      "inputs": { "from": "@outputs('List_the_envelope_items')?['body/value']", "where": "@equals(string(item()?['alex_TemplateId']?['alex_externaltemplateid']), string(items('Update_each_envelope_item')?['template_id']))" }
+                    },
+                    "Update_the_live_item": {
+                      "runAfter": { "Find_item_for_live_status": [ "Succeeded" ] },
+                      "metadata": { "operationMetadataId": "e50b2c00-000a-4a10-9c01-00000000000a" },
+                      "type": "If",
+                      "expression": { "greater": [ "@length(body('Find_item_for_live_status'))", 0 ] },
+                      "actions": {
+                        "Write_the_live_item": {
+                          "runAfter": {},
+                          "metadata": { "operationMetadataId": "e50b2c00-000b-4a10-9c01-00000000000b" },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": { "connectionName": "shared_commondataserviceforapps", "operationId": "UpdateRecord", "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps" },
+                            "parameters": {
+                              "entityName": "alex_signaturerequestitems",
+                              "recordId": "@first(body('Find_item_for_live_status'))?['alex_signaturerequestitemid']",
+                              "item/alex_externalformid": "@string(items('Update_each_envelope_item')?['id'])",
+                              "item/alex_stepid": "@items('Update_each_envelope_item')?['step_id']",
+                              "item/alex_formslug": "@items('Update_each_envelope_item')?['template_slug']",
+                              "item/alex_fillurl": "@first(items('Update_each_envelope_item')?['assignees'])?['fill_url']",
+                              "item/alex_itemstatus": "@if(equals(items('Update_each_envelope_item')?['status'], 'signed'), 626220002, if(equals(items('Update_each_envelope_item')?['status'], 'decline'), 626220003, if(equals(items('Update_each_envelope_item')?['status'], 'pending'), 626220000, 626220001)))",
+                              "item/alex_signedon": "@if(equals(items('Update_each_envelope_item')?['status'], 'signed'), utcNow(), null)"
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          }
+                        }
+                      },
+                      "else": { "actions": {} }
+                    }
+                  }
+                },
+                "Wait_5_seconds_for_the_envelope": {
+                  "runAfter": { "Update_each_envelope_item": [ "Succeeded" ] },
+                  "metadata": { "operationMetadataId": "e50b2c00-000c-4a10-9c01-00000000000c" },
+                  "type": "Wait",
+                  "inputs": { "interval": { "count": 5, "unit": "Second" } }
+                }
+              }
+            },
+            "Finalize_when_the_envelope_completed": {
+              "runAfter": { "Poll_the_envelope_until_complete": [ "Succeeded" ] },
+              "metadata": { "operationMetadataId": "e50b2c00-000d-4a10-9c01-00000000000d" },
+              "type": "If",
+              "expression": { "and": [ { "greater": [ "@length(coalesce(body('Get_the_envelope_status')?['forms'], json('[]')))", 0 ] }, { "equals": [ "@length(body('All_signed_forms'))", "@length(coalesce(body('Get_the_envelope_status')?['forms'], json('[]')))" ] } ] },
+              "actions": {
+                "Read_back_each_envelope_form": {
+                  "runAfter": {},
+                  "metadata": { "operationMetadataId": "e50b2c00-000e-4a10-9c01-00000000000e" },
+                  "type": "Foreach",
+                  "foreach": "@coalesce(body('Get_the_envelope_status')?['forms'], json('[]'))",
+                  "runtimeConfiguration": { "concurrency": { "repetitions": 1 } },
+                  "actions": {
+                    "Find_item_for_envelope_readback": {
+                      "runAfter": {},
+                      "metadata": { "operationMetadataId": "e50b2c00-000f-4a10-9c01-00000000000f" },
+                      "type": "Query",
+                      "inputs": { "from": "@outputs('List_the_envelope_items')?['body/value']", "where": "@equals(string(item()?['alex_TemplateId']?['alex_externaltemplateid']), string(items('Read_back_each_envelope_form')?['template_id']))" }
+                    },
+                    "Get_the_member_form_status": {
+                      "runAfter": { "Find_item_for_envelope_readback": [ "Succeeded" ] },
+                      "metadata": { "operationMetadataId": "e50b2c00-0010-4a10-9c01-000000000010" },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": { "connectionName": "shared_alex-5feasydo-5f5849d39a0feaf28d", "operationId": "GetFormStatus", "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f5849d39a0feaf28d" },
+                        "parameters": { "formId": "@string(items('Read_back_each_envelope_form')?['id'])" },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "If_the_member_has_data": {
+                      "runAfter": { "Get_the_member_form_status": [ "Succeeded" ] },
+                      "metadata": { "operationMetadataId": "e50b2c00-0011-4a10-9c01-000000000011" },
+                      "type": "If",
+                      "expression": { "equals": [ "@coalesce(body('Get_the_member_form_status')?['has_data'], false)", true ] },
+                      "actions": {
+                        "Process_each_member_page_rt": {
+                          "runAfter": {},
+                          "metadata": { "operationMetadataId": "e50b2c00-0012-4a10-9c01-000000000012" },
+                          "type": "Foreach",
+                          "foreach": "@body('Get_the_member_form_status')?['payload']?['data']",
+                          "runtimeConfiguration": { "concurrency": { "repetitions": 1 } },
+                          "actions": {
+                            "Keep_member_value_fields_rt": {
+                              "runAfter": {},
+                              "metadata": { "operationMetadataId": "e50b2c00-0013-4a10-9c01-000000000013" },
+                              "type": "Query",
+                              "inputs": { "from": "@items('Process_each_member_page_rt')", "where": "@and(not(equals(item()?['type'], 'input-signature')), not(equals(coalesce(item()?['export']?['header'], ''), '')))" }
+                            },
+                            "Write_each_member_value_rt": {
+                              "runAfter": { "Keep_member_value_fields_rt": [ "Succeeded" ] },
+                              "metadata": { "operationMetadataId": "e50b2c00-0014-4a10-9c01-000000000014" },
+                              "type": "Foreach",
+                              "foreach": "@body('Keep_member_value_fields_rt')",
+                              "runtimeConfiguration": { "concurrency": { "repetitions": 1 } },
+                              "actions": {
+                                "Create_a_member_read_back_value_rt": {
+                                  "runAfter": {},
+                                  "metadata": { "operationMetadataId": "e50b2c00-0015-4a10-9c01-000000000015" },
+                                  "type": "OpenApiConnection",
+                                  "inputs": {
+                                    "host": { "connectionName": "shared_commondataserviceforapps", "operationId": "CreateRecord", "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps" },
+                                    "parameters": {
+                                      "entityName": "alex_signaturefieldvalues",
+                                      "item/alex_name": "@coalesce(items('Write_each_member_value_rt')?['label'], items('Write_each_member_value_rt')?['export']?['header'], items('Write_each_member_value_rt')?['name'])",
+                                      "item/alex_fieldname": "@items('Write_each_member_value_rt')?['name']",
+                                      "item/alex_fieldlabel": "@items('Write_each_member_value_rt')?['label']",
+                                      "item/alex_externalfieldname": "@items('Write_each_member_value_rt')?['export']?['header']",
+                                      "item/alex_value": "@string(coalesce(body('Get_the_member_form_status')?['data']?[items('Write_each_member_value_rt')?['export']?['header']], ''))",
+                                      "item/alex_direction": 626210001,
+                                      "item/alex_SignatureRequestId@odata.bind": "@concat('/alex_signaturerequests(', triggerOutputs()?['body/alex_signaturerequestid'], ')')",
+                                      "item/alex_TemplateId@odata.bind": "@if(greater(length(body('Find_item_for_envelope_readback')), 0), concat('/alex_signaturetemplates(', first(body('Find_item_for_envelope_readback'))?['_alex_templateid_value'], ')'), null)"
+                                    },
+                                    "authentication": "@parameters('$authentication')"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "else": { "actions": {} }
+                    }
+                  }
+                },
+                "Mark_the_envelope_request_Completed": {
+                  "runAfter": { "Read_back_each_envelope_form": [ "Succeeded" ] },
+                  "metadata": { "operationMetadataId": "e50b2c00-0016-4a10-9c01-000000000016" },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": { "connectionName": "shared_commondataserviceforapps", "operationId": "UpdateRecord", "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps" },
+                    "parameters": {
+                      "entityName": "alex_signaturerequests",
+                      "recordId": "@triggerOutputs()?['body/alex_signaturerequestid']",
+                      "item/alex_status": 626210006,
+                      "item/alex_completedon": "@utcNow()"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Download_the_envelope_package": {
+                  "runAfter": { "Mark_the_envelope_request_Completed": [ "Succeeded" ] },
+                  "metadata": { "operationMetadataId": "e50b2c00-0017-4a10-9c01-000000000017" },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": { "connectionName": "shared_alex-5feasydo-5f5849d39a0feaf28d", "operationId": "DownloadEnvelope", "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f5849d39a0feaf28d" },
+                    "parameters": { "envelopeId": "@triggerOutputs()?['body/alex_externalenvelopeid']" },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Attach_the_envelope_package_to_the_record": {
+                  "runAfter": { "Download_the_envelope_package": [ "Succeeded" ] },
+                  "metadata": { "operationMetadataId": "e50b2c00-0018-4a10-9c01-000000000018" },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": { "connectionName": "shared_commondataserviceforapps", "operationId": "PerformUnboundAction", "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps" },
+                    "parameters": {
+                      "actionName": "alex_AttachSignedPdf",
+                      "item/SignatureRequestId": "@triggerOutputs()?['body/alex_signaturerequestid']",
+                      "item/FileName": "@concat(triggerOutputs()?['body/alex_name'], '-envelope-signed.pdf')",
+                      "item/FileContent": "@base64(body('Download_the_envelope_package'))"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Attach_an_envelope_copy_for_the_agent": {
+                  "runAfter": { "Attach_the_envelope_package_to_the_record": [ "Succeeded" ] },
+                  "metadata": { "operationMetadataId": "e50b2c00-0019-4a10-9c01-000000000019" },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": { "connectionName": "shared_commondataserviceforapps", "operationId": "CreateRecord", "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps" },
+                    "parameters": {
+                      "entityName": "annotations",
+                      "item/subject": "Real-time signed copy | עותק חתום בזמן אמת",
+                      "item/filename": "@concat(triggerOutputs()?['body/alex_name'], '-envelope-signed.pdf')",
+                      "item/mimetype": "application/pdf",
+                      "item/isdocument": true,
+                      "item/documentbody": "@base64(body('Download_the_envelope_package'))",
+                      "item/objectid_alex_signaturerequest@odata.bind": "@concat('/alex_signaturerequests(', triggerOutputs()?['body/alex_signaturerequestid'], ')')"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "else": { "actions": {} }
+            },
+            "Close_the_envelope_real_time_session": {
+              "runAfter": { "Finalize_when_the_envelope_completed": [ "Succeeded", "Failed", "Skipped", "TimedOut" ] },
+              "metadata": { "operationMetadataId": "e50b2c00-001a-4a10-9c01-00000000001a" },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": { "connectionName": "shared_commondataserviceforapps", "operationId": "UpdateRecord", "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps" },
+                "parameters": {
+                  "entityName": "alex_signaturerequests",
+                  "recordId": "@triggerOutputs()?['body/alex_signaturerequestid']",
+                  "item/alex_realtimesessionactive": false
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "else": { "actions": {} }
         }
       },
       "schemaVersion": "1.0.0.0"

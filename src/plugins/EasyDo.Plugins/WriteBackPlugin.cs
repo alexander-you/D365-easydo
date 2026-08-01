@@ -49,15 +49,42 @@ namespace EasyDo.Plugins
 
             var svc = local.PluginUserService;
             var request = svc.Retrieve("alex_signaturerequest", target.Id, new ColumnSet(
-                "alex_templateid", "alex_relatedcontactid", "alex_primaryrecordid"));
+                "alex_templateid", "alex_relatedcontactid", "alex_primaryrecordid", "alex_ismultidocument"));
+
+            var relatedContact = request.GetAttributeValue<EntityReference>("alex_relatedcontactid");
+            var primaryRecordId = request.GetAttributeValue<string>("alex_primaryrecordid");
+            var converter = new ValueConverter(svc, trace);
+
+            // Envelope: write back each bundle document independently, using its own
+            // template's mappings and the read-back rows scoped to that document.
+            if (request.GetAttributeValue<bool>("alex_ismultidocument"))
+            {
+                var items = LoadEnvelopeItems(svc, trace, target.Id);
+                if (items.Count == 0) { trace.Trace("Envelope has no document items; nothing to write back."); return; }
+                foreach (var memberTemplateRef in items)
+                {
+                    WriteBackForTemplate(svc, trace, converter, target.Id, memberTemplateRef,
+                        memberTemplateRef.Id, primaryRecordId, relatedContact);
+                }
+                return;
+            }
 
             var templateRef = request.GetAttributeValue<EntityReference>("alex_templateid");
             if (templateRef == null) { trace.Trace("Request has no template; abort."); return; }
+            WriteBackForTemplate(svc, trace, converter, target.Id, templateRef,
+                Guid.Empty, primaryRecordId, relatedContact);
+        }
 
+        // Write back the read-back answers for a single template (a classic request
+        // template, or one document of an envelope). When scopedTemplateId is set the
+        // read-back rows are filtered to that bundle document.
+        private static void WriteBackForTemplate(
+            IOrganizationService svc, ITracingService trace, ValueConverter converter,
+            Guid requestId, EntityReference templateRef, Guid scopedTemplateId,
+            string primaryRecordId, EntityReference relatedContact)
+        {
             var template = svc.Retrieve("alex_signaturetemplate", templateRef.Id, new ColumnSet("alex_primarytable"));
             var primaryTable = template.GetAttributeValue<string>("alex_primarytable");
-            var primaryRecordId = request.GetAttributeValue<string>("alex_primaryrecordid");
-            var relatedContact = request.GetAttributeValue<EntityReference>("alex_relatedcontactid");
 
             EntityReference primary = null;
             if (!string.IsNullOrEmpty(primaryTable) && Guid.TryParse(primaryRecordId, out var prid))
@@ -70,11 +97,10 @@ namespace EasyDo.Plugins
                 primary = relatedContact;
 
             // Map of easydo field name -> recipient answer (ReadBack values).
-            var answers = LoadReadBackValues(svc, target.Id);
-            if (answers.Count == 0) { trace.Trace("No read-back values found; nothing to write."); return; }
+            var answers = LoadReadBackValues(svc, requestId, scopedTemplateId);
+            if (answers.Count == 0) { trace.Trace("No read-back values for template {0}; nothing to write.", templateRef.Id); return; }
 
             var mappings = MappingReader.ForTemplate(svc, templateRef.Id);
-            var converter = new ValueConverter(svc, trace);
             var primaryCache = new Dictionary<string, Entity>(StringComparer.OrdinalIgnoreCase);
             var pending = new Dictionary<string, Entity>(StringComparer.OrdinalIgnoreCase);
 
@@ -123,7 +149,34 @@ namespace EasyDo.Plugins
             }
         }
 
-        private static Dictionary<string, string> LoadReadBackValues(IOrganizationService svc, Guid requestId)
+        // The member document templates of an envelope request, one per item row.
+        private static List<EntityReference> LoadEnvelopeItems(IOrganizationService svc, ITracingService trace, Guid requestId)
+        {
+            var list = new List<EntityReference>();
+            try
+            {
+                var q = new QueryExpression("alex_signaturerequestitem")
+                {
+                    ColumnSet = new ColumnSet("alex_templateid"),
+                    NoLock = true,
+                    Criteria = new FilterExpression()
+                };
+                q.Criteria.AddCondition("alex_signaturerequestid", ConditionOperator.Equal, requestId);
+                q.AddOrder("alex_sequence", OrderType.Ascending);
+                foreach (var e in svc.RetrieveMultiple(q).Entities)
+                {
+                    var t = e.GetAttributeValue<EntityReference>("alex_templateid");
+                    if (t != null) list.Add(t);
+                }
+            }
+            catch (Exception ex)
+            {
+                trace.Trace("LoadEnvelopeItems failed: {0}", ex.Message);
+            }
+            return list;
+        }
+
+        private static Dictionary<string, string> LoadReadBackValues(IOrganizationService svc, Guid requestId, Guid scopedTemplateId)
         {
             var q = new QueryExpression("alex_signaturefieldvalue")
             {
@@ -132,6 +185,9 @@ namespace EasyDo.Plugins
             };
             q.Criteria.AddCondition("alex_signaturerequestid", ConditionOperator.Equal, requestId);
             q.Criteria.AddCondition("alex_direction", ConditionOperator.Equal, Direction.ReadBack);
+            // Envelope mode: only the read-back rows for this bundle document.
+            if (scopedTemplateId != Guid.Empty)
+                q.Criteria.AddCondition("alex_templateid", ConditionOperator.Equal, scopedTemplateId);
 
             var byField = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var e in svc.RetrieveMultiple(q).Entities)

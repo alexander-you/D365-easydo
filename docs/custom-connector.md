@@ -176,6 +176,70 @@ flowchart LR
   is accepted — `POST` returns 405)*. To remove a draft entirely use
   `DELETE /entity/me/forms/{id}` *(route verified live)*.
 
+## Envelope actions (2.0.0.0) | פעולות מעטפה
+
+> **מעטפה** מאגדת כמה מסמכים לחבילת חתימה אחת. פעולות אלו מנהלות גם את **הגדרת** המעטפה
+> (אילו מסמכים מרכיבים אותה) וגם את **המופע ששלחנו** (חתימה בפועל). כל הפעולות חדשות
+> בגרסה 2.0.0.0.
+
+### 10. Get Envelope Templates
+- **Purpose**: List easydo **envelope** templates (multi-document bundles), to sync
+  into `alex_signaturetemplate` (with `alex_isenvelope = true`) + `alex_envelopetemplateitem`.
+- **Caller**: Flow (template sync).
+- **Returns**: DataTables `data[]` where each item is `is_template = true`.
+- **HTTP**: `GET /entity/me/envelopes`.
+
+### 11. Create Envelope
+- **Purpose**: Create a **draft** envelope (compose members, no send).
+- **Caller**: Flow / Envelope Composition PCF ("Save to easydo").
+- **User sees / enters**: envelope `title` and the ordered member templates.
+- **Returns**: new envelope id + combined `fill_url`.
+- **HTTP**: `POST /entity/me/envelopes` — body `title` (required), `templates[]` (`id` per member).
+
+### 12. Get Envelope
+- **Purpose**: Read an envelope's composition (**template**) or live status (**sent instance**).
+- **Caller**: Flow (real-time poll, member sync).
+- **Returns**: `id`, `title`, `status`; for a template — `templates[]` (members + roles);
+  for a sent instance — `forms[]` (**per-document** `status` + `assignees[]`, i.e. the
+  live signed / declined / pending signal that drives the real-time panel).
+- **HTTP**: `GET /entity/me/envelopes/{envelopeId}`.
+
+### 13. Update Envelope
+- **Purpose**: Update an envelope **template** (settings + composition).
+- **Caller**: Envelope Composition PCF ("Save to easydo").
+- **User sees / enters**: `title`, `auth_method`, custom message, notify options, and the
+  full member list with per-member roles/assignees.
+- **HTTP**: `PUT /entity/me/envelopes/{envelopeId}`.
+
+### 14. Send Envelope
+- **Purpose**: Create **and** send an envelope in one call.
+- **Caller**: Flow (from the send wizard, when the template is an envelope).
+- **User sees / enters**: the main `recipient` (name + email), extra roles per member,
+  optional `pin`, optional `auth_method` (`pin` / `otp`).
+- **Returns**: the new **sent** envelope instance `id` (GUID).
+- **HTTP**: `POST /entity/me/envelopes/{envelopeId}/send`.
+
+### 15. Download Envelope
+- **Purpose**: Download the **combined** signed PDF of a completed envelope.
+- **Caller**: Flow (real-time finalize / read-back).
+- **HTTP**: `GET /entity/me/envelopes/{envelopeId}/download`.
+
+### 16. Delete Envelope
+- **Purpose**: Delete an envelope (template or sent instance).
+- **HTTP**: `DELETE /entity/me/envelopes/{envelopeId}`.
+
+## Recipient authentication (2.0.0.0) | אימות נמען
+
+> תבנית יכולה לדרוש מהחותם **לאמת את עצמו** לפני החתימה. האימות מועבר ל-easydo דרך שדה
+> `auth_method` בפעולות השליחה, וה-PIN דרך `pin`.
+
+- **`SendTemplate`** gained **`auth_method`** — enum `''` (None) / `pin` / `otp` (SMS OTP).
+- **`SendEnvelope`** carries **`auth_method`** and **`pin`** for the whole envelope.
+- **`UpdateEnvelope`** carries **`auth_method`** on the envelope template.
+- The **effective** method/PIN applied to a request is stored on
+  `alex_signaturerequest.alex_effectiveauthmethod` / `alex_effectivepin` (see
+  [data-model.md](data-model.md)).
+
 ---
 
 ## How the actions compose (send flow)

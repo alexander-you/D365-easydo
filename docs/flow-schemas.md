@@ -114,3 +114,64 @@ flowchart TD
    `sequence`, וזה שביר.
 3. **הלוגיקה "איזה איש קשר = איזה תפקיד" חיה מחוץ ל‑easydo** — צריך למפות זאת ב‑D365 ולהבטיח התאמה
    לפי sequence בזמן ריצה.
+
+---
+
+## סכימה ה' — שליחת מעטפה רב‑מסמכית (2.0.0.0)
+
+**מעטפה** מאגדת כמה מסמכים לחבילת חתימה אחת. שולחים ב‑`SendEnvelope` יחיד, ולכל מסמך נוצרת שורת
+`alex_signaturerequestitem` עם סטטוס וקישור חתימה משלה.
+
+```mermaid
+flowchart TD
+    A["טריגר: בקשה עם תבנית שהיא מעטפה<br/>(alex_isenvelope = true)"] --> B["easydo: SendEnvelope<br/>recipient + auth_method + templates[]"]
+    B --> C["שמירת alex_externalenvelopeid + סטטוס 'נשלח'"]
+    C --> D["יצירת שורת פריט לכל מסמך<br/>alex_signaturerequestitem (sequence, itemstatus)"]
+    D --> E["פאנל / זרימת polling עוקבים פר‑מסמך"]
+    style B fill:#2b7,stroke:#063,color:#fff
+```
+
+---
+
+## סכימה ו' — מעקב מעטפה בזמן אמת (2.0.0.0)
+
+זרימת ה‑polling מזהה מעטפה (יש `alex_externalenvelopeid`, אין `alex_externalformid`), מושכת
+`GetEnvelope` ומעדכנת כל מסמך בנפרד עד שכולם נחתמו — ואז מורידה את החבילה המאוחדת.
+
+```mermaid
+flowchart TD
+    T["טריגר: alex_realtimesessionactive = true"] --> Q{"מעטפה?<br/>externalenvelopeid קיים"}
+    Q -->|כן| L["Until: easydo GetEnvelope"]
+    L --> U1["עדכון כל alex_signaturerequestitem<br/>נחתם / נדחה / ממתין"]
+    U1 --> U2["עדכון alex_status של הבקשה<br/>נשלח → נצפה → הושלם / נדחה"]
+    U2 --> C{"כל המסמכים נחתמו?"}
+    C -->|לא| L
+    C -->|כן| R["קריאה חזרה של השדות מכל מסמך"]
+    R --> D["easydo: DownloadEnvelope (PDF מאוחד)"]
+    D --> A["צירוף לרשומה + סגירת הסשן"]
+    style L fill:#37c,stroke:#036,color:#fff
+    style D fill:#37c,stroke:#036,color:#fff
+```
+
+מימוש אמיתי: [src/flows/realtime-session-poll.flow.json](../src/flows/realtime-session-poll.flow.json).
+
+---
+
+## סכימה ז' — בדיקת סטטוס לפי דרישה (2.0.0.0)
+
+במקום להמתין למחזור ה‑5 דקות, פקד המסמכים חותם `alex_statuscheckrequestedon` — וזה מפעיל זרימה
+שמרעננת מיד את הסטטוס מ‑easydo.
+
+```mermaid
+flowchart TD
+    A["משתמש לוחץ 'בדיקת סטטוס' בפקד המסמכים"] --> B["עדכון alex_statuscheckrequestedon"]
+    B --> C["טריגר: שינוי בעמודה זו<br/>(Check Signature Status flow)"]
+    C --> D["easydo: GetFormStatus"]
+    D --> E["עדכון alex_status + alex_lastviewedon + alex_statuschecklastrunon"]
+    E --> F{"has_data = true?"}
+    F -->|כן| G["קריאה חזרה + הורדת PDF + צירוף לרשומה"]
+    F -->|לא| H["שמירת התוצאה ב-alex_statuscheckstatus"]
+    style D fill:#37c,stroke:#036,color:#fff
+```
+
+מימוש אמיתי: [src/flows/check-signature-status.flow.json](../src/flows/check-signature-status.flow.json).

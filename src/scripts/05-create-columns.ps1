@@ -33,9 +33,6 @@ Add-DVColumn $t (New-DVBool -Schema "alex_SupportsPreview" -En "Supports Preview
 Add-DVColumn $t (New-DVBool -Schema "alex_SupportsMultipleSigners" -En "Supports Multiple Signers" -He "תומך במספר חותמים" `
     -DescEn "Indicates whether this template allows more than one recipient to sign." `
     -DescHe "מציין האם תבנית זו מאפשרת ליותר מנמען אחד לחתום.")
-Add-DVColumn $t (New-DVString -Schema "alex_TemplateVersion" -En "Template Version" -He "גרסת תבנית" -MaxLength 50 `
-    -DescEn "Version label of the template as defined in easydo, for change tracking." `
-    -DescHe "תווית גרסה של התבנית כפי שהוגדרה ב-easydo, למעקב אחר שינויים.")
 Add-DVColumn $t (New-DVMemo -Schema "alex_TemplateSummary" -En "Description" -He "תיאור" -MaxLength 2000 `
     -DescEn "Business description of what this template is for and when to use it." `
     -DescHe "תיאור עסקי של מטרת התבנית ומתי להשתמש בה.")

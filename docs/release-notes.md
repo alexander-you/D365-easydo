@@ -4,6 +4,165 @@
 
 All notable changes to this project are documented here.
 
+## [2.0.0.0] — envelopes (multi-document packages), recipient authentication (PIN/OTP), template gallery & on-demand status (2026-08-01)
+
+> **Major release.** This version turns the solution from single-document signing into a
+> full **multi-document envelope** platform, adds **recipient authentication** (PIN / OTP),
+> a redesigned **Template Gallery** and **Documents** experience, real-time signing for
+> envelopes, and on-demand status refresh. Two new tables, seven new connector operations,
+> two new PCF controls and one new flow. Managed **and** unmanaged packages shipped.
+>
+> **גרסה מרכזית.** גרסה זו הופכת את הפתרון מחתימה על מסמך בודד ל**מעטפות רב‑מסמכיות**
+> מלאות, מוסיפה **אימות נמען** (PIN / OTP), גלריית תבניות ומסך מסמכים מחודשים, חתימה בזמן
+> אמת למעטפות, ורענון סטטוס לפי דרישה. שתי טבלאות חדשות, שבע פעולות קונקטור, שני פקדי PCF
+> וזרימה אחת חדשה. נשלחו חבילות מנוהלת **וגם** לא‑מנוהלת.
+
+### Added — Envelopes (multi-document packages) | מעטפות
+
+- **Send several documents as one signing package.** A template can now be an
+  **envelope** (`alex_signaturetemplate.alex_isenvelope = true`) that bundles several
+  document templates. The composition is defined by the new
+  **`alex_envelopetemplateitem`** table (one row per member document: name, order,
+  external template id, default role), kept in sync from easydo.
+- **Two new tables.**
+  - **`alex_envelopetemplateitem`** — the envelope **definition** (which documents make
+    up an envelope template), created by
+    [45/46 scripts](../src/scripts/46-create-envelope-template-item-table.ps1) and
+    populated by [51-sync-envelope-members.ps1](../src/scripts/51-sync-envelope-members.ps1)
+    and the template-sync flows.
+  - **`alex_signaturerequestitem`** — the **runtime** per-document row inside a sent
+    envelope (sequence, `alex_externalformid`, `alex_fillurl`, `alex_itemstatus`,
+    `alex_signedon`), created by
+    [45-create-envelope-item-table.ps1](../src/scripts/45-create-envelope-item-table.ps1)
+    with a read-only form and two views
+    ([57-create-item-form.ps1](../src/scripts/57-create-item-form.ps1)).
+- **Per-document status choice.** New global choice **`alex_envelopeitemstatus`**:
+  Pending (626220000), Waiting For Signature (626220001), Signed (626220002),
+  Declined (626220003), Expired (626220004), Error (626220005).
+- **Envelope columns on the request/template.** `alex_signaturerequest` gained
+  `alex_ismultidocument`, `alex_externalenvelopeid`, `alex_envelopefillurl`;
+  `alex_signaturetemplate` gained `alex_isenvelope` and `alex_envelopehost` (the anchor
+  for the Envelope Composition PCF); `alex_signaturefieldvalue` gained an
+  `alex_templateid` lookup so read-back values are attributed to the **right member
+  document** in an envelope.
+- **Envelope Composition PCF + tab.** New field-type control
+  ([src/pcf-envelope/](../src/pcf-envelope/)) hosted on a dedicated **envelope** tab of
+  the template form; [50-place-envelope-pcf-and-tabs.ps1](../src/scripts/50-place-envelope-pcf-and-tabs.ps1)
+  and [envelopeTabToggle.js](../src/webresources/envelopeTabToggle.js) show exactly one
+  tab (document mapping **or** envelope composition) based on `alex_isenvelope`.
+- **Seven new connector operations.** `GetEnvelopeTemplates`, `CreateEnvelope`,
+  `GetEnvelope`, `UpdateEnvelope`, `DeleteEnvelope`, `SendEnvelope`, `DownloadEnvelope`
+  (see [custom-connector.md](custom-connector.md)).
+
+> **בעברית.** אפשר עכשיו לשלוח **כמה מסמכים כחבילת חתימה אחת (מעטפה)**. תבנית יכולה להיות
+> **מעטפה** שמאגדת כמה תבניות מסמך. נוספו שתי טבלאות: **`alex_envelopetemplateitem`**
+> (הגדרת המעטפה — אילו מסמכים מרכיבים אותה) ו**`alex_signaturerequestitem`** (שורת ריצה
+> לכל מסמך בתוך מעטפה שנשלחה, עם סטטוס וקישור חתימה פר‑מסמך). נוסף מצב פר‑מסמך
+> (`alex_envelopeitemstatus`), עמודות מעטפה על הבקשה/התבנית, ופקד **הרכב מעטפה** (PCF)
+> בטאב ייעודי שמתחלף אוטומטית לפי אם התבנית היא מעטפה. בקונקטור נוספו **שבע פעולות מעטפה**.
+
+### Added — Recipient authentication: PIN & OTP | אימות נמען
+
+- **Templates can require the signer to authenticate.** New authentication settings on
+  `alex_signaturetemplate` ([47](../src/scripts/47-add-template-auth-columns.ps1),
+  [54](../src/scripts/54-add-otp-columns.ps1)): **authentication method**
+  (`alex_authmethod` — None / PIN / OTP-SMS), **PIN mode** (`alex_pinmode` — No PIN /
+  Fixed PIN / Variable PIN from a field), fixed `alex_pinvalue`, `alex_pinsourcefield`,
+  `alex_otpphonesource`, and per-send override switches
+  (`alex_pinallowsendoverride`, `alex_otpallowsendoverride`).
+- **The effective value is stamped on each request.** New
+  `alex_signaturerequest.alex_effectiveauthmethod` and `alex_effectivepin`
+  ([48](../src/scripts/48-add-request-effective-auth-columns.ps1)) record exactly what
+  authentication was applied for that send.
+- **Connector supports it end-to-end.** `SendTemplate`, `SendEnvelope` and
+  `UpdateEnvelope` gained an `auth_method` field (`''` / `pin` / `otp`) plus `pin`.
+
+> **בעברית.** תבנית יכולה עכשיו **לדרוש מהחותם לאמת את עצמו**: שיטת אימות (ללא / PIN /
+> OTP ב‑SMS), מצב PIN (ללא / קבוע / משתנה משדה), ערך/שדה מקור ל‑PIN וטלפון ל‑OTP, ומתגי
+> **דריסה לכל שליחה**. הערך שהוחל בפועל נחתם על הבקשה (`alex_effectiveauthmethod`,
+> `alex_effectivepin`). הקונקטור תומך בכך מקצה לקצה דרך שדה `auth_method` בפעולות השליחה.
+
+### Added — Template Gallery & Documents experience | גלריית תבניות ומסך מסמכים
+
+- **Template Gallery PCF.** A new Apple-style **card gallery**
+  ([src/pcf-template-gallery/](../src/pcf-template-gallery/), `EasyDoTemplateGallery`)
+  replaces the flat template list: cards distinguish **envelope** vs single **document**,
+  show an active/inactive/deleted status pill and the primary table, with toolbar filters,
+  live search, sort and an animated side panel (sync / binding / auth / roles / members).
+- **Documents grid + on-demand status check.** The Documents PCF
+  ([src/pcf-documents/](../src/pcf-documents/)) gained a **"Check status"** action that
+  stamps `alex_statuscheckrequestedon`, triggering the new **Check Signature Status**
+  flow to re-poll easydo immediately instead of waiting for the 5-minute cycle. Backing
+  columns `alex_statuscheckrequestedon` / `alex_statuschecklastrunon` /
+  `alex_statuscheckstatus` ([56](../src/scripts/56-add-statuscheck-columns.ps1)).
+- **Document viewer** enhancements for envelopes and per-document state.
+
+> **בעברית.** נוספה **גלריית תבניות** (PCF בסגנון כרטיסיות) שמחליפה את הרשימה השטוחה —
+> מבחינה בין מעטפה למסמך בודד, מציגה סטטוס וטבלה ראשית, עם סינון/חיפוש/מיון ופאנל צדדי
+> מונפש. פקד **המסמכים** קיבל פעולת **"בדיקת סטטוס"** לפי דרישה, שמפעילה מיד את זרימת
+> **Check Signature Status** במקום להמתין למחזור ה‑5 דקות.
+
+### Added — Real-time signing for envelopes | חתימה בזמן אמת למעטפות
+
+- **The live signing panel now understands envelopes.** When an envelope is sent in
+  real-time mode, [realtimeSession.html](../src/webresources/realtimeSession.html) shows a
+  **per-document checklist** with live Signed / Declined / Pending indicators, and loads
+  the **combined signed PDF** once every document is complete.
+- **The poll flow handles envelope sessions.** A new additive branch in
+  [realtime-session-poll.flow.json](../src/flows/realtime-session-poll.flow.json) polls
+  `GetEnvelope`, updates each `alex_signaturerequestitem`, lights the request status
+  (Sent → Viewed → Completed / Declined), reads back all member fields, downloads the
+  package via `DownloadEnvelope` and attaches it to the business record.
+
+> **בעברית.** פאנל החתימה החי **מזהה עכשיו מעטפות**: מוצגת **רשימת מסמכים** עם חיווי חי
+> נחתם / נדחה / ממתין, וה‑PDF המאוחד נטען עם סיום כל המסמכים. זרימת ה‑polling קיבלה ענף
+> ייעודי למעטפות שמעדכן כל פריט, מדליק את הסטטוס, קורא חזרה את השדות ומצרף את החבילה
+> החתומה לרשומה העסקית.
+
+### Added — Copy-link governance | ממשל העתקת קישור
+
+- **Control whether agents may copy a raw signing link.** New global switch
+  `alex_easydosettings.alex_allowcopylink` and per-template override
+  `alex_signaturetemplate.alex_copylinkmode` (Inherit / Allow / Block)
+  ([60](../src/scripts/60-add-copylink-columns.ps1)); the Admin Center settings drawer
+  exposes the global default.
+
+> **בעברית.** נוסף ממשל **העתקת קישור חתימה**: מתג גלובלי (`alex_allowcopylink`) ודריסה
+> פר‑תבנית (`alex_copylinkmode` — ברירת מחדל / מותר / חסום), עם מתג במרכז הניהול.
+
+### Changed | שינויים
+
+- **Admin Center refresh.** Connections + required flows merged into one health card with
+  an inline progress bar and an overall status pill; a separate **optional flows** card
+  (copy/SharePoint flows) that does **not** gate readiness; flows are now discovered live
+  from the solution instead of a hard-coded list.
+- **Read-only main forms + bilingual associated views.** All nine data tables now render
+  their main form **read-only** (records are system-maintained), and each table's
+  associated view was rebuilt with meaningful columns and a bilingual name
+  ([59-lockdown-forms-and-assoc-views.ps1](../src/scripts/59-lockdown-forms-and-assoc-views.ps1)).
+- **Template soft-delete.** Templates removed from easydo are deactivated with a new
+  **Deleted** status reason (`626210000`) instead of being hard-deleted
+  ([55](../src/scripts/55-add-template-deleted-status.ps1)); the gallery shows a red
+  *deleted* pill.
+
+> **בעברית.** **מרכז הניהול** רוענן (כרטיס תקינות אחד, זרימות אופציונליות שאינן חוסמות,
+> גילוי זרימות חי). כל **תשעת** הטפסים הראשיים הם עכשיו **לקריאה בלבד** והתצוגות המשויכות
+> נבנו מחדש עם שמות דו‑לשוניים. תבניות שנמחקו ב‑easydo מושבתות עם סיבת סטטוס **נמחק**
+> במקום מחיקה קשיחה, והגלריה מציגה תווית אדומה.
+
+### Fixed | תוקן
+
+- **Envelope name showed a GUID.** Envelope requests now resolve the envelope
+  template's real name (via `WizardIntakePlugin.ResolveTemplate`) instead of
+  `easydo - <guid>`.
+- **Real-time panel RTL layout.** The progress-rail connector line and a stray white side
+  strip were an RTL bug in [realtimeSession.html](../src/webresources/realtimeSession.html)
+  (`.edo-rt-line` drawn on the wrong physical side); fixed with an RTL-specific rule plus
+  `overflow` clipping.
+
+> **בעברית.** **שם המעטפה** הציג GUID — עכשיו נפתר לשם התבנית האמיתי. תוקן באג **RTL**
+> בפאנל בזמן אמת (קו המחבר בפס ההתקדמות ורצועה לבנה בצד).
+
 ## [1.3.0.0] — document validity / expiry (auto-cancel overdue signature requests) (2026-07-30)
 
 ### Added

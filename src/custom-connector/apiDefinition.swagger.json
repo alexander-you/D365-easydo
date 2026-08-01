@@ -453,6 +453,24 @@
                       }
                     }
                   }
+                },
+                "pin": {
+                  "type": "string",
+                  "x-ms-summary": "קוד PIN | PIN",
+                  "description": "Optional PIN the recipient must enter before signing. Applied per request (does not change the shared template). | קוד PIN אופציונלי שהנמען חייב להזין לפני החתימה. מוחל ברמת הבקשה (אינו משנה את התבנית המשותפת)."
+                },
+                "auth_method": {
+                  "type": "string",
+                  "x-ms-summary": "שיטת אימות | Authentication method",
+                  "description": "Optional recipient authentication method before signing. 'pin' requires a PIN; 'otp' sends a one-time SMS code. | שיטת אימות הנמען לפני החתימה (אופציונלי). 'pin' דורש קוד PIN; 'otp' שולח קוד חד-פעמי ב-SMS.",
+                  "enum": [
+                    "pin",
+                    "otp"
+                  ],
+                  "x-ms-enum-display-name": [
+                    "PIN",
+                    "OTP (SMS)"
+                  ]
                 }
               },
               "required": [
@@ -1105,6 +1123,622 @@
         "responses": {
           "200": {
             "description": "OK"
+          }
+        }
+      }
+    },
+    "/entity/me/envelopes": {
+      "get": {
+        "operationId": "GetEnvelopeTemplates",
+        "summary": "Get envelope templates | אחזור תבניות מעטפה",
+        "description": "List envelope templates (multi-document bundles). An envelope groups several documents so one recipient signs them all with a single link and gets one combined PDF. Returns a DataTables envelope; read the data array (each item is a template with is_template=true). | מחזיר את רשימת תבניות המעטפה (חבילות מרובות-מסמכים). מעטפה מקבצת כמה מסמכים כך שנמען אחד חותם על כולם בקישור אחד ומקבל PDF מאוחד. התוצאה במבנה DataTables — קרא את מערך data (כל פריט הוא תבנית עם is_template=true).",
+        "parameters": [
+          {
+            "name": "draw",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 1,
+            "x-ms-summary": "מונה | Counter",
+            "description": "DataTables draw counter — leave the default value. | מונה בקשה של DataTables — השאר את ברירת המחדל."
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 0,
+            "x-ms-summary": "היסט | Offset",
+            "description": "Index of the first record to return (paging). | האינדקס של הרשומה הראשונה להחזרה (דפדוף)."
+          },
+          {
+            "name": "length",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 25,
+            "x-ms-summary": "עמוד | Page",
+            "description": "Number of records to return per page. | מספר הרשומות להחזרה בכל עמוד."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "operationId": "CreateEnvelope",
+        "summary": "Create draft envelope | יצירת טיוטת מעטפה",
+        "description": "Create a DRAFT multi-document envelope from a title and a list of member templates, without sending it. No notification is sent. Use this when you want to build the bundle and preview it before sending. Returns the new envelope instance id and its combined fill_url. To create AND send in one call, use 'Send envelope' instead. | יוצר טיוטת מעטפה מרובת-מסמכים משם ומרשימת תבניות חברות, בלי לשלוח. לא נשלחת התראה. מתאים לבניית החבילה ותצוגה מקדימה לפני שליחה. מחזיר את מזהה מופע המעטפה החדש ואת קישור המילוי המאוחד. ליצירה ושליחה בפעולה אחת, השתמש ב'שליחת מעטפה'.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "x-ms-summary": "כותרת | Title",
+                  "description": "The envelope title shown to the recipient. | כותרת המעטפה המוצגת לנמען."
+                },
+                "templates": {
+                  "type": "array",
+                  "x-ms-summary": "מסמכים | Documents",
+                  "description": "The member templates (documents) to include in the bundle, in signing order. | תבניות החברות (המסמכים) לכלול בחבילה, לפי סדר החתימה.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "x-ms-summary": "מזהה מסמך | Document id",
+                        "description": "The member template id (a document inside the bundle). | מזהה תבנית החבר (מסמך בתוך החבילה)."
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "title"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/entity/me/envelopes/{envelopeId}": {
+      "get": {
+        "operationId": "GetEnvelope",
+        "summary": "Get envelope detail / status | אחזור פרטי / סטטוס מעטפה",
+        "description": "Get one envelope by id. For an envelope TEMPLATE it returns its member templates and their signer roles. For a SENT instance it returns the combined fill_url and the forms array — one form per document with its own status and per-role assignees. Used to poll a sent envelope until every document is signed. | מחזיר מעטפה אחת לפי מזהה. עבור תבנית מעטפה מוחזרות תבניות החברות ובעלי התפקידים שלהן. עבור מופע שנשלח מוחזרים קישור המילוי המאוחד ומערך הטפסים — טופס אחד לכל מסמך עם הסטטוס שלו ועם הנמענים לפי תפקיד. משמש למעקב אחר מעטפה שנשלחה עד שכל מסמך נחתם.",
+        "parameters": [
+          {
+            "name": "envelopeId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "מזהה מעטפה | Envelope id",
+            "description": "The easydo envelope id — a template id (to inspect members/roles) or a sent instance id (to poll status). | מזהה המעטפה ב-easydo — מזהה תבנית (לבדיקת חברים/תפקידים) או מזהה מופע שנשלח (למעקב סטטוס)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "x-ms-summary": "מזהה | ID",
+                  "description": "The envelope id (GUID). | מזהה המעטפה (GUID)."
+                },
+                "title": {
+                  "type": "string",
+                  "x-ms-summary": "כותרת | Title",
+                  "description": "The envelope title. | כותרת המעטפה."
+                },
+                "is_template": {
+                  "type": "boolean",
+                  "x-ms-summary": "תבנית | Is template",
+                  "description": "True for an envelope template, false for a sent instance. | אמת עבור תבנית מעטפה, שקר עבור מופע שנשלח."
+                },
+                "status": {
+                  "type": "string",
+                  "x-ms-summary": "סטטוס | Status",
+                  "description": "Overall envelope status. Observed: in-progress (waiting for signatures), completed. | סטטוס כללי של המעטפה. נצפו: in-progress (ממתין לחתימות), completed (הושלם)."
+                },
+                "slug": {
+                  "type": "string",
+                  "x-ms-summary": "מזהה ייחודי | Slug",
+                  "description": "The envelope slug. | מזהה ה-slug של המעטפה."
+                },
+                "fill_url": {
+                  "type": "string",
+                  "x-ms-summary": "קישור חתימה מאוחד | Combined signing link",
+                  "description": "The single link that opens the whole bundle for the recipient. | הקישור היחיד הפותח את כל החבילה עבור הנמען."
+                },
+                "forms": {
+                  "type": "array",
+                  "x-ms-summary": "מסמכים | Documents",
+                  "description": "One entry per document in the sent bundle. Loop over it to read each document's status and signers. | רשומה אחת לכל מסמך בחבילה שנשלחה. עברו על המערך כדי לקרוא את הסטטוס והחותמים של כל מסמך.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "x-ms-summary": "מזהה טופס | Form id",
+                        "description": "The easydo form id of this document. | מזהה טופס easydo של מסמך זה."
+                      },
+                      "template_id": {
+                        "type": "integer",
+                        "x-ms-summary": "מזהה תבנית | Template id",
+                        "description": "The member template id this document was produced from. | מזהה תבנית החבר שממנה נוצר המסמך."
+                      },
+                      "name": {
+                        "type": "string",
+                        "x-ms-summary": "שם | Name",
+                        "description": "The document name. | שם המסמך."
+                      },
+                      "status": {
+                        "type": "string",
+                        "x-ms-summary": "סטטוס מסמך | Document status",
+                        "description": "Per-document status. Observed: waiting, signed, decline. | סטטוס המסמך. נצפו: waiting, signed, decline."
+                      },
+                      "sequence": {
+                        "type": "integer",
+                        "x-ms-summary": "סדר | Sequence",
+                        "description": "The signing order of this document in the bundle. | סדר החתימה של מסמך זה בחבילה."
+                      },
+                      "step_id": {
+                        "type": "string",
+                        "x-ms-summary": "מזהה שלב | Step id",
+                        "description": "The easydo workflow step id for this document. | מזהה שלב זרימת העבודה ב-easydo עבור מסמך זה."
+                      },
+                      "template_slug": {
+                        "type": "string",
+                        "x-ms-summary": "slug תבנית | Template slug",
+                        "description": "The slug of the source member template. | ה-slug של תבנית החבר המקורית."
+                      },
+                      "assignees": {
+                        "type": "array",
+                        "x-ms-summary": "חותמים | Signers",
+                        "description": "The signers of this document, one per role. | החותמים על מסמך זה, אחד לכל תפקיד.",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "template_role_id": {
+                              "type": "integer",
+                              "x-ms-summary": "מזהה תפקיד | Role id",
+                              "description": "The signer role (1 = main signer). | תפקיד החותם (1 = החותם הראשי)."
+                            },
+                            "sequence": {
+                              "type": "integer",
+                              "x-ms-summary": "סדר חתימה | Signing sequence",
+                              "description": "The order this role signs within the document. | הסדר שבו תפקיד זה חותם בתוך המסמך."
+                            },
+                            "main": {
+                              "type": "boolean",
+                              "x-ms-summary": "חותם ראשי | Main signer",
+                              "description": "True for the primary signer of the bundle. | אמת עבור החותם הראשי של החבילה."
+                            },
+                            "status": {
+                              "type": "string",
+                              "x-ms-summary": "סטטוס חותם | Signer status",
+                              "description": "Per-role status. Observed: waiting, pending (queued behind an earlier role), signed, decline. | סטטוס לפי תפקיד. נצפו: waiting, pending (ממתין בתור מאחורי תפקיד קודם), signed, decline."
+                            },
+                            "name": {
+                              "type": "string",
+                              "x-ms-summary": "שם | Name",
+                              "description": "The signer name. | שם החותם."
+                            },
+                            "email": {
+                              "type": "string",
+                              "x-ms-summary": "דוא\"ל | Email",
+                              "description": "The signer email. | דוא\"ל החותם."
+                            },
+                            "fill_url": {
+                              "type": "string",
+                              "x-ms-summary": "קישור חתימה | Signing link",
+                              "description": "The per-signer link for this document. | קישור החתימה של חותם זה למסמך זה."
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "templates": {
+                  "type": "array",
+                  "x-ms-summary": "תבניות חברות | Member templates",
+                  "description": "For an envelope TEMPLATE: the member documents and their roles. Empty on a sent instance. | עבור תבנית מעטפה: מסמכי החברים והתפקידים שלהם. ריק במופע שנשלח.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "x-ms-summary": "מזהה מסמך | Document id",
+                        "description": "The member template id. | מזהה תבנית החבר."
+                      },
+                      "name": {
+                        "type": "string",
+                        "x-ms-summary": "שם | Name",
+                        "description": "The member document name. | שם מסמך החבר."
+                      },
+                      "sequence": {
+                        "type": "integer",
+                        "x-ms-summary": "סדר | Sequence",
+                        "description": "The signing order of this member (null = parallel). | סדר החתימה של חבר זה (null = במקביל)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "UpdateEnvelope",
+        "summary": "Update envelope template | עדכון תבנית מעטפה",
+        "description": "Update an envelope TEMPLATE's settings and composition. Send only the keys you want to change; omitted top-level keys are preserved. Always include the full templates array (all members) so the document composition is not lost. Used by the Envelope Composition control's 'Save to easydo' button. | מעדכן את ההגדרות וההרכב של תבנית מעטפה. שלח רק את המפתחות שברצונך לשנות; מפתחות עליונים שהושמטו נשמרים. תמיד כלול את מערך ה-templates המלא (כל החברים) כדי לא לאבד את הרכב המסמכים. משמש את כפתור 'שמור ל-easydo' בפקד הרכב המעטפה.",
+        "parameters": [
+          {
+            "name": "envelopeId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "מזהה תבנית מעטפה | Envelope template id",
+            "description": "The easydo envelope TEMPLATE id to update. | מזהה תבנית המעטפה ב-easydo לעדכון."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "x-ms-summary": "כותרת | Title",
+                  "description": "The envelope title. | כותרת המעטפה."
+                },
+                "pin": {
+                  "type": "string",
+                  "x-ms-summary": "קוד גישה | PIN",
+                  "description": "Recipient access PIN. Empty clears it. | קוד גישה לנמען. ריק מנקה אותו."
+                },
+                "auth_method": {
+                  "type": "string",
+                  "enum": [
+                    "",
+                    "pin",
+                    "otp"
+                  ],
+                  "x-ms-summary": "שיטת אימות | Auth method",
+                  "description": "Recipient authentication method: empty, 'pin' or 'otp'. | שיטת אימות הנמען: ריק, 'pin' או 'otp'."
+                },
+                "options": {
+                  "type": "object",
+                  "x-ms-summary": "אפשרויות | Options",
+                  "description": "Envelope-level notification options object, passed whole. When sent, the WHOLE options object is replaced — include every sub-key you want to keep. Shape: { custom_message: { he, en } (or \"\" to clear), notify_recipient: 'email'|'sms'|'whatsapp'|null, default_notify_notes: string }. custom_message MUST be a { he, en } object or the empty string — a plain non-empty string is rejected. | אובייקט אפשרויות התראה ברמת המעטפה, מועבר בשלמותו. בעת שליחה כל אובייקט ה-options מוחלף — כלול כל תת-מפתח שברצונך לשמר. מבנה: { custom_message: { he, en } (או \"\" לניקוי), notify_recipient: 'email'|'sms'|'whatsapp'|null, default_notify_notes: string }."
+                },
+                "templates": {
+                  "type": "array",
+                  "x-ms-summary": "מסמכים | Documents",
+                  "description": "The full member composition, in signing order. Include every member so none is dropped. | הרכב החברים המלא, לפי סדר החתימה. כלול כל חבר כדי שלא יימחק.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "x-ms-summary": "מזהה מסמך | Document id",
+                        "description": "The member template id. | מזהה תבנית החבר."
+                      },
+                      "sequence": {
+                        "type": "integer",
+                        "x-ms-summary": "סדר | Sequence",
+                        "description": "The signing order of this member (1..N; null = parallel). | סדר החתימה של חבר זה (1..N; null = במקביל)."
+                      },
+                      "assignees": {
+                        "type": "array",
+                        "x-ms-summary": "תפקידים | Roles",
+                        "description": "Extra signer roles for this member (role 2 and up). Omit for single-role members. | תפקידי חתימה נוספים לחבר זה (תפקיד 2 ומעלה). השמט עבור חברים עם תפקיד יחיד.",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "role_id": {
+                              "type": "integer",
+                              "x-ms-summary": "מזהה תפקיד | Role id",
+                              "description": "The signer role id. | מזהה תפקיד החותם."
+                            },
+                            "name": {
+                              "type": "string",
+                              "x-ms-summary": "שם | Name",
+                              "description": "Optional role display name. | שם תצוגה אופציונלי לתפקיד."
+                            },
+                            "email": {
+                              "type": "string",
+                              "x-ms-summary": "דוא\"ל | Email",
+                              "description": "Optional role email. | דוא\"ל אופציונלי לתפקיד."
+                            }
+                          },
+                          "required": [
+                            "role_id"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteEnvelope",
+        "summary": "Delete envelope | מחיקת מעטפה",
+        "description": "Delete an envelope template or a sent instance by id. Use to remove a draft or clean up a test envelope. | מוחק תבנית מעטפה או מופע שנשלח לפי מזהה. משמש להסרת טיוטה או לניקוי מעטפת בדיקה.",
+        "parameters": [
+          {
+            "name": "envelopeId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "מזהה מעטפה | Envelope id",
+            "description": "The easydo envelope id to delete. | מזהה המעטפה ב-easydo למחיקה."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/entity/me/envelopes/{envelopeId}/send": {
+      "post": {
+        "operationId": "SendEnvelope",
+        "summary": "Send envelope for signature | שליחת מעטפה לחתימה",
+        "description": "Create and send a multi-document envelope from an envelope template in one call. The recipient is the main signer (role 1) and receives a single combined link for the whole bundle. Add a templates entry ONLY for member documents that have extra signer roles (role 2 and up); single-role documents inherit the main recipient automatically. Signing is sequential by role sequence. | יוצר ושולח מעטפה מרובת-מסמכים מתבנית מעטפה בפעולה אחת. הנמען הוא החותם הראשי (תפקיד 1) ומקבל קישור מאוחד יחיד לכל החבילה. הוסף רשומת templates רק עבור מסמכים שיש להם תפקידי חתימה נוספים (תפקיד 2 ומעלה); מסמכים עם תפקיד יחיד יורשים אוטומטית את הנמען הראשי. החתימה מתבצעת לפי סדר התפקידים.",
+        "parameters": [
+          {
+            "name": "envelopeId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "תבנית מעטפה | Envelope template",
+            "description": "The envelope template to send. Pick from the list, or supply an envelope template id dynamically. | תבנית המעטפה לשליחה. בחר מהרשימה, או ספק מזהה תבנית מעטפה דינמית.",
+            "x-ms-dynamic-values": {
+              "operationId": "GetEnvelopeTemplates",
+              "parameters": {
+                "length": 100
+              },
+              "value-collection": "data",
+              "value-path": "id",
+              "value-title": "title"
+            }
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "recipient": {
+                  "type": "object",
+                  "x-ms-summary": "נמען ראשי | Main recipient",
+                  "description": "The main signer (role 1) of the whole envelope. Required. | החותם הראשי (תפקיד 1) של כל המעטפה. חובה.",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "x-ms-summary": "שם | Name",
+                      "description": "Recipient display name. | שם הנמען לתצוגה."
+                    },
+                    "email": {
+                      "type": "string",
+                      "x-ms-summary": "דוא\"ל | Email",
+                      "description": "Recipient email address. | כתובת הדוא\"ל של הנמען."
+                    },
+                    "phone": {
+                      "type": "string",
+                      "x-ms-summary": "טלפון | Phone",
+                      "description": "Recipient phone (optional, for SMS notification). | טלפון הנמען (אופציונלי, להתראת SMS)."
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "email"
+                  ]
+                },
+                "templates": {
+                  "type": "array",
+                  "x-ms-summary": "תפקידים נוספים | Extra roles",
+                  "description": "Only for member documents that have extra signer roles (role 2 and up). Each entry names the member document and the people who fill its additional roles. Documents with a single role need NO entry here. | רק עבור מסמכים שיש להם תפקידי חתימה נוספים (תפקיד 2 ומעלה). כל רשומה מציינת את מסמך החבר ואת האנשים הממלאים את תפקידיו הנוספים. מסמכים עם תפקיד יחיד אינם זקוקים לרשומה כאן.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "x-ms-summary": "מזהה מסמך | Document id",
+                        "description": "The member template id (the document that has the extra role). | מזהה תבנית החבר (המסמך בעל התפקיד הנוסף)."
+                      },
+                      "assignees": {
+                        "type": "array",
+                        "x-ms-summary": "חותמים נוספים | Extra signers",
+                        "description": "The people filling the additional roles (role_id 2 and up) on this document. | האנשים הממלאים את התפקידים הנוספים (role_id 2 ומעלה) במסמך זה.",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "role_id": {
+                              "type": "integer",
+                              "x-ms-summary": "מזהה תפקיד | Role id",
+                              "description": "The signer role number (2 = second role, 3 = third, ...). | מספר תפקיד החותם (2 = תפקיד שני, 3 = שלישי, ...)."
+                            },
+                            "name": {
+                              "type": "string",
+                              "x-ms-summary": "שם | Name",
+                              "description": "The signer name for this role. | שם החותם עבור תפקיד זה."
+                            },
+                            "email": {
+                              "type": "string",
+                              "x-ms-summary": "דוא\"ל | Email",
+                              "description": "The signer email for this role. | דוא\"ל החותם עבור תפקיד זה."
+                            },
+                            "phone": {
+                              "type": "string",
+                              "x-ms-summary": "טלפון | Phone",
+                              "description": "The signer phone for this role (optional). | טלפון החותם עבור תפקיד זה (אופציונלי)."
+                            }
+                          },
+                          "required": [
+                            "role_id"
+                          ]
+                        }
+                      },
+                      "prefill_data": {
+                        "type": "array",
+                        "x-ms-summary": "מילוי מקדים | Prefill",
+                        "description": "Optional values to pre-fill into THIS document's fields before the recipient opens the bundle. Each item targets a field by its technical name. Set read_only to lock a value that came from Dynamics 365. | ערכים אופציונליים למילוי מראש בשדות של מסמך זה לפני שהנמען פותח את החבילה. כל פריט מכוון לשדה לפי שמו הטכני. הגדר read_only כדי לנעול ערך שהגיע מ-Dynamics 365.",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "x-ms-summary": "שדה | Field",
+                              "description": "The field technical name to pre-fill. | השם הטכני של השדה למילוי מראש."
+                            },
+                            "content_value": {
+                              "type": "string",
+                              "x-ms-summary": "ערך | Value",
+                              "description": "The value to pre-fill. For a checkbox use 'checked' or 'unchecked'. | הערך למילוי מראש. עבור תיבת סימון השתמש ב-'checked' או 'unchecked'."
+                            },
+                            "read_only": {
+                              "type": "boolean",
+                              "x-ms-summary": "נעילה | Lock",
+                              "description": "True locks the field so the recipient cannot edit the pre-filled value. | True נועל את השדה כך שהנמען לא יכול לערוך את הערך שמולא מראש."
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ]
+                  }
+                },
+                "meta_data": {
+                  "type": "object",
+                  "x-ms-summary": "מטא-דאטה | Metadata",
+                  "description": "Optional metadata. Use meta_data.client to store correlation values (e.g. the Dynamics 365 record id and table). | מטא-דאטה אופציונלית. השתמש ב-meta_data.client לשמירת ערכי שיוך (למשל מזהה הרשומה והטבלה ב-D365).",
+                  "properties": {
+                    "client": {
+                      "type": "object"
+                    }
+                  }
+                },
+                "pin": {
+                  "type": "string",
+                  "x-ms-summary": "קוד PIN | PIN",
+                  "description": "Optional PIN the recipient must enter before signing the envelope. Applied per request (does not change the shared envelope template). | קוד PIN אופציונלי שהנמען חייב להזין לפני חתימת המעטפה. מוחל ברמת הבקשה (אינו משנה את תבנית המעטפה המשותפת)."
+                },
+                "auth_method": {
+                  "type": "string",
+                  "x-ms-summary": "שיטת אימות | Authentication method",
+                  "description": "Optional recipient authentication method before signing the envelope. 'pin' requires a PIN; 'otp' sends a one-time SMS code. | שיטת אימות הנמען לפני חתימת המעטפה (אופציונלי). 'pin' דורש קוד PIN; 'otp' שולח קוד חד-פעמי ב-SMS.",
+                  "enum": [
+                    "pin",
+                    "otp"
+                  ],
+                  "x-ms-enum-display-name": [
+                    "PIN",
+                    "OTP (SMS)"
+                  ]
+                }
+              },
+              "required": [
+                "recipient"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "x-ms-summary": "מזהה מעטפה | Envelope id",
+                  "description": "The new sent envelope instance id (GUID). Store it to poll status and download the combined PDF. | מזהה מופע המעטפה שנשלחה (GUID). שמור אותו למעקב סטטוס והורדת ה-PDF המאוחד."
+                },
+                "is_template": {
+                  "type": "boolean",
+                  "x-ms-summary": "תבנית | Is template",
+                  "description": "False for the sent instance. | שקר עבור המופע שנשלח."
+                },
+                "status": {
+                  "type": "string",
+                  "x-ms-summary": "סטטוס | Status",
+                  "description": "The new instance status (in-progress right after sending). | סטטוס המופע החדש (in-progress מיד לאחר השליחה)."
+                },
+                "fill_url": {
+                  "type": "string",
+                  "x-ms-summary": "קישור חתימה מאוחד | Combined signing link",
+                  "description": "The single link that opens the whole bundle for the recipient. | הקישור היחיד הפותח את כל החבילה עבור הנמען."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/entity/me/envelopes/{envelopeId}/download": {
+      "get": {
+        "operationId": "DownloadEnvelope",
+        "summary": "Download combined envelope PDF | הורדת PDF מאוחד של המעטפה",
+        "description": "Download the single combined PDF of all documents in the envelope. The complete PDF exists once every document in the bundle is signed. | מוריד את קובץ ה-PDF המאוחד היחיד של כל המסמכים במעטפה. הקובץ המלא קיים לאחר שכל מסמך בחבילה נחתם.",
+        "parameters": [
+          {
+            "name": "envelopeId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "מזהה מעטפה | Envelope id",
+            "description": "The sent easydo envelope instance id to download. | מזהה מופע המעטפה שנשלחה ב-easydo להורדה."
+          }
+        ],
+        "produces": [
+          "application/pdf"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "string",
+              "format": "binary",
+              "description": "The combined PDF file content. | תוכן קובץ ה-PDF המאוחד."
+            }
           }
         }
       }

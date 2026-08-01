@@ -168,7 +168,14 @@ function Set-ApiResponseProp {
 }
 # Type 10 = String
 Set-ApiRequestParam -UniqueName "SignatureRequestId" -Name "SignatureRequestId" -Type 10 -Optional $false
+# Optional: scope prefill to a single envelope member document (member template GUID).
+# When omitted, ResolvePrefill falls back to the request's primary template (classic single-template path).
+Set-ApiRequestParam -UniqueName "TemplateId"         -Name "TemplateId"         -Type 10 -Optional $true
+# Optional: variable-PIN source. A column on the primary table whose value is
+# read as the recipient PIN. When omitted, no PIN is resolved (PinValue empty).
+Set-ApiRequestParam -UniqueName "PinSourceField"     -Name "PinSourceField"     -Type 10 -Optional $true
 Set-ApiResponseProp -UniqueName "PrefillData"        -Name "PrefillData"        -Type 10
+Set-ApiResponseProp -UniqueName "PinValue"           -Name "PinValue"           -Type 10
 
 # ---- 5. SDK steps: PopulateAnchor on Create + Update of alex_signaturerequest ----
 # Pre-operation, synchronous: fills alex_primaryrecordid from the launch context

@@ -41,6 +41,11 @@ const ST: Record<number, string> = {
   626210011: "warn"   // Pending Retry
 };
 
+/* ---- envelope per-document status (alex_envelopeitemstatus) ------- */
+const ITEM_SIGNED = 626220002;
+/* request statuses the on-demand check flow acts on (open / in-flight) */
+const OPEN_STATUSES = [626210002, 626210003, 626210004, 626210005];
+
 /* ---- chip definitions --------------------------------------------- */
 interface ChipDef { key: string; he: string; en: string; vals: number[] | null; tone: string; }
 const CHIPS: ChipDef[] = [
@@ -52,6 +57,11 @@ const CHIPS: ChipDef[] = [
   { key: "failed", he: "נכשל", en: "Failed", vals: [626210008], tone: "bad" }
 ];
 
+/* ---- inline icons ------------------------------------------------- */
+const REFRESH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>';
+const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+const ENV_SVG = '<svg class="edg-env-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>';
+
 /* ---- i18n --------------------------------------------------------- */
 const I18N: Record<Lang, Record<string, string>> = {
   en: {
@@ -61,7 +71,11 @@ const I18N: Record<Lang, Record<string, string>> = {
     count1: "document", countN: "documents",
     colSent: "Sent on", colChecked: "Last checked", colCompleted: "Completed",
     empty: "No documents yet", emptyDesc: "Signature requests sent from this record will appear here.",
-    emptyChip: "No documents in this view", noDate: "—", noTemplate: "—"
+    emptyChip: "No documents in this view",
+    refresh: "Refresh", check: "Check status", checking: "Checking\u2026",
+    checkDone: "Status check requested", checkNone: "Nothing to check",
+    envelope: "Envelope", signedOf: "{0} of {1} signed",
+    noDate: "\u2014", noTemplate: "\u2014"
   },
   he: {
     dir: "rtl",
@@ -70,7 +84,11 @@ const I18N: Record<Lang, Record<string, string>> = {
     count1: "מסמך", countN: "מסמכים",
     colSent: "תאריך שליחה", colChecked: "נבדק לאחרונה", colCompleted: "תאריך השלמה",
     empty: "אין עדיין מסמכים", emptyDesc: "בקשות לחתימה שיישלחו מרשומה זו יופיעו כאן.",
-    emptyChip: "אין מסמכים בתצוגה זו", noDate: "—", noTemplate: "—"
+    emptyChip: "אין מסמכים בתצוגה זו",
+    refresh: "רענון", check: "בדוק מצב", checking: "בודק\u2026",
+    checkDone: "בקשת בדיקת מצב נשלחה", checkNone: "אין מה לבדוק",
+    envelope: "מעטפה", signedOf: "{0} מתוך {1} נחתמו",
+    noDate: "\u2014", noTemplate: "\u2014"
   }
 };
 
@@ -80,6 +98,11 @@ export class EasyDoDocumentsGrid implements ComponentFramework.StandardControl<I
   private lang: Lang = "he";
   private activeChip = "all";
   private pageSizeSet = false;
+  /* envelope member counts per request id: { total, signed } */
+  private envCounts: Record<string, { total: number; signed: number }> = {};
+  private envLoadedKey = "";
+  private envLoading = false;
+  private busy = false;
 
   public init(
     context: ComponentFramework.Context<IInputs>,
@@ -109,6 +132,23 @@ export class EasyDoDocumentsGrid implements ComponentFramework.StandardControl<I
 
     // Load remaining pages before rendering (related sets are small).
     if (ds.paging && ds.paging.hasNextPage) { ds.paging.loadNextPage(); return; }
+
+    // Fetch envelope member counts once per record set, then render.
+    const ids = ds.sortedRecordIds || [];
+    const key = ids.join(",");
+    if (key !== this.envLoadedKey && !this.envLoading) {
+      this.envLoading = true;
+      this.fetchEnvCounts(ids).then(() => {
+        this.envLoading = false;
+        this.envLoadedKey = key;
+        this.render(ds);
+        return;
+      }).catch(() => {
+        this.envLoading = false;
+        this.envLoadedKey = key;
+        this.render(ds);
+      });
+    }
 
     this.render(ds);
   }
@@ -207,7 +247,8 @@ export class EasyDoDocumentsGrid implements ComponentFramework.StandardControl<I
       this.esc(counts.all === 1 ? this.t("count1") : this.t("countN")) + '</div>';
     html += '</div>';
 
-    // chips
+    // filter bar: chips + elegant divider + action buttons
+    html += '<div class="edg-filterbar">';
     html += '<div class="edg-chips">';
     for (const c of CHIPS) {
       const active = this.activeChip === c.key ? " is-active" : "";
@@ -217,6 +258,14 @@ export class EasyDoDocumentsGrid implements ComponentFramework.StandardControl<I
         '<span class="edg-chip-count">' + (counts[c.key] || 0) + '</span>' +
         '</button>';
     }
+    html += '</div>';
+    html += '<div class="edg-actions">';
+    html += '<button type="button" class="edg-btn" data-act="refresh" title="' + this.esc(this.t("refresh")) + '">' +
+      REFRESH_SVG + '<span>' + this.esc(this.t("refresh")) + '</span></button>';
+    html += '<button type="button" class="edg-btn edg-btn-primary" data-act="check" title="' + this.esc(this.t("check")) + '">' +
+      CHECK_SVG + '<span class="edg-btn-label">' + this.esc(this.t("check")) + '</span>' +
+      '<span class="edg-btn-spin"></span></button>';
+    html += '</div>';
     html += '</div>';
 
     // body
@@ -245,11 +294,14 @@ export class EasyDoDocumentsGrid implements ComponentFramework.StandardControl<I
     const checked = this.fmt(rec, F.lastCheck) || this.t("noDate");
     const completed = this.fmt(rec, F.completed) || this.t("noDate");
     const id = rec.getRecordId();
+    const env = this.envCounts[id.replace(/[{}]/g, "")];
 
-    let h = '<div class="edg-row edg-row-click" data-id="' + this.esc(id) + '" tabindex="0" role="button">';
+    let h = '<div class="edg-row edg-row-click' + (env ? ' is-envelope' : '') +
+      '" data-id="' + this.esc(id) + '" tabindex="0" role="button">';
     h += '<div class="edg-row-main">';
-    h += '<div class="edg-row-name">' + this.esc(name) + '</div>';
+    h += '<div class="edg-row-name">' + (env ? ENV_SVG : '') + '<span>' + this.esc(name) + '</span></div>';
     h += '<div class="edg-row-tpl">' + this.esc(template) + '</div>';
+    if (env) h += this.envProgress(env);
     h += '</div>';
     h += this.metaCell(this.t("colSent"), sent);
     h += this.metaCell(this.t("colChecked"), checked);
@@ -266,6 +318,15 @@ export class EasyDoDocumentsGrid implements ComponentFramework.StandardControl<I
       '</span><span class="edg-meta-val">' + this.esc(value) + '</span></div>';
   }
 
+  private envProgress(env: { total: number; signed: number }): string {
+    const pct = env.total ? Math.round((env.signed / env.total) * 100) : 0;
+    const lbl = this.t("signedOf").replace("{0}", String(env.signed)).replace("{1}", String(env.total));
+    const done = env.total > 0 && env.signed >= env.total;
+    return '<div class="edg-env' + (done ? ' is-done' : '') + '">' +
+      '<div class="edg-env-track"><span class="edg-env-fill" style="width:' + pct + '%"></span></div>' +
+      '<span class="edg-env-lbl">' + this.esc(lbl) + '</span></div>';
+  }
+
   private emptyState(title: string, desc: string): string {
     let h = '<div class="edg-empty"><div class="edg-empty-icon"></div>';
     h += '<div class="edg-empty-title">' + this.esc(title) + '</div>';
@@ -276,6 +337,11 @@ export class EasyDoDocumentsGrid implements ComponentFramework.StandardControl<I
 
   /* ---- events ------------------------------------------------------ */
   private wire(ds: DataSet): void {
+    const refreshBtn = this.root.querySelector<HTMLElement>('[data-act="refresh"]');
+    if (refreshBtn) refreshBtn.addEventListener("click", () => this.doRefresh(ds));
+    const checkBtn = this.root.querySelector<HTMLElement>('[data-act="check"]');
+    if (checkBtn) checkBtn.addEventListener("click", () => this.doCheckStatus(ds, checkBtn));
+
     const chips = this.root.querySelectorAll<HTMLElement>(".edg-chip");
     chips.forEach((chip) => {
       chip.addEventListener("click", () => {
@@ -298,6 +364,77 @@ export class EasyDoDocumentsGrid implements ComponentFramework.StandardControl<I
         }
       });
     });
+  }
+
+  /* ---- envelope counts + toolbar actions --------------------------- */
+  private async fetchEnvCounts(ids: string[]): Promise<void> {
+    this.envCounts = {};
+    if (!ids.length) return;
+    const clean = ids.map((i) => i.replace(/[{}]/g, "")).filter((i) => !!i);
+    const chunk = 20;
+    for (let i = 0; i < clean.length; i += chunk) {
+      const part = clean.slice(i, i + chunk);
+      const orClause = part.map((id) => "_alex_signaturerequestid_value eq " + id).join(" or ");
+      const q = "?$select=alex_itemstatus,_alex_signaturerequestid_value&$filter=(" + orClause + ")";
+      try {
+        const res = await this.context.webAPI.retrieveMultipleRecords("alex_signaturerequestitem", q);
+        for (const rec of res.entities) {
+          const reqId = String(rec["_alex_signaturerequestid_value"] || "").replace(/[{}]/g, "");
+          if (!reqId) continue;
+          const st = rec["alex_itemstatus"];
+          const cur = this.envCounts[reqId] || { total: 0, signed: 0 };
+          cur.total++;
+          if (typeof st === "number" && st === ITEM_SIGNED) cur.signed++;
+          this.envCounts[reqId] = cur;
+        }
+      } catch { /* leave counts empty for this chunk */ }
+    }
+  }
+
+  private doRefresh(ds: DataSet): void {
+    this.envLoadedKey = "";              // force a recount after the reload
+    if (ds.refresh) ds.refresh();
+  }
+
+  private doCheckStatus(ds: DataSet, btn: HTMLElement): void {
+    if (this.busy) return;
+    const ids = ds.sortedRecordIds || [];
+    const targets: string[] = [];
+    for (const id of ids) {
+      const sv = this.statusVal(ds.records[id]);
+      if (sv != null && OPEN_STATUSES.indexOf(sv) >= 0) targets.push(id.replace(/[{}]/g, ""));
+    }
+    if (!targets.length) { this.toast(this.t("checkNone")); return; }
+    this.busy = true;
+    btn.classList.add("is-busy");
+    const stamp = new Date().toISOString();
+    const jobs = targets.map((id) =>
+      this.context.webAPI
+        .updateRecord("alex_signaturerequest", id, { alex_statuscheckrequestedon: stamp })
+        .then(() => undefined, () => undefined)
+    );
+    Promise.all(jobs).then(() => {
+      this.toast(this.t("checkDone"));
+      window.setTimeout(() => {
+        this.busy = false;
+        btn.classList.remove("is-busy");
+        this.envLoadedKey = "";
+        if (ds.refresh) ds.refresh();
+      }, 5000);
+      return;
+    }).catch(() => undefined);
+  }
+
+  private toast(msg: string): void {
+    let el = this.root.querySelector<HTMLElement>(".edg-toast");
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "edg-toast";
+      this.root.appendChild(el);
+    }
+    el.textContent = msg;
+    el.classList.add("is-show");
+    window.setTimeout(() => { if (el) el.classList.remove("is-show"); }, 2600);
   }
 
   private openViewer(recordId: string): void {

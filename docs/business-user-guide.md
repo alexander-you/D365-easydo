@@ -40,6 +40,12 @@ The actions fall into four groups:
 | B | Look things up | Get profiles, Get templates, Get template detail, List forms |
 | C | Send for signature (the main job) | Send template, Create draft form |
 | D | Advanced / manual control | Create form, Set recipients, Upload file, Send form, Get status, Download document, Cancel, Delete |
+| E | **Envelopes** (multi-document packages) | Get / Create / Update / Send / Download / Delete envelope |
+
+> **New in 2.0.0.0 / חדש ב‑2.0.0.0:** you can now send **several documents as one
+> envelope**, require the signer to **authenticate** (PIN or SMS OTP), and watch an
+> envelope sign **document by document** in real time. See Group E below and
+> [release-notes.md](release-notes.md).
 
 ---
 
@@ -376,6 +382,31 @@ need.
 
 ---
 
+## Group E — Envelopes (multi-document packages) | קבוצה E — מעטפות
+
+An **envelope** bundles several documents into **one** signing package: the signer opens
+one link and signs each document in order. You build the envelope once on the easydo
+website (which documents, in what order, who signs each), and the solution keeps it in
+sync as an **envelope template**.
+
+- **Send an envelope** works just like sending a single template — pick the envelope,
+  choose the recipient, send. Behind the scenes the everyday flow calls **Send envelope**
+  once, and the solution creates one **item** per document so you can see the status of
+  **each** document separately (Pending → Waiting → Signed / Declined).
+- **Watch it live.** In real-time mode the panel shows a checklist of the envelope's
+  documents; each turns green as the customer signs it. When the last one is signed, the
+  **combined signed PDF** appears on the record automatically.
+- **Authentication.** An envelope (or a single template) can require the signer to enter a
+  **PIN** or a one-time **SMS code (OTP)** before signing — configured on the template.
+
+> **בעברית.** **מעטפה** מאגדת כמה מסמכים ל**חבילת חתימה אחת**: החותם פותח קישור
+> אחד וחותם על כל מסמך לפי הסדר. שולחים מעטפה בדיוק כמו תבנית רגילה, והמערכת
+> יוצרת **פריט** לכל מסמך כך שרואים סטטוס נפרד (ממתין ← נחתם / נדחה). במצב בזמן אמת
+> רואים צ'קליסט שמתמלא בירוק, ובסוף ה‑PDF המאוחד החתום מופיע על הרשומה. ניתן גם
+> לדרוש מהחותם **PIN** או **קוד חד‑פעמי (OTP) ב‑SMS** לפני החתימה.
+
+---
+
 ## Quick reference | טבלת תמצית
 
 | # | Action | One-line purpose |
@@ -395,5 +426,8 @@ need.
 | 13 | Send form | Send a manually built form. |
 | 14 | Download document | Get the signed PDF. |
 | 15 | Cancel form | Stop a sent request. |
+| 16 | Get / Create / Update envelope | Read or build a multi-document envelope. |
+| 17 | **Send envelope** ⭐ | Send a multi-document envelope for signature. |
+| 18 | Download / Delete envelope | Get the combined signed PDF, or remove an envelope. |
 
 > ⭐ = the action used by the everyday "Send signature request" flow.
