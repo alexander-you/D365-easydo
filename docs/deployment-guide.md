@@ -1,8 +1,8 @@
 # Deployment Guide | מדריך פריסה
 
-> מדריך פריסה. הפתרון נבנה כ-solution לא מנוהל (unmanaged) בסביבת
-> הפיתוח, ומיוצא כ-solution מנוהל (managed) לפריסה ל-Test/Production. הפריסה משתמשת
-> ב-Environment Variables ו-Connection References, ומומלץ לבצעה דרך PAC CLI.
+> מדריך פריסה. ה‑Solution נבנה כ‑Unmanaged בסביבת הפיתוח ומיוצא כ‑Managed לפריסה
+> לסביבות Test ו‑Production. הפריסה משתמשת ב‑Environment Variables וב‑Connection
+> References, ומומלץ לבצע אותה באמצעות PAC CLI.
 
 ## Environments
 
@@ -44,9 +44,10 @@ index row and no tag is invisible to anyone browsing the repo. Always also:
 2. Add a `## [<version>]` entry to [release-notes.md](release-notes.md).
 3. Commit and create the git tag `v<version>` (and push it).
 
-> **בעברית.** גרסה = **חבילה מנוהלת + לא‑מנוהלת** דרך `40-export-release.ps1`, ובנוסף
-> **שורה בטבלת הגרסאות**, **רשומת release‑notes**, ו**תג git `v<version>`** שנדחף. בלי
-> השלושה האלה הגרסה קיימת בתיקייה אבל "לא נראית".
+> **עברית:** הוצאת גרסה כוללת **חבילת Managed וחבילת Unmanaged** באמצעות
+> `40-export-release.ps1`, וכן **שורה בטבלת הגרסאות**, **רשומה ביומן הגרסאות** ותג Git
+> `v<version>` שנדחף למאגר. ללא שלושת הפריטים האלה, הגרסה קיימת בתיקייה אך אינה מופיעה
+> באינדקס הגרסאות.
 
 > **PCF components.** The three code components (Template Field Mapping, Template Gallery,
 > Envelope Composition) plus the Documents grid are part of the exported solution. During
@@ -103,8 +104,8 @@ has two ALM consequences to plan for:
 **הפעלת טבלה עשויה ליצור תלות ב‑Solution אחר.** לדוגמה, הפעלת `account` או
 `salesorder` יוצרת תלות ב‑Sales, והפעלת `incident` או `entitlement` יוצרת תלות
 ב‑Service. ה‑Solution הנדרש חייב להיות מותקן בסביבת היעד; אחרת ייבוא הפתרון ייכשל.
-לכן יש להפעיל רק טבלאות שקיימות בסביבות הלקוח ושעבורן מותקנים הרישוי ורכיבי המוצר
-הנדרשים.
+לכן יש להפעיל רק טבלאות שקיים עבורן רישוי מתאים, ושרכיבי המוצר שלהן מותקנים בסביבות
+הלקוח.
 
 ## Add the Documents PCF to a business form | הוספת פקד המסמכים לטופס עסקי
 

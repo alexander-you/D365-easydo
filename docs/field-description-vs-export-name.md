@@ -62,7 +62,7 @@ when mapping it to a Dynamics column in the mapping grid (the Template Field Map
 
 **תיאור השדה** עונה על השאלה **"מה השדה הזה, בשפה פשוטה?"**. זהו הניסוח שכותב תבנית ה‑easydo
 הקליד ליד ה‑placeholder — למשל `שם פרטי`, `שם מלא עובד`, `עלות לחודש`, `חתימה`. הוא **אינו
-נושא מידע קישור** כלל; הוא קיים אך ורק כדי שמנהל ה‑Dynamics **יזהה** את השדה בזמן שהוא ממפה
+מכיל פרטי קישור טכניים**; הוא קיים אך ורק כדי שמנהל ה‑Dynamics **יזהה** את השדה בזמן שהוא ממפה
 אותו לעמודה ב‑Dynamics בטבלת המיפוי (פקד ה‑PCF של מיפוי שדות התבנית).
 
 ### עברית — משמעות טכנית
@@ -70,7 +70,7 @@ when mapping it to a Dynamics column in the mapping grid (the Template Field Map
 - מתמלא על ידי **זרימת סנכרון התבניות** מתוך המאפיין **`label`** של אובייקט השדה ב‑easydo,
   עם שרשרת גיבוי בטוחה: `coalesce(label, export.header, name)` — כך שאם כותב התבנית השאיר את
   ה‑label ריק, המנהל עדיין רואה משהו בעל משמעות ולא שורה ריקה.
-- בעבר עמודה זו החזיקה את `placeholderLabel` של easydo, שהתברר כ**שם‑סוג שדה גנרי** (למשל
+- בעבר עמודה זו החזיקה את `placeholderLabel` של easydo, שהתברר כ**שם כללי של סוג השדה** (למשל
   "שדה טקסט", "תאריך") ולא תיאור אמיתי. היא הוחלפה ל‑`label`, הניסוח שנכתב על ידי אדם, שהוא
   שימושי בהרבה.
 - העמודה היא **לתצוגה בלבד**: שום רכיב בצינור השליחה, ב‑resolver של ה‑prefill או במיפוי
@@ -125,14 +125,14 @@ name is *the address the data lives at*.
   | תבנית                                     | משמעות                              |
   | ----------------------------------------- | ----------------------------------- |
   | `contact.firstname`                       | עמודה ישירה על הטבלה                 |
-  | `incident.new_productid.name`             | **קפיצת** lookup ליעד יחיד           |
-  | `incident.customerid.contact.fullname`    | קפיצה פולימורפית (יעד מפורש)         |
+  | `incident.new_productid.name`             | מעבר דרך Lookup ליעד יחיד             |
+  | `incident.customerid.contact.fullname`    | מעבר פולימורפי דרך Lookup (יעד מפורש) |
 
-- נצרך על ידי ה‑Custom API **`alex_AutoMapTemplateFields`** כדי לפתור כל שדה ל‑`table.column`
-  קונקרטי (וקפיצת lookup), וממלא את `alex_dynamicstable`, `alex_dynamicsfield` ו‑
-  `alex_lookupfield`. אותן עמודות פתורות הן מה שה‑resolver של ה‑prefill ואשף השליחה קוראים
+- משמש את ה‑Custom API **`alex_AutoMapTemplateFields`** כדי לפתור כל שדה ל‑`table.column`
+  קונקרטי (ולמעבר דרך Lookup), ולמלא את `alex_dynamicstable`, `alex_dynamicsfield` ו‑
+  `alex_lookupfield`. אלה העמודות שה‑resolver של ה‑prefill ואשף השליחה קוראים
   בפועל בזמן השליחה.
-- מכיוון שהוא פונה למכונה, שם ייצוא **ריק או פגום** הוא מה שגורם לשדה להישאר ריק בזמן שליחה —
+- מכיוון שהוא מיועד לעיבוד אוטומטי, שם ייצוא **ריק או פגום** גורם לשדה להישאר ריק בזמן שליחה —
   נוכחות התיאור **אינה** עוזרת.
 
 ---

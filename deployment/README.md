@@ -1,6 +1,6 @@
 # Deployment Assets
 
-> נכסי פריסה — משתני סביבה, חיבורים, וסדר ייבוא. יושלם בהמשך.
+> רכיבי Deployment — Environment Variables, חיבורים וסדר ייבוא. המסמך יושלם בהמשך.
 
 | File | Purpose |
 | --- | --- |

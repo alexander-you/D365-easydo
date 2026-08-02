@@ -21,7 +21,7 @@ in source control, flow definitions, or this repository.
 
 > הטוקן של easydo הוא הסוד היחיד שהאינטגרציה צריכה. הוא נשמר אך ורק בתוך
 > **Connection** מוצפן של Power Platform, וכתובת ה-API נשמרת ב-**Environment Variable**.
-> ה-flows מפנים ל-Connection Reference ולעולם אינם קוראים את ערך הטוקן עצמו.
+> תהליכי ה‑Flow משתמשים ב‑Connection Reference ולעולם אינם קוראים את ערך הטוקן עצמו.
 
 ## 2. How data moves | כיצד הנתונים נעים
 
@@ -68,8 +68,8 @@ A template can require the **signer** to authenticate before opening the documen
   the recipient-facing UI.
 
 > תבנית יכולה לדרוש מהחותם **לאמת את עצמו** לפני פתיחת המסמך: ללא / **PIN** / **OTP ב‑SMS**.
-> ה‑PIN יכול להיות קבוע או להישאב משדה ברשומה, וה‑OTP נשלח לטלפון משדה מקור. דריסה בעת
-> שליחה מותרת רק אם התבנית מאפשרת. הערך שהוחל בפועל נחתם על הבקשה ומועבר ל‑easydo דרך
+> ה‑PIN יכול להיות קבוע או להישאב משדה ברשומה, וה‑OTP נשלח לטלפון משדה מקור. שינוי בעת
+> השליחה מותר רק אם התבנית מאפשרת זאת. הערך שהוחל בפועל נשמר בבקשה ומועבר ל‑easydo דרך
 > `auth_method`.
 
 ## 3b. Copy-link governance (2.0.0.0) | ממשל העתקת קישור
@@ -79,8 +79,8 @@ channels) is governed centrally: a global default
 (`alex_easydosettings.alex_allowcopylink`) with a per-template override
 (`alex_signaturetemplate.alex_copylinkmode` — Inherit / Allow / Block).
 
-> העתקת **קישור חתימה גולמי** נשלטת מרכזית: מתג גלובלי + דריסה פר‑תבנית (ברירת מחדל /
-> מותר / חסום).
+> העתקת **קישור חתימה גולמי** מנוהלת באופן מרכזי באמצעות ברירת מחדל גלובלית והגדרה
+> ברמת התבנית (ירושה / מותר / חסום).
 
 ## 4. What is recorded | מה מתועד
 
@@ -91,8 +91,8 @@ channels) is governed centrally: a global default
 - **Secure Inputs / Secure Outputs** are enabled on sensitive Power Automate actions
   so that tokens and payloads do not appear in run history.
 
-> טבלת ה-Integration Log שומרת **תקציר בטוח** של כל פעולה — לעולם לא תוכן רגיש מלא.
-> מתועד מי יצר בקשה, מתי נשלחה, למי, באיזו תבנית, ושינויי סטטוס. באקשנים רגישים
+> טבלת ה‑Integration Log שומרת **תקציר שאינו כולל מידע רגיש** של כל פעולה, ולעולם אינה
+> שומרת תוכן רגיש מלא. מתועד מי יצר בקשה, מתי נשלחה, למי, באיזו תבנית ושינויי סטטוס. בפעולות רגישות
 > מופעל Secure Inputs/Outputs כדי שטוקנים ונתונים לא יופיעו בהיסטוריית ההרצה.
 
 ## 5. Platform governance | ממשל פלטפורמה

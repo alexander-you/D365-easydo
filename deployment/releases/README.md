@@ -1,4 +1,4 @@
-# Solution Releases | חבילות פתרון
+# Solution Releases | חבילות Solution
 
 Exported managed **and** unmanaged solution packages for `alex_d365_easydo`.
 Each version folder contains both artifacts, produced by
@@ -30,9 +30,10 @@ Each version folder contains both artifacts, produced by
 3. After import, confirm the flows are **On** in the easydo Admin Center → "התקנה
    ותקינות" (required flows gate readiness; the optional copy flows do not).
 
-> **בעברית.** כל תיקיית גרסה מכילה חבילה **מנוהלת** ו**לא‑מנוהלת**. ייבא את המנוהלת
-> לסביבות בדיקה/ייצור ואת הלא‑מנוהלת לסביבת פיתוח. בזמן הייבוא הקם את שני החיבורים
-> (`alex_easydo`, `alex_dataverse_easydo`), ואז ודא שהזרימות פעילות דרך מרכז הניהול.
+> **עברית:** כל תיקיית גרסה מכילה חבילת **Managed** וחבילת **Unmanaged**. יש לייבא את
+> חבילת ה‑Managed לסביבות בדיקה וייצור, ואת חבילת ה‑Unmanaged לסביבת הפיתוח. במהלך
+> הייבוא יש להגדיר את שני החיבורים (`alex_easydo`, `alex_dataverse_easydo`) ולוודא
+> שתהליכי ה‑Flow פעילים דרך מרכז הניהול.
 
 > **PCF controls.** From **2.0.0.0** the package also carries three code components —
 > Template Field Mapping, Template Gallery and Envelope Composition — plus the Documents

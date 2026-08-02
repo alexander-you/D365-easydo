@@ -1,8 +1,8 @@
 # Custom Connector — easydo | קונקטור מותאם
 
-> מסמך זה מתאר את ה-Custom Connector היחיד שמחבר את Dynamics 365
-> ל-easydo. הקונקטור מכיל **actions בלבד** (ללא triggers ב-MVP). לכל פעולה מתואר:
-> מה היא עושה, מי מפעיל אותה (משתמש או flow), מה המשתמש מזין/רואה, ומה הפעולה מחזירה.
+> מסמך זה מתאר את ה‑Custom Connector שמחבר את Dynamics 365
+> ל‑easydo. הקונקטור מכיל **Actions בלבד** (ללא Triggers ב‑MVP). לכל פעולה מתואר
+> מה היא עושה, מי מפעיל אותה (משתמש או Flow), מה המשתמש מזין או רואה ומה הפעולה מחזירה.
 > בשלב הבא (fast-follow) ניתן יהיה להוסיף **trigger יחיד** מסוג Webhook במקום ה-polling.
 
 ## Overview
@@ -29,9 +29,9 @@ Environment Variables, never in source control.
 
 ## Connection — what the user enters
 
-> המשתמש/אדמין שמקים את החיבור מזין **רק את הטוקן של easydo**.
-> אין שם משתמש/סיסמה ואין סוד נוסף. הטוקן נשמר בתוך ה-Connection המאובטח של
-> Power Platform ולא נחשף ב-flows או בקוד.
+> המשתמש או מנהל המערכת שמגדיר את החיבור מזין **רק את הטוקן של easydo**.
+> אין צורך בשם משתמש או בסיסמה, ואין סוד נוסף. הטוקן נשמר ב‑Connection המאובטח של
+> Power Platform ואינו נחשף בתהליכי ה‑Flow או בקוד.
 
 The connector authenticates with an **API key** sent as the `Authorization`
 header. When creating a **Connection**, the only thing the user provides is the
@@ -179,7 +179,7 @@ flowchart LR
 ## Envelope actions (2.0.0.0) | פעולות מעטפה
 
 > **מעטפה** מאגדת כמה מסמכים לחבילת חתימה אחת. פעולות אלו מנהלות גם את **הגדרת** המעטפה
-> (אילו מסמכים מרכיבים אותה) וגם את **המופע ששלחנו** (חתימה בפועל). כל הפעולות חדשות
+> (אילו מסמכים מרכיבים אותה) וגם את **המופע שנשלח** (תהליך החתימה בפועל). כל הפעולות חדשות
 > בגרסה 2.0.0.0.
 
 ### 10. Get Envelope Templates

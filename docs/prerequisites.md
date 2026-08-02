@@ -20,7 +20,7 @@ flowchart TD
     E["A. Power Platform environment<br/>סביבת Power Platform<br/>(Dataverse enabled)"] --> F["B. Power Automate plan<br/>רישוי Power Automate<br/>(custom + Dataverse connectors)"]
     F --> G["C. Service account<br/>חשבון שירות לחיבורים"]
 
-    D --> H["5. Import the solution<br/>ייבוא ה‑solution<br/>(managed / unmanaged)"]
+    D --> H["5. Import the Solution<br/>ייבוא ה‑Solution<br/>(Managed / Unmanaged)"]
     G --> H
     H --> I["6. Create easydo Connection<br/>חיבור easydo<br/>(paste Bearer token)"]
     I --> J["7. Set base‑URL env var<br/>הגדרת כתובת ה‑API<br/>+ turn on flows"]
@@ -39,8 +39,8 @@ flowchart TD
 You need an **active easydo account** for your company (the "entity"). easydo offers a
 **free trial** — you can open one immediately and upgrade later.
 
-נדרש **חשבון easydo פעיל** עבור החברה שלך ("entity"). ל‑easydo יש **חשבון ניסיון חינם**
-— אפשר לפתוח אותו מיד ולשדרג בהמשך.
+נדרש **חשבון easydo פעיל** עבור החברה שלך ("entity"). easydo מציעה **תקופת ניסיון ללא
+תשלום** — אפשר להתחיל בה מיד ולשדרג בהמשך.
 
 | | Link |
 | --- | --- |
@@ -54,7 +54,7 @@ The integration talks to the **easydo REST API**. API access can depend on your
 **plan/tier**, so confirm with easydo that API access is enabled for your company
 entity **before** you start.
 
-האינטגרציה עובדת מול **ה‑REST API של easydo**. גישת ה‑API עשויה להיות תלוית **חבילה**,
+האינטגרציה עובדת מול **ה‑REST API של easydo**. הזמינות של גישת ה‑API עשויה להיות תלויה ב**חבילה**,
 לכן ודא מול easydo שגישת ה‑API מופעלת לחברה שלך **לפני** שמתחילים.
 
 - **API documentation** ("Getting Started – Company") · **תיעוד ה‑API**:

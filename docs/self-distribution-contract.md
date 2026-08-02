@@ -124,20 +124,21 @@ changes.
 
 ---
 
-## עברית
+## כללי הפצה עצמית של קישור החתימה
 
 ### 1. מה המסמך הזה מגדיר
 
 יש שתי דרכים שבהן קישור חתימה מגיע לנמען באינטגרציה הזו:
 
-1. **שליחה נייטיב של easydo** — easydo עצמה מודיעה לנמען דרך **הערוץ הראשי**
+1. **שליחה מובנית של easydo** — easydo עצמה מודיעה לנמען דרך **הערוץ הראשי**
    (`email` / `sms` / `whatsapp`). זו ברירת המחדל.
 2. **הפצה עצמית** — הלקוח מפיץ את קישור החתימה דרך **ערוץ משלו** (מסעות לקוח /
    Power Automate Flow / Workflow קלאסי / Plugin / פורטל וכו'). easydo רק **מייצרת**
    את הקישור ו**לא** מודיעה.
 
-המסמך מגדיר את **חוזה ההפצה העצמית** למקרה (2): הדרך האחת, הבלתי‑תלויה‑במנגנון, שבה כל
-תהליך של הלקוח יכול לתפוס בקשת חתימה ולהפיץ אותה. הכלל:
+המסמך מגדיר את **כללי ההפצה העצמית** עבור מקרה (2): ממשק אחיד שמאפשר לכל תהליך של
+הלקוח לזהות בקשת חתימה שמוכנה להפצה, לקרוא את קישור החתימה ולהפיץ אותו בערוץ המתאים.
+הכלל הוא:
 
 > **הטריגר הוא תמיד יצירה / עדכון של רשומת `alex_signaturerequest` שמגיעה למצב שבו
 > קישור החתימה מוכן. לא משנה המנגנון (CIJ, Flow, Workflow, Plugin) — החוזה זהה:
@@ -150,21 +151,21 @@ changes.
 
 | `notify_platform` | התנהגות easydo |
 | --- | --- |
-| `email` / `sms` / `whatsapp` | easydo שולחת הודעה נייטיב בערוץ הזה. |
+| `email` / `sms` / `whatsapp` | easydo שולחת הודעה מובנית בערוץ זה. |
 | `null` | easydo מייצרת את ה‑`fill_url` **בלי להודיע** — קישור בלבד. |
 
-ה‑Send flow כבר שומר את הקישור על הבקשה. **להפצה עצמית, השינוי היחיד הוא
-`notify_platform = null`** כדי ש‑easydo תשתוק והערוץ של הלקוח יהיה המפיץ היחיד (בלי
-שליחה כפולה).
+ה‑Send Flow כבר שומר את הקישור בבקשה. **בהפצה עצמית יש להגדיר
+`notify_platform = null`**, כדי ש‑easydo לא תשלח הודעה והערוץ של הלקוח יהיה ערוץ
+ההפצה היחיד. כך נמנעת שליחה כפולה.
 
-### 3. החוזה — שדות על `alex_signaturerequest`
+### 3. כללי ההפצה — שדות ב־`alex_signaturerequest`
 
 | שדה | סוג | תפקיד בחוזה |
 | --- | --- | --- |
 | `alex_signaturerequestid` | מזהה ייחודי | הרשומה שאליה הצרכן מאזין. |
 | `alex_status` | Choice `alex_signaturestatus` | שער מחזור החיים (ר' §4). |
 | `alex_signinglink` | URL | **קישור החתימה להפצה** (ה‑`fill_url` של easydo). |
-| `alex_easydochannel` | Choice `alex_easydochannel` | תצלום הערוץ הראשי (Email 626210000 / SMS 626210001 / WhatsApp 626210002). |
+| `alex_easydochannel` | Choice `alex_easydochannel` | הערוץ הראשי כפי שנקבע בעת השליחה (Email 626210000 / SMS 626210001 / WhatsApp 626210002). |
 | `alex_externalformid` | טקסט | מזהה הטופס ב‑easydo (קישור / תמיכה). |
 | `alex_senton` | תאריך/שעה | מתי הקישור נוצר. |
 | `alex_primaryrecordid` + `alex_primarytable` | טקסט | הרשומה שממנה יצא (למי לשלוח). |
@@ -214,15 +215,16 @@ changes.
 | 626210011 | ממתין לניסיון חוזר | Waiting retry | — |
 
 **תנאי הטריגר לצרכן:** הרשומה מגיעה ל‑**`alex_status = 626210002` (נשלח)** *וגם*
-`alex_signinglink` לא ריק. שקול ועמיד יותר: טריגר על **`alex_signinglink` שמשתנה
-מריק ללא‑ריק** (filtering attribute `alex_signinglink`).
+`alex_signinglink` אינו ריק. חלופה שקולה ועמידה יותר היא להפעיל טריגר כאשר
+`alex_signinglink` משתנה מערך ריק לערך שאינו ריק (filtering attribute
+`alex_signinglink`).
 
 ### 5. איך כל מנגנון מאזין (כולם שקולים)
 
 - **מסעות לקוח (CIJ):** מסע שמותנע בטריגר Dataverse על `alex_signaturerequest`
   (סגמנט / טריגר על `alex_signinglink ne null`). קורא את הקישור + הנמען ושולח דרך
   ערוץ ה‑email/SMS/WhatsApp שלו.
-- **Power Automate Flow:** "כאשר שורה נוספת או משתנה" על `alex_signaturerequests`,
+- **Power Automate Flow:** "כאשר שורה מתווספת או משתנה" על `alex_signaturerequests`,
   filtering attribute `alex_signinglink` (או trigger condition על `alex_status`).
   קורא את הקישור ושולח לכל connector.
 - **Workflow קלאסי:** scope על עדכון `alex_signaturerequest` עם תנאי
@@ -230,13 +232,13 @@ changes.
 - **Plugin:** רשום על Update של `alex_signaturerequest`, filtering attribute
   `alex_signinglink`. להפצה צד‑שרת מותאמת לחלוטין.
 
-**אינווריאנט החוזה:** אף אחד מהם לא קורא ל‑easydo ישירות. כולם קוראים רק את
+**עיקרון מחייב:** אף אחד מהמנגנונים אינו קורא ל‑easydo ישירות. כולם קוראים רק את
 `alex_signaturerequest` (+ ילדי `alex_signaturerecipient`). easydo נשארת מאחורי
 ה‑Send flow.
 
 ### 6. תנאי טריגר מומלץ (דוגמת Flow)
 
-טריגר: *כאשר שורה נוספת, משתנה או נמחקת* → `alex_signaturerequests`,
+טריגר: *כאשר שורה מתווספת, משתנה או נמחקת* → `alex_signaturerequests`,
 Scope = Organization, **עמודות** `alex_signinglink,alex_status`,
 **סינון שורות** `alex_signinglink ne null`, **תנאי טריגר**:
 
@@ -244,4 +246,7 @@ Scope = Organization, **עמודות** `alex_signinglink,alex_status`,
 @not(equals(coalesce(triggerOutputs()?['body/alex_signinglink'], ''), ''))
 ```
 
-זה נורה בדיוק פעם אחת, כשהקישור מופיע לראשונה, ללא תלות בשינויי סטטוס מאוחרים.
+התנאי מוודא שה‑Flow פועל רק כאשר קישור החתימה אינו ריק, אך הוא אינו מבטיח הפעלה
+יחידה: עדכון מאוחר של אחת העמודות שנבחרו עלול להפעיל את ה‑Flow שוב. כדי למנוע הפצה
+כפולה, יש להוסיף מנגנון idempotency, למשל עמודת "הופץ בתאריך" או מזהה הפצה ייחודי,
+ולבדוק אותו לפני שליחת ההודעה.

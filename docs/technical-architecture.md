@@ -8,9 +8,9 @@ Function is used in the MVP; the architecture is designed so the integration lay
 can later be swapped for an Azure Function without changing the data model or UX.
 
 > הארכיטקטורה משאירה את Dynamics 365 כנקודת ההפעלה והמעקב
-> המרכזית. הזרימה: כפתור ב-Command Bar בטופס Contact → Custom Page מונחה → Power
+> המרכזית. התהליך: כפתור ב‑Command Bar בטופס Contact → Custom Page מונחה → Power
 > Automate → Custom Connector → easydo API, כאשר Dataverse מאחסן את כל הנתונים.
-> אין Azure Function ב-MVP, אך התכנון מאפשר החלפת שכבת האינטגרציה בעתיד ללא שינוי
+> ב‑MVP לא נעשה שימוש ב‑Azure Function, אך התכנון מאפשר להחליף את שכבת האינטגרציה בעתיד ללא שינוי
 > מודל הנתונים או חוויית המשתמש.
 
 ```text
@@ -163,12 +163,13 @@ and persists it to `alex_statusmessage`. The plug-in deliberately **does not cat
 continue** past an `OrganizationService` failure — doing so aborts the platform
 transaction and silently rolls the relationship back.
 
-> **בעברית.** הפעלת טבלה לשליחה (מסך "ניהול טבלאות שליחה") קוראת ל‑Custom API
-> `alex_EnsureSignatureLookup`, שמייצר קשר N:1 מ‑`alex_signaturerequest` לטבלה. מאחר
-> שאי אפשר לכתוב מטא‑דאטה ל‑solution מנוהל, הפלאגין בוחר יעד **לא‑מנוהל**: בפיתוח —
-> `alex_d365_easydo` עצמו; אצל לקוח (בסיס מנוהל) — solution לא‑מנוהל ייעודי
-> `alex_d365_easydo_runtime` שנוצר לפי הצורך, עם **אזהרה** למשתמש. הפלאגין אינו בולע
-> חריגות, כדי לא לגלגל את הטרנזקציה לאחור.
+> **עברית:** הפעלת טבלה לשליחה במסך **ניהול טבלאות שליחה** קוראת ל‑Custom API
+> `alex_EnsureSignatureLookup`, שיוצר קשר N:1 מ‑`alex_signaturerequest` לטבלה. מאחר
+> שאי אפשר להוסיף Metadata חדש ל‑Solution מסוג Managed, ה‑Plugin בוחר יעד מסוג
+> **Unmanaged**: בסביבת הפיתוח נעשה שימוש ב‑`alex_d365_easydo`; בסביבת לקוח, שבה
+> ה‑Solution הבסיסי הוא Managed, נעשה שימוש ב‑`alex_d365_easydo_runtime` הייעודי,
+> שנוצר לפי הצורך. ה‑Plugin אינו מתעלם מחריגות, כדי למנוע כשל שקט שבו הטרנזקציה
+> מתגלגלת לאחור.
 
 ## Correlation strategy
 

@@ -12,12 +12,12 @@ Integrating easydo e‑signature requests with Dynamics 365 **Customer Insights 
 
 **English.** A signature request is a Dataverse record (`alex_signaturerequest`). Its `alex_status` column moves through a lifecycle. A backend Power Automate flow ([send-signature-request](../src/flows/send-signature-request.flow.json)) listens for the **Ready to Send** status, calls easydo, and on success sets the status to **Sent**. A second scheduled flow ([read-signature-results](../src/flows/read-signature-results.flow.json)) polls easydo and advances the status to **Delivered / Viewed / Completed**. CIJ plugs in by **reacting** to these status changes to drive journeys (confirmations, reminders, follow‑ups).
 
-**עברית.** בקשת חתימה היא רשומת Dataverse (`alex_signaturerequest`). העמודה `alex_status` עוברת מחזור חיים. flow ברקע ([send-signature-request](../src/flows/send-signature-request.flow.json)) מאזין לסטטוס **מוכן למשלוח**, קורא ל‑easydo, ובהצלחה מעדכן ל**נשלח**. flow מתוזמן שני ([read-signature-results](../src/flows/read-signature-results.flow.json)) מושך עדכונים מ‑easydo ומקדם את הסטטוס ל**נמסר / נצפה / הושלם**. CIJ משתלב על‑ידי **תגובה** לשינויי הסטטוס הללו כדי להניע מסעות (אישורים, תזכורות, המשך טיפול).
+**עברית:** בקשת חתימה היא רשומת Dataverse (`alex_signaturerequest`). העמודה `alex_status` עוברת מחזור חיים. Flow ברקע ([send-signature-request](../src/flows/send-signature-request.flow.json)) מאזין לסטטוס **מוכן למשלוח**, קורא ל‑easydo, ובהצלחה מעדכן ל**נשלח**. Flow מתוזמן נוסף ([read-signature-results](../src/flows/read-signature-results.flow.json)) מושך עדכונים מ‑easydo ומקדם את הסטטוס ל**נמסר / נצפה / הושלם**. CIJ מגיב לשינויי הסטטוס הללו ומפעיל מסעות המשך, כגון אישורים ותזכורות.
 
 ```mermaid
 flowchart LR
     D["Draft<br/>טיוטה"] --> R["Ready to Send<br/>מוכן למשלוח"]
-    R -->|"backend flow sends<br/>flow ברקע שולח"| S["Sent<br/>נשלח"]
+    R -->|"backend flow sends<br/>Flow ברקע שולח"| S["Sent<br/>נשלח"]
     R -->|"send fails<br/>שליחה נכשלת"| F["Failed<br/>נכשל"]
     S --> DL["Delivered<br/>נמסר"]
     DL --> V["Viewed<br/>נצפה"]
@@ -42,7 +42,7 @@ Choice: `alex_signaturestatus` on `alex_signaturerequest.alex_status`.
 | Value / ערך | English | עברית | Meaning / משמעות |
 |---|---|---|---|
 | `626210000` | Draft | טיוטה | Created in Dynamics, not yet sent. נוצר ב‑Dynamics, טרם נשלח. |
-| `626210001` | Ready to Send | מוכן למשלוח | Validated; queued for the backend flow. **Transient.** אומת; בתור ל‑flow. **טרנזיינטי.** |
+| `626210001` | Ready to Send | מוכן למשלוח | Validated; queued for the backend flow. **Transient.** אומת ונמצא בתור ל‑Flow ברקע. **זמני.** |
 | `626210002` | **Sent** | **נשלח** | easydo accepted it; request reached the customer. **Confirmed.** easydo קיבל; הבקשה הגיעה ללקוח. **מאומת.** |
 | `626210003` | Delivered | נמסר | easydo confirmed delivery. easydo אישר מסירה. |
 | `626210004` | Viewed | נצפה | Recipient opened the document. הנמען פתח את המסמך. |
@@ -63,9 +63,9 @@ Choice: `alex_signaturestatus` on `alex_signaturerequest.alex_status`.
 - **Do NOT trigger on `Ready to Send` (626210001).** It is only an instruction to the backend flow. Nothing has happened yet; the send can still flip to **Failed**. A journey started here may run for requests that never reached the customer, and the record has no `formId`/signing link yet (race condition).
 - **Trigger on `Sent` (626210002)** to react to *"the request actually went out."* At this point the `formId` and signing link exist and the send succeeded.
 
-**עברית.** תלוי במטרת המסע — אבל הכלל: **להאזין לאירוע עסקי מאומת ומשמעותי, לא למצב עיבוד טרנזיינטי.**
+**עברית:** הבחירה תלויה במטרת המסע, אך הכלל הוא: **יש להאזין לאירוע עסקי מאומת ומשמעותי, ולא למצב עיבוד זמני.**
 
-- **אין להפעיל טריגר על `מוכן למשלוח` (626210001).** זו רק הוראה ל‑flow ברקע. עדיין לא קרה כלום; השליחה עוד יכולה לעבור ל**נכשל**. מסע שמתחיל כאן עלול לרוץ עבור בקשות שמעולם לא הגיעו ללקוח, ולרשומה עדיין אין `formId`/קישור חתימה (מרוץ).
+- **אין להפעיל טריגר על `מוכן למשלוח` (626210001).** זו רק הוראה ל‑Flow ברקע. בשלב זה השליחה טרם בוצעה והיא עדיין עלולה להיכשל. מסע שמתחיל כאן עלול לפעול עבור בקשות שלא הגיעו ללקוח, ולרשומה עדיין אין `formId` או קישור חתימה (תנאי מרוץ).
 - **הפעל טריגר על `נשלח` (626210002)** כדי להגיב ל*"הבקשה באמת יצאה."* בנקודה זו ה‑`formId` וקישור החתימה קיימים והשליחה הצליחה.
 
 ---
@@ -89,9 +89,9 @@ Choice: `alex_signaturestatus` on `alex_signaturerequest.alex_status`.
 ## 5. Caveats / הסתייגויות
 
 - **English.** `Ready to Send` and `Pending Retry` are internal/transient — never use them as journey entry points. Always gate journeys on confirmed states (`Sent` and onward).
-- **עברית.** `מוכן למשלוח` ו`ממתין לניסיון חוזר` הם פנימיים/טרנזיינטיים — לעולם אל תשתמשו בהם כנקודת כניסה למסע. תמיד התנו מסעות במצבים מאומתים (`נשלח` והלאה).
+- **עברית:** `מוכן למשלוח` ו`ממתין לניסיון חוזר` הם מצבי ביניים פנימיים. אין להשתמש בהם כנקודת כניסה למסע; יש להגדיר את תנאי הכניסה לפי סטטוסים מאומתים (`נשלח` והלאה).
 - **English.** A request can jump straight to `Failed` from `Ready to Send`; always design a parallel **Failed** branch so journeys do not hang.
-- **עברית.** בקשה יכולה לקפוץ ישירות ל`נכשל` מ`מוכן למשלוח`; תכננו תמיד ענף **נכשל** מקביל כדי שמסעות לא ייתקעו.
+- **עברית:** בקשה יכולה לעבור ישירות מ־`מוכן למשלוח` ל־`נכשל`; תכננו תמיד ענף **נכשל** מקביל כדי שמסעות לא ייתקעו.
 
 ---
 

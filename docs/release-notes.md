@@ -12,8 +12,8 @@ All notable changes to this project are documented here.
 > envelopes, and on-demand status refresh. Two new tables, seven new connector operations,
 > two new PCF controls and one new flow. Managed **and** unmanaged packages shipped.
 >
-> **גרסה מרכזית.** גרסה זו הופכת את הפתרון מחתימה על מסמך בודד ל**מעטפות רב‑מסמכיות**
-> מלאות, מוסיפה **אימות נמען** (PIN / OTP), גלריית תבניות ומסך מסמכים מחודשים, חתימה בזמן
+> **גרסה מרכזית.** גרסה זו מרחיבה את ה‑Solution מחתימה על מסמך בודד ומוסיפה תמיכה מלאה
+> ב**מעטפות רב‑מסמכיות**, **אימות נמען** (PIN / OTP), גלריית תבניות ומסך מסמכים מחודשים, חתימה בזמן
 > אמת למעטפות, ורענון סטטוס לפי דרישה. שתי טבלאות חדשות, שבע פעולות קונקטור, שני פקדי PCF
 > וזרימה אחת חדשה. נשלחו חבילות מנוהלת **וגם** לא‑מנוהלת.
 
@@ -54,12 +54,12 @@ All notable changes to this project are documented here.
   `GetEnvelope`, `UpdateEnvelope`, `DeleteEnvelope`, `SendEnvelope`, `DownloadEnvelope`
   (see [custom-connector.md](custom-connector.md)).
 
-> **בעברית.** אפשר עכשיו לשלוח **כמה מסמכים כחבילת חתימה אחת (מעטפה)**. תבנית יכולה להיות
+> **עברית:** אפשר עכשיו לשלוח **כמה מסמכים כחבילת חתימה אחת (מעטפה)**. תבנית יכולה להיות
 > **מעטפה** שמאגדת כמה תבניות מסמך. נוספו שתי טבלאות: **`alex_envelopetemplateitem`**
 > (הגדרת המעטפה — אילו מסמכים מרכיבים אותה) ו**`alex_signaturerequestitem`** (שורת ריצה
 > לכל מסמך בתוך מעטפה שנשלחה, עם סטטוס וקישור חתימה פר‑מסמך). נוסף מצב פר‑מסמך
 > (`alex_envelopeitemstatus`), עמודות מעטפה על הבקשה/התבנית, ופקד **הרכב מעטפה** (PCF)
-> בטאב ייעודי שמתחלף אוטומטית לפי אם התבנית היא מעטפה. בקונקטור נוספו **שבע פעולות מעטפה**.
+> בטאב ייעודי שמתחלף אוטומטית לפי סוג התבנית. בקונקטור נוספו **שבע פעולות מעטפה**.
 
 ### Added — Recipient authentication: PIN & OTP | אימות נמען
 
@@ -77,9 +77,9 @@ All notable changes to this project are documented here.
 - **Connector supports it end-to-end.** `SendTemplate`, `SendEnvelope` and
   `UpdateEnvelope` gained an `auth_method` field (`''` / `pin` / `otp`) plus `pin`.
 
-> **בעברית.** תבנית יכולה עכשיו **לדרוש מהחותם לאמת את עצמו**: שיטת אימות (ללא / PIN /
-> OTP ב‑SMS), מצב PIN (ללא / קבוע / משתנה משדה), ערך/שדה מקור ל‑PIN וטלפון ל‑OTP, ומתגי
-> **דריסה לכל שליחה**. הערך שהוחל בפועל נחתם על הבקשה (`alex_effectiveauthmethod`,
+> **עברית:** תבנית יכולה עכשיו **לדרוש מהחותם לאמת את עצמו**: שיטת אימות (ללא / PIN /
+> OTP ב‑SMS), מצב PIN (ללא / קבוע / משתנה משדה), ערך או שדה מקור ל‑PIN וטלפון ל‑OTP,
+> וכן אפשרות לשינוי בכל שליחה. הערך שהוחל בפועל נשמר בבקשה (`alex_effectiveauthmethod`,
 > `alex_effectivepin`). הקונקטור תומך בכך מקצה לקצה דרך שדה `auth_method` בפעולות השליחה.
 
 ### Added — Template Gallery & Documents experience | גלריית תבניות ומסך מסמכים
@@ -97,7 +97,7 @@ All notable changes to this project are documented here.
   `alex_statuscheckstatus` ([56](../src/scripts/56-add-statuscheck-columns.ps1)).
 - **Document viewer** enhancements for envelopes and per-document state.
 
-> **בעברית.** נוספה **גלריית תבניות** (PCF בסגנון כרטיסיות) שמחליפה את הרשימה השטוחה —
+> **עברית:** נוספה **גלריית תבניות** (PCF בסגנון כרטיסיות) שמחליפה את הרשימה השטוחה —
 > מבחינה בין מעטפה למסמך בודד, מציגה סטטוס וטבלה ראשית, עם סינון/חיפוש/מיון ופאנל צדדי
 > מונפש. פקד **המסמכים** קיבל פעולת **"בדיקת סטטוס"** לפי דרישה, שמפעילה מיד את זרימת
 > **Check Signature Status** במקום להמתין למחזור ה‑5 דקות.
@@ -114,9 +114,9 @@ All notable changes to this project are documented here.
   (Sent → Viewed → Completed / Declined), reads back all member fields, downloads the
   package via `DownloadEnvelope` and attaches it to the business record.
 
-> **בעברית.** פאנל החתימה החי **מזהה עכשיו מעטפות**: מוצגת **רשימת מסמכים** עם חיווי חי
+> **עברית:** פאנל החתימה החי **מזהה עכשיו מעטפות**: מוצגת **רשימת מסמכים** עם חיווי חי
 > נחתם / נדחה / ממתין, וה‑PDF המאוחד נטען עם סיום כל המסמכים. זרימת ה‑polling קיבלה ענף
-> ייעודי למעטפות שמעדכן כל פריט, מדליק את הסטטוס, קורא חזרה את השדות ומצרף את החבילה
+> ייעודי למעטפות שמעדכן כל פריט ואת סטטוס הבקשה, קולט את ערכי השדות ומצרף את החבילה
 > החתומה לרשומה העסקית.
 
 ### Added — Copy-link governance | ממשל העתקת קישור
@@ -127,8 +127,9 @@ All notable changes to this project are documented here.
   ([60](../src/scripts/60-add-copylink-columns.ps1)); the Admin Center settings drawer
   exposes the global default.
 
-> **בעברית.** נוסף ממשל **העתקת קישור חתימה**: מתג גלובלי (`alex_allowcopylink`) ודריסה
-> פר‑תבנית (`alex_copylinkmode` — ברירת מחדל / מותר / חסום), עם מתג במרכז הניהול.
+> **עברית:** נוסף ממשל **העתקת קישור חתימה**: ברירת מחדל גלובלית
+> (`alex_allowcopylink`) והגדרה ברמת התבנית (`alex_copylinkmode` — ירושה / מותר / חסום),
+> עם מתג במרכז הניהול.
 
 ### Changed | שינויים
 
@@ -145,7 +146,7 @@ All notable changes to this project are documented here.
   ([55](../src/scripts/55-add-template-deleted-status.ps1)); the gallery shows a red
   *deleted* pill.
 
-> **בעברית.** **מרכז הניהול** רוענן (כרטיס תקינות אחד, זרימות אופציונליות שאינן חוסמות,
+> **עברית:** **מרכז הניהול** רוענן (כרטיס תקינות אחד, זרימות אופציונליות שאינן חוסמות,
 > גילוי זרימות חי). כל **תשעת** הטפסים הראשיים הם עכשיו **לקריאה בלבד** והתצוגות המשויכות
 > נבנו מחדש עם שמות דו‑לשוניים. תבניות שנמחקו ב‑easydo מושבתות עם סיבת סטטוס **נמחק**
 > במקום מחיקה קשיחה, והגלריה מציגה תווית אדומה.
@@ -160,7 +161,7 @@ All notable changes to this project are documented here.
   (`.edo-rt-line` drawn on the wrong physical side); fixed with an RTL-specific rule plus
   `overflow` clipping.
 
-> **בעברית.** **שם המעטפה** הציג GUID — עכשיו נפתר לשם התבנית האמיתי. תוקן באג **RTL**
+> **עברית:** **שם המעטפה** הציג GUID — עכשיו נפתר לשם התבנית האמיתי. תוקן באג **RTL**
 > בפאנל בזמן אמת (קו המחבר בפס ההתקדמות ורצועה לבנה בצד).
 
 ## [1.3.0.0] — document validity / expiry (auto-cancel overdue signature requests) (2026-07-30)
@@ -183,10 +184,10 @@ All notable changes to this project are documented here.
   easydo form (`CancelForm`) and marks the request **Expired** (`alex_status` = 626210010,
   `alex_cancelledon`).
 
-> **בעברית.** נוסף פיצ'ר **תוקף מסמך** לכל תבנית חתימה. שלוש הגדרות חדשות יושבות **בתוך**
-> רצועת ההגדרות של ה‑PCF (בלי להעמיס על הטופס): הפעלת תוקף, מספר ימי תוקף (1–3650), והרשאת
-> **דריסה לכל שליחה**. כשמופעל, זרימת **Send Signature Request** מחשבת וממלאת
-> **`alex_expireson`** ברגע השליחה. בוויזרד ניתן לדרוס את מספר ימי התוקף לשליחה בודדת
+> **עברית:** נוספה יכולת **תוקף מסמך** לכל תבנית חתימה. שלוש הגדרות חדשות נמצאות **בתוך**
+> רצועת ההגדרות של ה‑PCF (בלי להעמיס על הטופס): הפעלת תוקף, מספר ימי תוקף (1–3650)
+> ואפשרות לשנות את התוקף בכל שליחה. כשהתוקף מופעל, Flow מסוג **Send Signature Request** מחשב וממלא
+> את **`alex_expireson`** ברגע השליחה. באשף ניתן לשנות את מספר ימי התוקף לשליחה בודדת
 > (עובר דרך `alex_wizardpayload`). זרימה חדשה **Expire Overdue Requests** רצה **פעם ביום**,
 > מאתרת בקשות פתוחות שפג תוקפן, מבטלת את הטופס ב‑easydo ומסמנת את הבקשה כ‑**פג תוקף**.
 
@@ -207,13 +208,14 @@ All notable changes to this project are documented here.
   fields (both loops run with `concurrency.repetitions = 1` to avoid Dataverse throttling).
   New implementer guide: [multipage-readback-fix.md](multipage-readback-fix.md).
 
-> **בעברית.** זרימת קריאת התוצאות קראה בעבר רק את **העמוד הראשון** של המסמך החתום
+> **עברית:** Flow קריאת התוצאות קרא בעבר רק את **העמוד הראשון** של המסמך החתום
 > (`first(payload.data)`), כי תבניות הבדיקה המקוריות היו בנות עמוד אחד. במסמך אמיתי
 > רב‑עמודים easydo מחזירה את `payload.data` כמערך **לפי עמוד**, ולכן כל שדה בעמודים
-> 1..N (למשל **מטבע התשלום** בעמוד 23) דולג בשקט ולא נכתב חזרה ל‑Dynamics. הזרימה עוטפת
+> 1..N (למשל **מטבע התשלום** בעמוד 23) הושמט ללא התראה ולא נכתב חזרה ל‑Dynamics. הזרימה עוטפת
 > עכשיו את חילוץ הערכים בלולאת `Process_each_page` על כל העמודים — כך **כל השדות מכל
 > העמודים** נקראים. הערכים עדיין נשאבים מהאובייקט השטוח `data[header]`. תומך בכמות עמודים
-> ושדות בלתי‑מוגבלת (שתי הלולאות רצות סדרתית למניעת חניקה). נוסף מדריך מיישם ייעודי.
+> ושדות בלתי‑מוגבלת (שתי הלולאות רצות סדרתית כדי להפחית את הסיכון לחריגה ממגבלות הקצב
+> של Dataverse). נוסף מדריך מיישם ייעודי.
 
 ## [1.1.0.0] — field description, signature hiding & contact prefill in the wizard (2026-07-07)
 
@@ -241,13 +243,13 @@ All notable changes to this project are documented here.
   instead of `placeholderLabel`, which was only a **generic field‑type name** ("Text
   field", "Date") rather than an actual description.
 
-> **בעברית.** כל שדה תבנית מסתנכרן עכשיו עם שני שמות נפרדים: **תיאור שדה**
+> **עברית:** כל שדה תבנית מסתנכרן עכשיו עם שני שמות נפרדים: **תיאור שדה**
 > (`alex_externalfieldname`, מ‑`label` של easydo — לבני אדם) ו**שם ייצוא**
 > (`alex_externalexportname`, מ‑`export.header` — מפתח הקישור לאוטומציה). נוסף מדריך
 > דו‑לשוני שמסביר את המשמעות העסקית והטכנית של כל אחד. פקד מיפוי השדות **מסתיר שדות חתימה**
-> כברירת מחדל (עם תיבת סימון "הצג שדות חתימה"). אשף השליחה **פותר עכשיו שדות איש‑קשר** (קפיצת
-> lookup) בצד הלקוח, כך שערכי הרשומה הקשורה מוצגים בשלב "נתונים" ולא רק עמודות ישירות. תצוגת
-> המיפוי משתמשת כעת ב‑`label` (התיאור האמיתי) במקום ב‑`placeholderLabel` (שם‑סוג גנרי).
+> כברירת מחדל (עם תיבת סימון "הצג שדות חתימה"). אשף השליחה **פותר עכשיו שדות איש‑קשר**
+> באמצעות מעבר דרך Lookup בצד הלקוח, כך שערכי הרשומה הקשורה מוצגים בשלב "נתונים" ולא רק עמודות ישירות. תצוגת
+> המיפוי משתמש כעת ב‑`label` (התיאור האמיתי) במקום ב‑`placeholderLabel` (שם כללי של סוג השדה).
 
 ## Backlog | לטיפול בהמשך
 
@@ -295,7 +297,7 @@ All notable changes to this project are documented here.
   (626210003) is intentionally **not** auto-set. **Viewed** is the earliest reliable
   signal after sending.
 
-> **בעברית.** נוספה לכידת **סיבת דחייה** (`alex_declinereason`) — סיבת הסירוב שהלקוח
+> **עברית:** נוספה לכידת **סיבת דחייה** (`alex_declinereason`) — סיבת הסירוב שהלקוח
 > הקליד ב‑easydo נשמרת ומוצגת בפאנל הצדדי. זרימת ה‑polling מסנכרנת עכשיו את **כל**
 > מחזור החיים (נדחה / פג‑תוקף / בוטל / הושלם / נצפה) ולא רק הושלם, וגם רשומות עבר
 > נתפסות. בכישלון שליחה נחתם `alex_senton`. ה‑swagger של `GetFormStatus` תועד במלואו
@@ -357,15 +359,16 @@ All notable changes to this project are documented here.
   **Created (3)** with no transaction rollback; no runtime solution is created because
   the base is unmanaged (by design).
 
-> **בעברית.** הפעלת טבלת שליחה ממסך "ניהול טבלאות שליחה" קוראת ל‑Custom API
-> `alex_EnsureSignatureLookup` שמייצר ביקוש קשר N:1 בין הטבלה העסקית ל‑
-> `alex_signaturerequest`. קודם הפלאגין הוסיף את הקשר ל‑solution הקשיח
-> `alex_d365_easydo` ו**בלע** שגיאה כשה‑solution מנוהל — מה שגרם לגלגול הטרנזקציה
+> **עברית:** הפעלת טבלת שליחה ממסך "ניהול טבלאות שליחה" קוראת ל‑Custom API
+> `alex_EnsureSignatureLookup` שיוצר קשר N:1 בין הטבלה העסקית ל‑
+> `alex_signaturerequest`. בעבר ה‑Plugin הוסיף את הקשר ל‑Solution הקבוע
+> `alex_d365_easydo` והתעלם מהשגיאה כאשר ה‑Solution היה Managed — מה שגרם לגלגול הטרנזקציה
 > לאחור ולסטטוס **נכשל (4)** עם "שגיאת קשר". **התיקון:** אם הבסיס לא‑מנוהל (פיתוח)
-> משתמשים בו ישירות; אם מנוהל (לקוח) נוצר/נעשה שימוש ב‑solution לא‑מנוהל ייעודי
-> **`alex_d365_easydo_runtime`** והמשתמש מקבל **אזהרה** שההתאמה נשמרה שם; הפלאגין כבר
-> אינו בולע חריגות. **השלכת ALM:** הפעלת טבלה בבעלות solution מנוהל (Sales / Service /
-> Marketing) יוצרת **תלות מנוהלת** עליו — שחייבת להתקיים בסביבת היעד, אחרת הייבוא
+> משתמשים בו ישירות; אם הוא Managed (בסביבת לקוח), המערכת יוצרת או משתמשת ב‑Solution
+> ייעודי מסוג Unmanaged בשם **`alex_d365_easydo_runtime`**, והמשתמש מקבל **אזהרה**
+> שההתאמה נשמרה שם. ה‑Plugin כבר אינו מתעלם מחריגות. **המשמעות מבחינת ALM:** הפעלת
+> טבלה בבעלות Solution מנוהל (Sales / Service / Marketing) יוצרת בו **תלות מנוהלת**
+> שחייבת להתקיים בסביבת היעד, אחרת הייבוא
 > ייכשל. לכן יש להפעיל רק טבלאות שהלקוח באמת מחזיק.
 
 ## [Unreleased] — signed PDF on the primary record, smart last-viewed & per-table lookups (2026-06-21)
