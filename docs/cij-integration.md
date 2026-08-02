@@ -1,26 +1,48 @@
-# Customer Insights – Journeys ↔ easydo Signature Integration
+# שילוב easydo עם Customer Insights - Journeys
 
-Integrating easydo e‑signature requests with Dynamics 365 **Customer Insights – Journeys (CIJ)**.
-שילוב בקשות חתימה אלקטרונית של easydo עם **Customer Insights – Journeys (CIJ)** ב‑Dynamics 365.
+מסמך זה מסביר כיצד להפעיל מסעות ב־Dynamics 365 **Customer Insights - Journeys
+(CIJ)** בעקבות שינויים בסטטוס של בקשות חתימה ב־easydo.
 
-> **Bottom line / שורה תחתונה:** A CIJ trigger should react to the **Sent** status (`626210002`), not **Ready to Send** — because *Ready to Send* is a transient internal state that may still fail, while *Sent* is the confirmed event that the request actually reached the customer.
-> טריגר ב‑CIJ צריך להגיב לסטטוס **נשלח** (`626210002`), לא ל**מוכן למשלוח** — כי *מוכן למשלוח* הוא מצב ביניים פנימי שעוד עלול להיכשל, ואילו *נשלח* הוא האירוע המאומת שהבקשה באמת הגיעה ללקוח.
+> **המלצה מרכזית:** כדי להתחיל מסע לאחר שליחה מוצלחת, יש להאזין לסטטוס
+> **נשלח (`Sent`, ‏`626210002`)** ולא לסטטוס **מוכן למשלוח (`Ready to Send`,
+> ‏`626210001`)**. הסטטוס „מוכן למשלוח” הוא מצב עיבוד זמני והשליחה עדיין עלולה
+> להיכשל. האות הראשון שמאשר פעולה של הנמען הוא **נצפה (`Viewed`,
+> ‏`626210004`)**. הסטטוס `Delivered` אינו נקבע אוטומטית, משום ש־easydo אינו
+> מספק אישור מסירה אמין.
+
+## תוכן עניינים
+
+- [מבנה התהליך](#1-מבנה-התהליך)
+- [טבלת הסטטוסים](#2-טבלת-הסטטוסים)
+- [בחירת סטטוס לטריגר](#3-בחירת-סטטוס-לטריגר)
+- [דפוסי טריגר מומלצים](#4-דפוסי-טריגר-מומלצים)
+- [הסתייגויות](#5-הסתייגויות)
 
 ---
 
-## 1. How the pieces fit together / איך החלקים מתחברים
+## 1. מבנה התהליך
 
-**English.** A signature request is a Dataverse record (`alex_signaturerequest`). Its `alex_status` column moves through a lifecycle. A backend Power Automate flow ([send-signature-request](../src/flows/send-signature-request.flow.json)) listens for the **Ready to Send** status, calls easydo, and on success sets the status to **Sent**. A second scheduled flow ([read-signature-results](../src/flows/read-signature-results.flow.json)) polls easydo and advances the status to **Delivered / Viewed / Completed**. CIJ plugs in by **reacting** to these status changes to drive journeys (confirmations, reminders, follow‑ups).
+בקשת חתימה נשמרת ב־Dataverse כרשומה בטבלה `alex_signaturerequest`. העמודה
+`alex_status` מייצגת את מצב הבקשה לאורך התהליך.
 
-**עברית:** בקשת חתימה היא רשומת Dataverse (`alex_signaturerequest`). העמודה `alex_status` עוברת מחזור חיים. Flow ברקע ([send-signature-request](../src/flows/send-signature-request.flow.json)) מאזין לסטטוס **מוכן למשלוח**, קורא ל‑easydo, ובהצלחה מעדכן ל**נשלח**. Flow מתוזמן נוסף ([read-signature-results](../src/flows/read-signature-results.flow.json)) מושך עדכונים מ‑easydo ומקדם את הסטטוס ל**נמסר / נצפה / הושלם**. CIJ מגיב לשינויי הסטטוס הללו ומפעיל מסעות המשך, כגון אישורים ותזכורות.
+Flow השליחה
+([send-signature-request](../src/flows/send-signature-request.flow.json)) מופעל כאשר
+הבקשה עוברת לסטטוס **מוכן למשלוח**. הוא שולח את הבקשה ל־easydo, ולאחר הצלחה
+מעדכן אותה לסטטוס **נשלח**. בשלב זה קיימים המזהה החיצוני וקישור החתימה, אך אין
+עדיין ודאות שההודעה נמסרה לנמען.
+
+Flow מתוזמן
+([read-signature-results](../src/flows/read-signature-results.flow.json)) בודק את מצב
+הבקשות הפתוחות ב־easydo ומעדכן את הסטטוס ב־Dataverse. CIJ יכול להגיב לשינויים
+אלה ולהפעיל מסעות אישור, תזכורת, טיפול בסירוב או סיום תהליך.
 
 ```mermaid
 flowchart LR
     D["Draft<br/>טיוטה"] --> R["Ready to Send<br/>מוכן למשלוח"]
-    R -->|"backend flow sends<br/>Flow ברקע שולח"| S["Sent<br/>נשלח"]
+    R -->|"Send Flow"| S["Sent<br/>נשלח"]
     R -->|"send fails<br/>שליחה נכשלת"| F["Failed<br/>נכשל"]
-    S --> DL["Delivered<br/>נמסר"]
-    DL --> V["Viewed<br/>נצפה"]
+    S -.-> DL["Delivered<br/>נמסר<br/>(לא מתעדכן אוטומטית)"]
+    S --> V["Viewed<br/>נצפה"]
     V --> P["In Progress<br/>בתהליך"]
     P --> C["Completed<br/>הושלם"]
     P --> X["Declined<br/>נדחה"]
@@ -34,65 +56,82 @@ flowchart LR
 
 ---
 
-## 2. Status reference / טבלת סטטוסים
+התרשים מציג את המסלול המקובל. בפועל בקשה עשויה לדלג על חלק ממצבי הביניים,
+בהתאם למידע שמוחזר מ־easydo.
 
-Choice: `alex_signaturestatus` on `alex_signaturerequest.alex_status`.
-בחירה: `alex_signaturestatus` על `alex_signaturerequest.alex_status`.
+## 2. טבלת הסטטוסים
 
-| Value / ערך | English | עברית | Meaning / משמעות |
+העמודה `alex_signaturerequest.alex_status` משתמשת ב־Choice
+`alex_signaturestatus`.
+
+| ערך | שם רשמי | שם לתצוגה | משמעות |
 |---|---|---|---|
-| `626210000` | Draft | טיוטה | Created in Dynamics, not yet sent. נוצר ב‑Dynamics, טרם נשלח. |
-| `626210001` | Ready to Send | מוכן למשלוח | Validated; queued for the backend flow. **Transient.** אומת ונמצא בתור ל‑Flow ברקע. **זמני.** |
-| `626210002` | **Sent** | **נשלח** | easydo accepted it; request reached the customer. **Confirmed.** easydo קיבל; הבקשה הגיעה ללקוח. **מאומת.** |
-| `626210003` | Delivered | נמסר | easydo confirmed delivery. easydo אישר מסירה. |
-| `626210004` | Viewed | נצפה | Recipient opened the document. הנמען פתח את המסמך. |
-| `626210005` | In Progress | בתהליך | One or more recipients are signing. נמען אחד או יותר בתהליך חתימה. |
-| `626210006` | Completed | הושלם | All required recipients signed. כל הנמענים הנדרשים חתמו. |
-| `626210007` | Declined | נדחה | A recipient refused to sign. נמען סירב לחתום. |
-| `626210008` | Failed | נכשל | Delivery/processing error. שגיאת משלוח/עיבוד. |
-| `626210009` | Cancelled | בוטל | Cancelled before completion. בוטל לפני השלמה. |
-| `626210010` | Expired | פג תוקף | Expired before all signed. פג תוקף לפני שכולם חתמו. |
-| `626210011` | Pending Retry | ממתין לניסיון חוזר | Transient error; queued to retry. שגיאה זמנית; ממתין לניסיון חוזר. |
+| `626210000` | `Draft` | טיוטה | הבקשה נוצרה ב־Dynamics 365 וטרם נשלחה. |
+| `626210001` | `Ready to Send` | מוכן למשלוח | הבקשה ממתינה לעיבוד על ידי Flow השליחה. זהו מצב זמני. |
+| `626210002` | `Sent` | נשלח | easydo קיבל את הבקשה והשליחה הצליחה. המזהה החיצוני וקישור החתימה זמינים. |
+| `626210003` | `Delivered` | נמסר | ערך שמור לאישור מסירה. אינו נקבע אוטומטית, משום שאין אות מסירה אמין מ־easydo. |
+| `626210004` | `Viewed` | נצפה | הנמען פתח את המסמך. |
+| `626210005` | `In Progress` | בתהליך | נמען אחד או יותר נמצאים בתהליך החתימה. |
+| `626210006` | `Completed` | הושלם | כל הנמענים הנדרשים חתמו. |
+| `626210007` | `Declined` | נדחה | נמען סירב לחתום. |
+| `626210008` | `Failed` | נכשל | אירעה שגיאה בשליחה או בעיבוד. |
+| `626210009` | `Cancelled` | בוטל | הבקשה בוטלה לפני השלמת החתימה. |
+| `626210010` | `Expired` | פג תוקף | תוקף הבקשה פג לפני השלמת כל החתימות. |
+| `626210011` | `Pending Retry` | ממתין לניסיון חוזר | אירעה שגיאה זמנית והבקשה ממתינה לניסיון נוסף. |
 
 ---
 
-## 3. Which status should the CIJ trigger listen to? / לאיזה סטטוס הטריגר ב‑CIJ צריך להאזין?
+## 3. בחירת סטטוס לטריגר
 
-**English.** It depends on the journey's purpose — but the rule is: **listen to a confirmed, meaningful business event, not a transient processing state.**
+יש לבחור סטטוס שמייצג אירוע עסקי מאומת בהתאם למטרת המסע, ולא מצב עיבוד זמני.
 
-- **Do NOT trigger on `Ready to Send` (626210001).** It is only an instruction to the backend flow. Nothing has happened yet; the send can still flip to **Failed**. A journey started here may run for requests that never reached the customer, and the record has no `formId`/signing link yet (race condition).
-- **Trigger on `Sent` (626210002)** to react to *"the request actually went out."* At this point the `formId` and signing link exist and the send succeeded.
-
-**עברית:** הבחירה תלויה במטרת המסע, אך הכלל הוא: **יש להאזין לאירוע עסקי מאומת ומשמעותי, ולא למצב עיבוד זמני.**
-
-- **אין להפעיל טריגר על `מוכן למשלוח` (626210001).** זו רק הוראה ל‑Flow ברקע. בשלב זה השליחה טרם בוצעה והיא עדיין עלולה להיכשל. מסע שמתחיל כאן עלול לפעול עבור בקשות שלא הגיעו ללקוח, ולרשומה עדיין אין `formId` או קישור חתימה (תנאי מרוץ).
-- **הפעל טריגר על `נשלח` (626210002)** כדי להגיב ל*"הבקשה באמת יצאה."* בנקודה זו ה‑`formId` וקישור החתימה קיימים והשליחה הצליחה.
+- **אין להפעיל מסע על `Ready to Send` (`626210001`).** זהו אות ל־Flow להתחיל
+    את השליחה. הבקשה עדיין עלולה לעבור ל־`Failed`, וייתכן שהמזהה החיצוני וקישור
+    החתימה טרם נוצרו.
+- **יש להשתמש ב־`Sent` (`626210002`)** כאשר המסע צריך להתחיל לאחר שהשליחה
+    ל־easydo הצליחה וקישור החתימה זמין.
+- **אין לבסס מסע על `Delivered` (`626210003`) במימוש הנוכחי.** easydo אינו מספק
+    אות מסירה אמין, ולכן הסטטוס אינו נקבע אוטומטית.
+- **יש להשתמש ב־`Viewed` (`626210004`)** כאשר נדרש אישור ראשון לכך שהנמען פתח
+    את המסמך.
+- **יש להשתמש ב־`Completed` (`626210006`)** כאשר המסע צריך להתחיל רק לאחר
+    השלמת כל החתימות הנדרשות.
 
 ---
 
-## 4. Trigger patterns / תבניות טריגר
+## 4. דפוסי טריגר מומלצים
 
-| Goal / מטרה | Listen to status / להאזין לסטטוס | Value |
+| מטרת המסע | סטטוס | ערך |
 |---|---|---|
-| Confirm the request was sent / אישור שהבקשה נשלחה | Sent / נשלח | `626210002` |
-| Nudge after delivery / דחיפה לאחר מסירה | Delivered / נמסר | `626210003` |
-| Reminder if opened but not signed / תזכורת אם נצפה ולא נחתם | Viewed / נצפה | `626210004` |
-| Celebrate / close on signing / סיום בחתימה | Completed / הושלם | `626210006` |
-| Recover a refusal / טיפול בסירוב | Declined / נדחה | `626210007` |
-| Handle a send failure / טיפול בכשל שליחה | Failed / נכשל | `626210008` |
+| אישור שהשליחה ל־easydo הצליחה | `Sent` / נשלח | `626210002` |
+| פעולה לאחר פתיחת המסמך | `Viewed` / נצפה | `626210004` |
+| תזכורת לאחר צפייה ללא חתימה | `Viewed` / נצפה, המתנה ובדיקה חוזרת | `626210004` |
+| סיום המסע לאחר חתימה | `Completed` / הושלם | `626210006` |
+| טיפול בסירוב לחתום | `Declined` / נדחה | `626210007` |
+| טיפול בכשל שליחה | `Failed` / נכשל | `626210008` |
 
-**Implementation note / הערת מימוש.** In CIJ, create a **Dataverse-based trigger** on the `alex_signaturerequest` table, then add a condition on `alex_status` equal to the target value above. For reminders, combine the **Viewed** trigger with a wait branch and re‑check that the status has not advanced to **Completed**.
-ב‑CIJ צרו **טריגר מבוסס Dataverse** על הטבלה `alex_signaturerequest`, והוסיפו תנאי ש‑`alex_status` שווה לערך המבוקש לעיל. לתזכורות — שלבו את טריגר **נצפה** עם ענף המתנה ובדיקה חוזרת שהסטטוס לא התקדם ל**הושלם**.
-
----
-
-## 5. Caveats / הסתייגויות
-
-- **English.** `Ready to Send` and `Pending Retry` are internal/transient — never use them as journey entry points. Always gate journeys on confirmed states (`Sent` and onward).
-- **עברית:** `מוכן למשלוח` ו`ממתין לניסיון חוזר` הם מצבי ביניים פנימיים. אין להשתמש בהם כנקודת כניסה למסע; יש להגדיר את תנאי הכניסה לפי סטטוסים מאומתים (`נשלח` והלאה).
-- **English.** A request can jump straight to `Failed` from `Ready to Send`; always design a parallel **Failed** branch so journeys do not hang.
-- **עברית:** בקשה יכולה לעבור ישירות מ־`מוכן למשלוח` ל־`נכשל`; תכננו תמיד ענף **נכשל** מקביל כדי שמסעות לא ייתקעו.
+ב־CIJ יש ליצור טריגר מבוסס Dataverse על הטבלה `alex_signaturerequest` ולהוסיף
+תנאי שלפיו `alex_status` שווה לערך המתאים. בתרחיש תזכורת מומלץ להתחיל בסטטוס
+`Viewed`, להוסיף המתנה ולבדוק שוב שהבקשה טרם עברה ל־`Completed` לפני שליחת
+התזכורת.
 
 ---
 
-See also / ראו גם: [docs/flow-schemas.md](flow-schemas.md) · [docs/technical-architecture.md](technical-architecture.md) · [docs/data-model.md](data-model.md)
+## 5. הסתייגויות
+
+- `Ready to Send` ו־`Pending Retry` הם מצבי עיבוד פנימיים וזמניים. אין להשתמש
+    בהם כנקודת כניסה למסע.
+- בקשה יכולה לעבור ישירות מ־`Ready to Send` ל־`Failed`. יש לתכנן מסלול טיפול
+    בכשל ולא להניח שכל בקשה תגיע ל־`Sent`.
+- עדכון סטטוס עלול להתרחש יותר מפעם אחת. יש להגדיר את כללי הכניסה והיציאה כך
+    שלא יישלחו הודעות כפולות.
+- מסע שמתחיל ב־`Viewed` צריך לבדוק מחדש את הסטטוס לאחר ההמתנה, משום שהבקשה
+    עשויה לעבור בינתיים ל־`Completed`, ‏`Declined`, ‏`Cancelled` או `Expired`.
+
+---
+
+## מסמכים קשורים
+
+- [סכמות ה־Flows](flow-schemas.md)
+- [ארכיטקטורה טכנית](technical-architecture.md)
+- [מודל הנתונים](data-model.md)

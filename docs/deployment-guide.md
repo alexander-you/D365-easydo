@@ -44,7 +44,7 @@ index row and no tag is invisible to anyone browsing the repo. Always also:
 2. Add a `## [<version>]` entry to [release-notes.md](release-notes.md).
 3. Commit and create the git tag `v<version>` (and push it).
 
-> **עברית:** הוצאת גרסה כוללת **חבילת Managed וחבילת Unmanaged** באמצעות
+> **סיכום הוצאת גרסה:** הוצאת גרסה כוללת **חבילת Managed וחבילת Unmanaged** באמצעות
 > `40-export-release.ps1`, וכן **שורה בטבלת הגרסאות**, **רשומה ביומן הגרסאות** ותג Git
 > `v<version>` שנדחף למאגר. ללא שלושת הפריטים האלה, הגרסה קיימת בתיקייה אך אינה מופיעה
 > באינדקס הגרסאות.

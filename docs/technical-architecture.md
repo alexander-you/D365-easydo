@@ -163,7 +163,7 @@ and persists it to `alex_statusmessage`. The plug-in deliberately **does not cat
 continue** past an `OrganizationService` failure — doing so aborts the platform
 transaction and silently rolls the relationship back.
 
-> **עברית:** הפעלת טבלה לשליחה במסך **ניהול טבלאות שליחה** קוראת ל‑Custom API
+> **התנהגות בסביבת לקוח:** הפעלת טבלה לשליחה במסך **ניהול טבלאות שליחה** קוראת ל‑Custom API
 > `alex_EnsureSignatureLookup`, שיוצר קשר N:1 מ‑`alex_signaturerequest` לטבלה. מאחר
 > שאי אפשר להוסיף Metadata חדש ל‑Solution מסוג Managed, ה‑Plugin בוחר יעד מסוג
 > **Unmanaged**: בסביבת הפיתוח נעשה שימוש ב‑`alex_d365_easydo`; בסביבת לקוח, שבה

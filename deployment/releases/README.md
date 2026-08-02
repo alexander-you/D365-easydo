@@ -30,7 +30,7 @@ Each version folder contains both artifacts, produced by
 3. After import, confirm the flows are **On** in the easydo Admin Center → "התקנה
    ותקינות" (required flows gate readiness; the optional copy flows do not).
 
-> **עברית:** כל תיקיית גרסה מכילה חבילת **Managed** וחבילת **Unmanaged**. יש לייבא את
+> **הנחיות פריסה:** כל תיקיית גרסה מכילה חבילת **Managed** וחבילת **Unmanaged**. יש לייבא את
 > חבילת ה‑Managed לסביבות בדיקה וייצור, ואת חבילת ה‑Unmanaged לסביבת הפיתוח. במהלך
 > הייבוא יש להגדיר את שני החיבורים (`alex_easydo`, `alex_dataverse_easydo`) ולוודא
 > שתהליכי ה‑Flow פעילים דרך מרכז הניהול.
