@@ -82,13 +82,29 @@ has two ALM consequences to plan for:
   dependencies**, and **import fails** if the dependency is missing in the target
   environment. Only enable tables the customer actually has licensed/installed.
 
-> **בעברית.** הפעלת טבלת שליחה ממסך הניהול יוצרת קשר חדש דרך ה‑Custom API
-> `alex_EnsureSignatureLookup`. בפיתוח הקשר נוסף ישירות ל‑`alex_d365_easydo` (לא‑מנוהל)
-> ונוסע בייצוא הבא; אצל לקוח (בסיס מנוהל) הוא נוסף ל‑solution לא‑מנוהל ייעודי
-> `alex_d365_easydo_runtime` שיש לייצא בנפרד — או, עדיף, להפעיל את הטבלה כבר בפיתוח כדי
-> שתישלח בתוך ה‑managed הראשי. בנוסף, הפעלת טבלה בבעלות solution מנוהל (Sales / Service /
-> Marketing) יוצרת **תלות מנוהלת** שחייבת להתקיים בסביבת היעד — אחרת הייבוא ייכשל. יש
-> להפעיל רק טבלאות שהלקוח אכן מחזיק.
+### התאמות בזמן ריצה ותלויות ב‑Solution מנוהל
+
+מנהל מערכת יכול לאפשר שליחת מסמכים מכל טבלה עסקית דרך מסך **ניהול טבלאות שליחה**
+במרכז הניהול. בעת הפעלת טבלה, ה‑Custom API `alex_EnsureSignatureLookup` יוצר קשר ייעודי
+בין הטבלה לבין `alex_signaturerequest`. הקשר מאפשר לשייך כל בקשת חתימה לרשומת המקור
+ולהציג את בקשות החתימה הקשורות אליה.
+
+**מיקום הקשר ב‑Solution תלוי בסוג הסביבה:**
+
+- בסביבת **Dev**, ה‑Solution הראשי `alex_d365_easydo` הוא Unmanaged. הקשר נוסף אליו
+  ישירות ולכן נכלל בייצוא הבא של ה‑Solution.
+- בסביבת **Test, Production או סביבת לקוח**, ה‑Solution הראשי מותקן בדרך כלל כ‑Managed
+  ואי אפשר להוסיף אליו רכיבי Metadata חדשים. במקרה כזה המערכת יוצרת או משתמשת
+  ב‑Solution לא‑מנוהל ייעודי בשם `alex_d365_easydo_runtime`, ומציגה למנהל המערכת אזהרה.
+- כדי להעביר את ההתאמה לסביבה אחרת, יש לייצא גם את `alex_d365_easydo_runtime`. הדרך
+  המומלצת היא להפעיל את הטבלה כבר בסביבת Dev, כדי שהקשר ייכלל בייצוא ה‑Managed של
+  ה‑Solution הראשי.
+
+**הפעלת טבלה עשויה ליצור תלות ב‑Solution אחר.** לדוגמה, הפעלת `account` או
+`salesorder` יוצרת תלות ב‑Sales, והפעלת `incident` או `entitlement` יוצרת תלות
+ב‑Service. ה‑Solution הנדרש חייב להיות מותקן בסביבת היעד; אחרת ייבוא הפתרון ייכשל.
+לכן יש להפעיל רק טבלאות שקיימות בסביבות הלקוח ושעבורן מותקנים הרישוי ורכיבי המוצר
+הנדרשים.
 
 ## Prerequisites | דרישות מקדימות
 
