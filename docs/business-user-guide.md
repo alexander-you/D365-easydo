@@ -1,436 +1,260 @@
-# Connector Actions Guide | מדריך פעולות הקונקטור
+# מדריך פעולות הקונקטור
 
-> מדריך זה מסביר **בשפה פשוטה** מה עושה כל אחת מ־15 הפעולות של קונקטור easydo,
-> מתי משתמשים בה, מה ממלאים בכל שדה ומה מקבלים בחזרה. המדריך מיועד למי שבונה
-> תהליכי Flow ב‑Power Automate ואינו בהכרח מכיר את ה‑API. לכל פעולה יש מקום לצילום מסך.
+מדריך זה מסביר בשפה פשוטה מה עושה כל פעולה בקונקטור easydo, מתי משתמשים בה,
+אילו ערכים מזינים ומה מתקבל בתגובה. הוא מיועד לבוני תהליכים ב־Power Automate
+ואינו דורש היכרות מוקדמת עם ה־API.
 
-This guide explains, **in plain language**, what each of the 15 easydo connector
-actions does, when to use it, what you type into each field, and what you get back.
-It is written for someone building flows in Power Automate — no API knowledge needed.
-Screenshots are placeholders for now; replace the images under
-[images/](images/) when you capture them.
+שמות הפעולות והשדות נשארו באנגלית, כפי שהם מוצגים ב־Power Automate.
 
-> **A note about screenshots / על צילומי המסך:** the `![...](images/...)` lines below
-> are placeholders. The pictures do not exist yet — add them to the `docs/images/`
-> folder later and they will appear automatically.
+## תוכן עניינים
 
----
-
-## How signing works in one minute | איך זה עובד בקצרה
-
-You build a **template** once on the easydo website (the document plus the places
-people sign). After that, the everyday job is simply: pick a template, list who
-should sign, and send. easydo emails each person a private signing link and reports
-the status back. Most flows only need three or four of the actions below — the rest
-are there for advanced scenarios.
-
-> בונים **תבנית** פעם אחת באתר easydo (המסמך + המקומות לחתימה). לאחר מכן העבודה
-> היומיומית פשוטה: בוחרים תבנית, מציינים מי צריך לחתום, ושולחים. easydo שולח לכל
-> אדם קישור חתימה אישי במייל ומדווח על הסטטוס. רוב הזרימות צריכות רק שלוש-ארבע מהפעולות.
+- [תהליך החתימה בקצרה](#תהליך-החתימה-בקצרה)
+- [קבוצה A: בדיקת החיבור](#קבוצה-a-בדיקת-החיבור)
+- [קבוצה B: אחזור מידע](#קבוצה-b-אחזור-מידע)
+- [קבוצה C: שליחה רגילה לחתימה](#קבוצה-c-שליחה-רגילה-לחתימה)
+- [קבוצה D: בנייה וניהול ידניים](#קבוצה-d-בנייה-וניהול-ידניים)
+- [קבוצה E: מעטפות מרובות מסמכים](#קבוצה-e-מעטפות-מרובות-מסמכים)
+- [טבלת תמצית](#טבלת-תמצית)
 
 ---
 
-## The 15 actions | 15 הפעולות
+## תהליך החתימה בקצרה
 
-The actions fall into four groups:
+בונים תבנית פעם אחת באתר easydo: מעלים את המסמך ומגדירים את המקומות המיועדים
+לחתימה ולמילוי. לאחר מכן בוחרים את התבנית, מציינים מי נדרש לחתום ושולחים.
+easydo שולח לכל חותם קישור אישי ומחזיר את סטטוס החתימה. ברוב התהליכים נדרשות
+רק הפעולות לאחזור תבנית, לשליחה ולבדיקת סטטוס.
 
-| # | Group | Actions |
+---
+
+## קבוצות הפעולות
+
+| # | קבוצה | פעולות |
 | --- | --- | --- |
-| A | Check the connection | Get entity |
-| B | Look things up | Get profiles, Get templates, Get template detail, List forms |
-| C | Send for signature (the main job) | Send template, Create draft form |
-| D | Advanced / manual control | Create form, Set recipients, Upload file, Send form, Get status, Download document, Cancel, Delete |
-| E | **Envelopes** (multi-document packages) | Get / Create / Update / Send / Download / Delete envelope |
+| A | בדיקת החיבור | `Get entity` |
+| B | אחזור מידע | `Get profiles`, `Get templates`, `Get template detail`, `List forms` |
+| C | שליחה רגילה לחתימה | `Send template`, `Create draft form` |
+| D | בנייה וניהול ידניים | `Create form`, `Set recipients`, `Upload file`, `Send form`, `Get status`, `Download document`, `Cancel`, `Delete` |
+| E | מעטפות מרובות מסמכים | פעולות אחזור, יצירה, עדכון, שליחה, הורדה ומחיקה של מעטפה |
 
-> **New in 2.0.0.0 / חדש ב‑2.0.0.0:** you can now send **several documents as one
-> envelope**, require the signer to **authenticate** (PIN or SMS OTP), and watch an
-> envelope sign **document by document** in real time. See Group E below and
-> [release-notes.md](release-notes.md).
-
----
-
-## Group A — Check the connection | קבוצה A — בדיקת חיבור
-
-### 1. Get entity (test connection) | אחזור ישות (בדיקת חיבור)
-
-**Plain meaning:** "Is my easydo connection working?" This asks easydo for the
-details of *your own* company account. If it answers, your token and connection are
-fine.
-
-**When to use:** Once, when setting things up, or to troubleshoot a broken connection.
-
-**What you fill in:** Nothing.
-
-**What you get back:** Your company's name and ID in easydo.
-
-![Get entity action](images/01-get-entity.png)
-
-> **עברית:** "האם החיבור ל-easydo תקין?" הפעולה מבקשת את פרטי חשבון החברה שלך.
-> אם מתקבלת תשובה — הטוקן והחיבור תקינים. לא ממלאים כלום. משתמשים בה פעם אחת בהקמה
-> או לאיתור תקלות.
+החל מגרסה 2.0.0.0 אפשר לשלוח כמה מסמכים כחבילת חתימה אחת, לדרוש אימות של
+החותם באמצעות PIN או קוד חד־פעמי ב־SMS ולעקוב אחר כל מסמך בנפרד. מידע נוסף
+מופיע ב[הערות המהדורה](release-notes.md).
 
 ---
 
-## Group B — Look things up | קבוצה B — חיפוש מידע
+## קבוצה A: בדיקת החיבור
 
-### 2. Get profiles / contacts | אחזור פרופילים / אנשי קשר
+### 1. `Get entity` — בדיקת החיבור
 
-**Plain meaning:** Get the list of contacts (people) that already exist in your
-easydo account, so you can pick a saved recipient instead of typing their email
-every time.
+הפעולה בודקת אם החיבור ל־easydo תקין באמצעות אחזור פרטי חשבון החברה.
 
-**When to use:** When you want to send to someone already saved in easydo.
+- **מתי משתמשים:** לאחר הגדרת החיבור או בעת איתור תקלה.
+- **מה מזינים:** אין שדות למילוי.
+- **מה מתקבל:** שם החברה והמזהה שלה ב־easydo.
 
-**What you fill in (all optional):**
-
-| Field | What it really means |
-| --- | --- |
-| Page size | How many contacts to bring back at once (e.g. `25`). Leave it for the default. |
-| Start offset | Where to start in the list — `0` is the beginning. Use it only to fetch the *next* page (e.g. set it to `25` for the second page). |
-| Request counter | A technical number easydo echoes back so it can match the response to your request. You can leave it as `1`. |
-
-**What you get back:** A list of contacts, each with a name, email and easydo ID.
-
-![Get profiles action](images/02-get-profiles.png)
-
-> **עברית:** מחזירה את רשימת אנשי הקשר השמורים ב-easydo, כדי לבחור נמען שמור במקום
-> להקליד כתובת email בכל פעם. כל השדות אופציונליים: "גודל עמוד" = כמה רשומות להביא;
-> `Start offset` = מהיכן להתחיל (0 = מההתחלה, 25 = העמוד הבא); `Request counter` = מספר טכני שאפשר
-> להשאיר 1.
-
-### 3. Get templates from easydo | אחזור תבניות מ-easydo
-
-**Plain meaning:** Get the list of ready-made templates you built on the easydo
-website, so you can choose which document to send.
-
-**When to use:** To let a user pick a template, or to find a template's ID.
-
-**What you fill in:** The same three optional paging fields as above (page size,
-start offset, request counter) — usually left as defaults.
-
-**What you get back:** A list of templates, each with its name and **template ID**
-(you'll need that ID to send).
-
-![Get templates action](images/03-get-templates.png)
-
-> **עברית:** מחזירה את רשימת התבניות המוכנות שבנית באתר easydo, כדי לבחור איזה מסמך
-> לשלוח. בכל תבנית מופיע השם ו**מזהה התבנית** (תזדקק לו כדי לשלוח). השדות זהים לפעולה
-> הקודמת ובדרך כלל נשארים בברירת המחדל.
-
-### 4. Get template detail and fields | אחזור פרטי תבנית ושדות
-
-**Plain meaning:** Open one specific template and see what's inside it — its name,
-and the list of fields people will fill in (such as "Full name" or "ID number").
-
-**When to use:** When you need to know which fields a template contains, for example
-to map them to Dynamics columns.
-
-**What you fill in:**
-
-| Field | What it really means |
-| --- | --- |
-| Template ID | The ID of the template you want to inspect (from action 3). |
-
-**What you get back:** The template's details and the list of its fields.
-
-![Get template detail action](images/04-get-template.png)
-
-> **עברית:** פותחת תבנית מסוימת ומציגה מה יש בה — שם והשדות שאנשים ימלאו (כמו "שם
-> מלא" או "תעודת זהות"). ממלאים את "מזהה תבנית" (מהפעולה הקודמת). שימושי כשרוצים לדעת
-> אילו שדות יש בתבנית.
-
-### 7. List forms | אחזור רשימת טפסים
-
-> *(Listed here with the look-ups; technically action #7 in the connector.)*
-
-**Plain meaning:** Show the signature forms that have already been created or sent —
-basically your "sent items" for signatures.
-
-**When to use:** To check history, or to find a form you sent earlier.
-
-**What you fill in:** Optional paging fields (page size, start offset, request
-counter).
-
-**What you get back:** A list of forms with their status (waiting, signed, etc.) and
-IDs.
-
-![List forms action](images/07-list-forms.png)
-
-> **עברית:** מציגה את הטפסים שכבר נוצרו או נשלחו — מעין "פריטים שנשלחו" לחתימות. בכל
-> טופס מופיע הסטטוס (ממתין, נחתם וכו') והמזהה. השדות אופציונליים.
+אם הפעולה מחזירה תשובה תקינה, פרטי החיבור וה־token תקינים.
 
 ---
 
-## Group C — Send for signature (the everyday job) | קבוצה C — שליחה לחתימה
+## קבוצה B: אחזור מידע
 
-These two actions are what most flows actually use.
+### 2. `Get profiles / contacts` — אחזור אנשי קשר
 
-### 5. Send template for signature | שליחת תבנית לחתימה ⭐
+הפעולה מחזירה את אנשי הקשר השמורים בחשבון easydo. כך אפשר לבחור נמען קיים
+במקום להזין מחדש את פרטיו בכל שליחה.
 
-**Plain meaning:** The main action. Take a ready template, say who should sign, and
-**send it**. Each recipient immediately gets an email with their personal signing
-link.
+- **מתי משתמשים:** כאשר רוצים לשלוח מסמך לאדם שכבר שמור ב־easydo.
+- **מה מתקבל:** רשימת אנשי קשר הכוללת שם, כתובת email ומזהה easydo.
 
-**When to use:** Every time you want to send a document out for signature. This is
-the action the "Send signature request" flow uses.
+כל שדות הקלט אופציונליים:
 
-**What you fill in:**
-
-| Field | What it really means |
+| שדה | משמעות |
 | --- | --- |
-| Template ID | Which template (document) to send — from action 3. |
-| Form name | A friendly name for this specific send, e.g. "Know your customer – Dana Levi". It helps you recognise it later. |
-| Recipients | The people who should sign. For each one you give a **name** and **email**, the **order** they sign in (1, 2, 3…), and mark whether they actually sign or just receive a copy. |
+| `Page size` | מספר אנשי הקשר שיוחזרו בכל עמוד, לדוגמה `25`. אם השדה נשאר ריק, תחול ברירת המחדל. |
+| `Start offset` | המיקום שממנו מתחיל האחזור. `0` מציין את תחילת הרשימה; `25` יכול לשמש לאחזור העמוד הבא. |
+| `Request counter` | מספר טכני שמוחזר בתגובה לצורך התאמה לבקשה. בדרך כלל אפשר להשאיר `1`. |
 
-**What you get back:** The new form, including its **form ID** and a **signing link**
-for each recipient. Save the form ID so you can track the status later.
+### 3. `Get templates from easydo` — אחזור תבניות
 
-![Send template action](images/05-send-template.png)
+הפעולה מחזירה את תבניות החתימה שנבנו באתר easydo.
 
-> **עברית:** הפעולה המרכזית. בוחרים תבנית מוכנה, מציינים מי צריך לחתום, ו**שולחים**.
-> כל נמען מקבל מיד מייל עם קישור חתימה אישי. ממלאים: "מזהה תבנית" (איזה מסמך), "שם
-> הטופס" (שם ברור לבקשת החתימה), ו"נמענים" — לכל נמען שם, כתובת email, סדר חתימה
-> (1, 2, 3) והאם
-> הוא חותם או רק מקבל עותק. בחזרה מקבלים **מזהה טופס** ו**קישור חתימה** לכל נמען. שמרו
-> את מזהה הטופס כדי לעקוב אחרי הסטטוס.
+- **מתי משתמשים:** להצגת תבניות לבחירה או לאיתור מזהה של תבנית.
+- **מה מזינים:** שדות הדפדוף האופציונליים המפורטים בפעולה הקודמת.
+- **מה מתקבל:** רשימת תבניות הכוללת את שם התבנית ואת `Template ID` הנדרש לשליחה.
 
-### 6. Create a draft form from a template | יצירת טיוטה מתבנית
+### 4. `Get template detail and fields` — אחזור פרטי תבנית ושדות
 
-**Plain meaning:** Same as "Send", **but it does not send anything yet**. It prepares
-the document as a draft so you (or the user) can review it before it goes out.
+הפעולה מחזירה את פרטי התבנית ואת השדות שהחותמים נדרשים למלא, כגון שם מלא
+או מספר זהות.
 
-**When to use:** For a "Preview" button — create the draft, look at it, then send for
-real later.
+- **מתי משתמשים:** כאשר צריך להכיר את מבנה התבנית, למשל לצורך מיפוי השדות לעמודות ב־Dynamics 365.
+- **מה מזינים:** `Template ID` שהתקבל בפעולה `Get templates`.
+- **מה מתקבל:** פרטי התבנית, השדות והתפקידים המוגדרים בה.
 
-**What you fill in:** The **Template ID** (and recipients if you want to pre-fill
-them). No email is sent.
+### 7. `List forms` — אחזור טפסים
 
-**What you get back:** A draft form with an ID, ready to be reviewed or sent.
+הפעולה מציגה טפסי חתימה שכבר נוצרו או נשלחו.
 
-![Create draft form action](images/06-create-draft.png)
-
-> **עברית:** כמו "שליחה", אך הפעולה **עדיין אינה שולחת דבר** — היא מכינה את המסמך כטיוטה לבדיקה
-> לפני השליחה. שימושי לכפתור "תצוגה מקדימה": יוצרים טיוטה, בודקים, ואז שולחים. ממלאים
-> "מזהה תבנית", ולא נשלח שום מייל.
+- **מתי משתמשים:** לבדיקת היסטוריית השליחות או לאיתור טופס קיים.
+- **מה מזינים:** שדות דפדוף אופציונליים.
+- **מה מתקבל:** רשימת טפסים הכוללת מזהה וסטטוס, כגון ממתין או נחתם.
 
 ---
 
-## Group D — Advanced / manual control | קבוצה D — שליטה ידנית מתקדמת
+## קבוצה C: שליחה רגילה לחתימה
 
-You normally don't need these — "Send template" does the whole job in one step. They
-exist for the manual, step-by-step way of building a signature request (upload your
-own file, add signers, then send), and for managing forms after they're out.
+אלה הפעולות המרכזיות ברוב תהליכי העבודה.
 
-> בדרך כלל אין צורך בפעולות האלה — "שליחת תבנית" מבצעת את התהליך כולו בצעד אחד. הן
-> מיועדות לתהליך ידני, שלב אחר שלב (העלאת קובץ, הוספת חותמים ושליחה), ולניהול טפסים
-> לאחר השליחה.
+### 5. `Send template for signature` — שליחת תבנית לחתימה
 
-### 8. Create form | יצירת טופס
+הפעולה יוצרת בקשת חתימה מתבנית מוכנה ושולחת לכל נמען קישור חתימה אישי. זוהי
+הפעולה שבה משתמש Flow השליחה הרגיל.
 
-**Plain meaning:** Start an **empty** signature form from scratch (not from a
-template). You'll then add a file and recipients yourself in the next steps.
-
-**When to use:** Only in the manual flow, when you don't start from a template.
-
-**What you fill in:** Basic details for the new form (such as a name).
-
-**What you get back:** An empty form with an ID to use in the following steps.
-
-![Create form action](images/08-create-form.png)
-
-> **עברית:** יוצרת טופס חתימה **ריק** מאפס (לא מתבנית). לאחר מכן מוסיפים קובץ ונמענים
-> באופן ידני. הפעולה משמשת רק בתהליך הידני ומחזירה מזהה טופס לשלבים הבאים.
-
-### 11. Set recipients (assignees) | קביעת נמענים
-
-**Plain meaning:** Tell an existing form **who needs to sign it** and in what order.
-
-**When to use:** In the manual flow, after creating a form, before sending it.
-
-**What you fill in:**
-
-| Field | What it really means |
+| שדה | משמעות |
 | --- | --- |
-| Form ID | Which form you're adding signers to (from action 8). |
-| Recipients | The signers — name, email, signing order, and whether they sign or just get a copy. |
+| `Template ID` | התבנית שרוצים לשלוח. המזהה מתקבל בפעולה `Get templates`. |
+| `Form name` | שם ברור לבקשת החתימה, לדוגמה "הכר את הלקוח — דנה לוי". |
+| `Recipients` | רשימת הנמענים. לכל נמען מציינים שם, כתובת email, סדר חתימה והאם הוא חותם או מקבל עותק בלבד. |
 
-**What you get back:** Confirmation that the signers were attached to the form.
+בתגובה מתקבלים `Form ID` וקישור חתימה לכל נמען. יש לשמור את `Form ID` לצורך
+מעקב אחר הסטטוס והורדת המסמך החתום.
 
-![Set recipients action](images/11-set-assignees.png)
+### 6. `Create a draft form from a template` — יצירת טיוטה מתבנית
 
-> **עברית:** מגדירה לטופס קיים **מי צריך לחתום** ובאיזה סדר. ממלאים "מזהה טופס" ואת
-> רשימת הנמענים (שם, מייל, סדר חתימה, והאם חותם או רק מקבל עותק). משמשת בזרימה הידנית
-> אחרי יצירת טופס ולפני שליחתו.
+הפעולה מכינה טופס מתבנית אך אינה שולחת אותו. אפשר להשתמש בה להצגת המסמך
+ולבדיקתו לפני השליחה.
 
-### 12. Upload file | העלאת קובץ
-
-**Plain meaning:** Attach the actual document (a PDF) to a form that you built
-manually.
-
-**When to use:** In the manual flow, when you bring your own file instead of using a
-template.
-
-**What you fill in:**
-
-| Field | What it really means |
-| --- | --- |
-| Form ID | Which form the file belongs to. |
-| File | The document content to attach (usually a PDF). |
-
-**What you get back:** Confirmation that the file is attached.
-
-![Upload file action](images/12-upload-file.png)
-
-> **עברית:** מצרפת את המסמך עצמו (PDF) לטופס שבנית ידנית. ממלאים "מזהה טופס" ואת
-> הקובץ. משמשת בזרימה הידנית כשמביאים קובץ משלך במקום תבנית.
-
-### 13. Send form | שליחת טופס
-
-**Plain meaning:** Send a form that you assembled manually (file + recipients) so the
-signers get their emails. This is the manual equivalent of "Send template".
-
-**When to use:** At the end of the manual flow, once the form has a file and signers.
-
-**What you fill in:** The **Form ID** of the form to send.
-
-**What you get back:** Confirmation and the signing links for the recipients.
-
-![Send form action](images/13-send-form.png)
-
-> **עברית:** שולחת טופס שהורכב ידנית (קובץ + נמענים) כך שהחותמים יקבלו את הודעות ה‑email.
-> זו המקבילה הידנית ל"שליחת תבנית". ממלאים "מזהה טופס". משמשת בסוף הזרימה הידנית.
-
-### 9. Get form status | בדיקת סטטוס טופס
-
-**Plain meaning:** Check what's happening with a form you sent — is it still waiting,
-viewed, signed, or declined?
-
-**When to use:** To follow up after sending, e.g. a flow that updates Dynamics when
-the document is signed.
-
-**What you fill in:**
-
-| Field | What it really means |
-| --- | --- |
-| Form ID | The form you want to check (you saved this when you sent it). |
-
-**What you get back:** The current status and details of each signer.
-
-![Get form status action](images/09-get-status.png)
-
-> **עברית:** בודקת מה קורה עם טופס שנשלח — האם עדיין ממתין, נצפה, נחתם או נדחה.
-> ממלאים "מזהה טופס". שימושי למעקב לאחר שליחה (למשל זרימה שמעדכנת את Dynamics כשהמסמך
-> נחתם).
-
-### 14. Download document | הורדת מסמך
-
-**Plain meaning:** Download the finished, signed PDF so you can store it back in
-Dynamics 365.
-
-**When to use:** Once a form is fully signed, to keep a copy on the record.
-
-**What you fill in:**
-
-| Field | What it really means |
-| --- | --- |
-| Form ID | The signed form whose PDF you want. |
-
-**What you get back:** The signed PDF file content.
-
-![Download document action](images/14-download.png)
-
-> **עברית:** מורידה את קובץ ה‑PDF החתום כדי לשמור אותו ברשומת Dynamics 365. ממלאים
-> "מזהה טופס". משתמשים בה לאחר שהטופס נחתם במלואו.
-
-### 15. Cancel form | ביטול טופס
-
-**Plain meaning:** Cancel a signature request that was already sent, so it can no
-longer be signed.
-
-**When to use:** When a request was sent by mistake or is no longer relevant.
-
-**What you fill in:**
-
-| Field | What it really means |
-| --- | --- |
-| Form ID | The form you want to cancel. |
-
-**What you get back:** Confirmation that the form was cancelled.
-
-![Cancel form action](images/15-cancel-form.png)
-
-> **עברית:** מבטלת בקשת חתימה שכבר נשלחה, כך שלא ניתן יותר לחתום עליה. ממלאים "מזהה
-> טופס". משמשת כשבקשה נשלחה בטעות או אינה רלוונטית עוד.
-
-### 10. Delete form | מחיקת טופס
-
-**Plain meaning:** Permanently remove a form — usually a leftover draft you no longer
-need.
-
-**When to use:** To clean up drafts or test forms. Be careful: this is permanent.
-
-**What you fill in:**
-
-| Field | What it really means |
-| --- | --- |
-| Form ID | The form to delete. |
-
-**What you get back:** Confirmation that the form was deleted.
-
-![Delete form action](images/10-delete-form.png)
-
-> **עברית:** מוחקת טופס לצמיתות — בדרך כלל טיוטה שכבר אין בה צורך. ממלאים "מזהה טופס".
-> זהירות: הפעולה בלתי הפיכה. שימושי לניקוי טיוטות או טפסי בדיקה.
+- **מתי משתמשים:** בתהליך הכולל תצוגה מקדימה או אישור לפני שליחה.
+- **מה מזינים:** `Template ID`, ואפשר גם להזין מראש את הנמענים.
+- **מה מתקבל:** טיוטת טופס ומזהה שאפשר להשתמש בו בפעולות הבאות.
 
 ---
 
-## Group E — Envelopes (multi-document packages) | קבוצה E — מעטפות
+## קבוצה D: בנייה וניהול ידניים
 
-An **envelope** bundles several documents into **one** signing package: the signer opens
-one link and signs each document in order. You build the envelope once on the easydo
-website (which documents, in what order, who signs each), and the solution keeps it in
-sync as an **envelope template**.
+בדרך כלל אין צורך בפעולות אלה, משום ש־`Send template for signature` מבצעת את
+תהליך השליחה המלא. הן מיועדות לבניית בקשה ללא תבנית ולניהול טפסים לאחר יצירתם.
 
-- **Send an envelope** works just like sending a single template — pick the envelope,
-  choose the recipient, send. Behind the scenes the everyday flow calls **Send envelope**
-  once, and the solution creates one **item** per document so you can see the status of
-  **each** document separately (Pending → Waiting → Signed / Declined).
-- **Watch it live.** In real-time mode the panel shows a checklist of the envelope's
-  documents; each turns green as the customer signs it. When the last one is signed, the
-  **combined signed PDF** appears on the record automatically.
-- **Authentication.** An envelope (or a single template) can require the signer to enter a
-  **PIN** or a one-time **SMS code (OTP)** before signing — configured on the template.
+תהליך ידני טיפוסי כולל יצירת טופס ריק, הוספת נמענים, העלאת PDF ושליחת הטופס.
 
-> **עברית:** **מעטפה** מאגדת כמה מסמכים ל**חבילת חתימה אחת**: החותם פותח קישור
-> אחד וחותם על כל מסמך לפי הסדר. שולחים מעטפה בדיוק כמו תבנית רגילה, והמערכת
-> יוצרת **פריט** לכל מסמך כך שרואים סטטוס נפרד (ממתין ← נחתם / נדחה). במצב בזמן אמת
-> רואים רשימת מעקב שבה כל מסמך מסומן בירוק לאחר חתימתו, ובסוף קובץ ה‑PDF החתום
-> והמאוחד מופיע ברשומה. ניתן גם
-> לדרוש מהחותם **PIN** או **קוד חד‑פעמי (OTP) ב‑SMS** לפני החתימה.
+### 8. `Create form` — יצירת טופס ריק
+
+הפעולה יוצרת טופס חתימה חדש שאינו מבוסס על תבנית.
+
+- **מתי משתמשים:** בתחילת תהליך ידני שבו מעלים קובץ ומגדירים נמענים בנפרד.
+- **מה מזינים:** פרטים בסיסיים, כגון שם הטופס.
+- **מה מתקבל:** `Form ID` לשימוש בשלבים הבאים.
+
+### 11. `Set recipients` — הגדרת נמענים
+
+הפעולה מגדירה מי יחתום על טופס קיים ובאיזה סדר.
+
+| שדה | משמעות |
+| --- | --- |
+| `Form ID` | מזהה הטופס שנוצר קודם לכן. |
+| `Recipients` | רשימת הנמענים, כולל שם, כתובת email, סדר חתימה והאם הנמען חותם או מקבל עותק בלבד. |
+
+בתגובה מתקבל אישור שהנמענים שויכו לטופס.
+
+### 12. `Upload file` — העלאת קובץ
+
+הפעולה מצרפת קובץ PDF לטופס שנבנה באופן ידני.
+
+| שדה | משמעות |
+| --- | --- |
+| `Form ID` | מזהה הטופס שאליו יצורף הקובץ. |
+| `File` | תוכן הקובץ, בדרך כלל מסמך PDF. |
+
+בתגובה מתקבל אישור שהקובץ צורף לטופס.
+
+### 13. `Send form` — שליחת טופס
+
+הפעולה שולחת טופס שהורכב באופן ידני לאחר שנוספו אליו קובץ ונמענים.
+
+- **מתי משתמשים:** בשלב האחרון של התהליך הידני.
+- **מה מזינים:** `Form ID` של הטופס המוכן לשליחה.
+- **מה מתקבל:** אישור שליחה וקישורי החתימה של הנמענים.
+
+### 9. `Get form status` — בדיקת סטטוס
+
+הפעולה בודקת את מצב הטופס ואת מצב החתימה של כל נמען.
+
+- **מתי משתמשים:** למעקב לאחר השליחה, למשל כדי לעדכן את הרשומה ב־Dynamics 365 לאחר החתימה.
+- **מה מזינים:** `Form ID` שנשמר בעת יצירת הטופס או שליחתו.
+- **מה מתקבל:** הסטטוס הנוכחי ופרטי החותמים.
+
+### 14. `Download document` — הורדת מסמך
+
+הפעולה מורידה את קובץ ה־PDF של הטופס. לאחר השלמת החתימה אפשר לשמור את הקובץ
+החתום ברשומה המתאימה ב־Dynamics 365.
+
+- **מה מזינים:** `Form ID` של הטופס.
+- **מה מתקבל:** תוכן קובץ ה־PDF.
+
+### 15. `Cancel form` — ביטול טופס
+
+הפעולה מבטלת בקשת חתימה שכבר נשלחה ומונעת חתימה נוספת עליה.
+
+- **מתי משתמשים:** כאשר בקשה נשלחה בטעות או אינה רלוונטית עוד.
+- **מה מזינים:** `Form ID` של הטופס לביטול.
+- **מה מתקבל:** אישור שהטופס בוטל.
+
+### 10. `Delete form` — מחיקת טיוטה
+
+הפעולה מוחקת טופס לצמיתות. היא מיועדת בעיקר לטיוטות ולטפסי בדיקה שכבר אין
+בהם צורך.
+
+- **מה מזינים:** `Form ID` של הטופס למחיקה.
+- **מה מתקבל:** אישור שהטופס נמחק.
+
+> המחיקה בלתי הפיכה. אין להשתמש בפעולה זו כאשר נדרש לשמור היסטוריית חתימה.
 
 ---
 
-## Quick reference | טבלת תמצית
+## קבוצה E: מעטפות מרובות מסמכים
 
-| # | Action | One-line purpose |
+מעטפה מאגדת כמה מסמכים לחבילת חתימה אחת. החותם פותח קישור אחד וחותם על
+המסמכים לפי הסדר שהוגדר. המערכת שומרת סטטוס נפרד לכל מסמך ומפיקה PDF מאוחד
+לאחר השלמת החתימה על כל המסמכים.
+
+| פעולה | שימוש |
+| --- | --- |
+| `Get envelope templates` | אחזור תבניות מעטפה קיימות. |
+| `Create draft envelope` | יצירת טיוטת מעטפה בלי לשלוח אותה. |
+| `Get envelope detail / status` | אחזור הרכב המעטפה או מעקב אחר סטטוס של מעטפה שנשלחה. |
+| `Update envelope template` | עדכון ההגדרות והרכב המסמכים בתבנית מעטפה. |
+| `Send envelope for signature` | יצירה ושליחה של מעטפה מתבנית קיימת. |
+| `Download combined envelope PDF` | הורדת קובץ ה־PDF המאוחד לאחר שכל המסמכים נחתמו. |
+| `Delete envelope` | מחיקת תבנית מעטפה, טיוטה או מופע שנשלח. |
+
+בשליחת מעטפה אפשר להגדיר חותם ראשי ולדרוש אימות באמצעות PIN או קוד חד־פעמי
+ב־SMS. במצב זמן אמת מוצגת רשימת המסמכים, וכל מסמך מסומן כהושלם לאחר חתימתו.
+
+---
+
+## טבלת תמצית
+
+| # | פעולה | מטרה |
 | --- | --- | --- |
-| 1 | Get entity | Test that the connection works. |
-| 2 | Get profiles | List saved contacts in easydo. |
-| 3 | Get templates | List your ready-made templates. |
-| 4 | Get template detail | See a template's fields. |
-| 5 | **Send template** ⭐ | Send a template for signature (main action). |
-| 6 | Create draft form | Prepare a draft without sending (preview). |
-| 7 | List forms | See forms already created/sent. |
-| 8 | Create form | Start an empty form (manual flow). |
-| 9 | Get form status | Check if a form is signed yet. |
-| 10 | Delete form | Permanently remove a form. |
-| 11 | Set recipients | Add signers to a manual form. |
-| 12 | Upload file | Attach a PDF to a manual form. |
-| 13 | Send form | Send a manually built form. |
-| 14 | Download document | Get the signed PDF. |
-| 15 | Cancel form | Stop a sent request. |
-| 16 | Get / Create / Update envelope | Read or build a multi-document envelope. |
-| 17 | **Send envelope** ⭐ | Send a multi-document envelope for signature. |
-| 18 | Download / Delete envelope | Get the combined signed PDF, or remove an envelope. |
+| 1 | `Get entity` | בדיקת תקינות החיבור. |
+| 2 | `Get profiles` | אחזור אנשי קשר שמורים. |
+| 3 | `Get templates` | אחזור תבניות חתימה. |
+| 4 | `Get template detail` | הצגת פרטי התבנית והשדות שלה. |
+| 5 | **`Send template`** | שליחת תבנית לחתימה. |
+| 6 | `Create draft form` | יצירת טיוטה ללא שליחה. |
+| 7 | `List forms` | הצגת טפסים שנוצרו או נשלחו. |
+| 8 | `Create form` | יצירת טופס ריק לתהליך ידני. |
+| 9 | `Get form status` | בדיקת סטטוס הטופס והחותמים. |
+| 10 | `Delete form` | מחיקה לצמיתות של טיוטה או טופס. |
+| 11 | `Set recipients` | הוספת נמענים לטופס ידני. |
+| 12 | `Upload file` | צירוף PDF לטופס ידני. |
+| 13 | `Send form` | שליחת טופס שנבנה ידנית. |
+| 14 | `Download document` | הורדת מסמך PDF. |
+| 15 | `Cancel form` | ביטול בקשת חתימה שנשלחה. |
+| 16 | פעולות אחזור ועריכת מעטפה | ניהול תבניות מעטפה והרכב המסמכים. |
+| 17 | **`Send envelope`** | שליחת כמה מסמכים כחבילת חתימה אחת. |
+| 18 | פעולות הורדה ומחיקת מעטפה | הורדת PDF מאוחד או מחיקת מעטפה. |
 
-> ⭐ = the action used by the everyday "Send signature request" flow.
+הפעולות **`Send template`** ו־**`Send envelope`** הן פעולות השליחה המרכזיות
+בתהליכי העבודה הרגילים.
