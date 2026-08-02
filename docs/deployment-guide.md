@@ -106,6 +106,84 @@ has two ALM consequences to plan for:
 לכן יש להפעיל רק טבלאות שקיימות בסביבות הלקוח ושעבורן מותקנים הרישוי ורכיבי המוצר
 הנדרשים.
 
+## Add the Documents PCF to a business form | הוספת פקד המסמכים לטופס עסקי
+
+The **Documents grid** PCF is included in the released Solution, but importing the
+Solution does not place it automatically on forms that belong to the customer. The
+control displays the signature requests related to the current business record, with
+status filters, sent and completion dates, envelope progress, navigation to the request,
+and an on-demand **Check status** action. See the
+[Documents PCF source](../src/pcf-documents/) and its feature summary in the
+[release notes](release-notes.md#added--template-gallery--documents-experience--גלריית-תבניות-ומסך-מסמכים).
+
+### Recommended: add it from the easydo Admin Center
+
+1. Open **Send tables management** and enable the required business table. Wait until
+  the relationship status shows that the Lookup was created successfully.
+2. Select **Add to form** next to the enabled table.
+3. Choose each Main Form on which the documents should appear.
+4. The Admin Center adds an **easydo Documents** tab containing a related-record subgrid
+  and binds `alex_EasyDo.EasyDoDocumentsGrid` to it. The form is then published.
+
+Repeat the operation for every Main Form used by the relevant model-driven apps. Adding
+the control to one form does not add it to the table's other forms.
+
+### Manual installation in the form designer
+
+Use this path when the form is managed separately, when the customer does not permit
+automatic form changes, or when the control must be placed in an existing tab:
+
+1. Confirm that the relationship `alex_<table>_signaturerequest` exists. If it does not,
+  enable the table first in **Send tables management**.
+2. Open the table's Main Form in the Power Apps form designer and add a subgrid in the
+  required tab or section.
+3. Configure the subgrid to show **related records only** from the
+  `alex_signaturerequest` table through the `alex_<table>_signaturerequest`
+  relationship. Use a view that includes `alex_name`, `alex_status`, `alex_templateid`,
+  `alex_senton`, `alex_laststatuscheckon` and `alex_completedon`.
+4. Add the code component `alex_EasyDo.EasyDoDocumentsGrid` to the subgrid's dataset,
+  bind its `records` dataset to the subgrid and leave `language` as `auto` unless a
+  fixed language is required. Enable the component for Web, Tablet and Phone.
+5. Save and publish the form, then verify it from an existing business record that has
+  at least one related signature request.
+
+### הוספה מומלצת דרך מרכז הניהול של easydo
+
+פקד ה‑PCF **מסמכי easydo** כלול ב‑Solution המופץ, אך ייבוא ה‑Solution אינו מוסיף אותו
+אוטומטית לטפסים השייכים ללקוח. הפקד מציג את בקשות החתימה המקושרות לרשומה העסקית
+הנוכחית, כולל סינון לפי סטטוס, תאריכי שליחה והשלמה, התקדמות חתימה במעטפה, מעבר לבקשת
+החתימה ובדיקת סטטוס לפי דרישה. מידע נוסף נמצא ב[קוד המקור של הפקד](../src/pcf-documents/)
+וב[תקציר היכולת ביומן הגרסאות](release-notes.md#added--template-gallery--documents-experience--גלריית-תבניות-ומסך-מסמכים).
+
+1. פתחו את **ניהול טבלאות שליחה** והפעילו את הטבלה העסקית הרצויה. המתינו עד שסטטוס
+  הקשר יציין שה‑Lookup נוצר בהצלחה.
+2. לחצו על **הוסף לטופס** לצד הטבלה הפעילה.
+3. בחרו כל Main Form שבו יש להציג את המסמכים.
+4. מרכז הניהול מוסיף לטופס לשונית **מסמכי easydo**, ובה Subgrid של הרשומות המקושרות
+  ופקד `alex_EasyDo.EasyDoDocumentsGrid`. בסיום הטופס מתפרסם אוטומטית.
+
+יש לחזור על הפעולה עבור כל Main Form שמשמש את היישומים הרלוונטיים. הוספת הפקד לטופס
+אחד אינה מוסיפה אותו אוטומטית לטפסים האחרים של אותה טבלה.
+
+### הוספה ידנית באמצעות מעצב הטפסים
+
+מסלול זה מתאים כאשר הטופס מנוהל בנפרד, כאשר הלקוח אינו מאפשר שינוי אוטומטי של הטופס,
+או כאשר רוצים למקם את הפקד בלשונית קיימת:
+
+1. ודאו שהקשר `alex_<table>_signaturerequest` קיים. אם הקשר אינו קיים, הפעילו תחילה את
+  הטבלה במסך **ניהול טבלאות שליחה**.
+2. פתחו את ה‑Main Form של הטבלה במעצב הטפסים של Power Apps והוסיפו Subgrid בלשונית או
+  במקטע הרצויים.
+3. הגדירו את ה‑Subgrid להצגת **רשומות קשורות בלבד** מטבלת `alex_signaturerequest`, דרך
+  הקשר `alex_<table>_signaturerequest`. בחרו View הכולל את העמודות `alex_name`,
+  `alex_status`, `alex_templateid`, `alex_senton`, `alex_laststatuscheckon`
+  ו‑`alex_completedon`.
+4. הוסיפו ל‑dataset של ה‑Subgrid את רכיב הקוד `alex_EasyDo.EasyDoDocumentsGrid`, קשרו
+  את ה‑dataset בשם `records` ל‑Subgrid והשאירו את `language` בערך `auto`, אלא אם נדרשת
+  שפה קבועה. הפעילו את הרכיב עבור Web, Tablet ו‑Phone.
+5. שמרו ופרסמו את הטופס. לאחר מכן פתחו רשומה עסקית שיש לה לפחות בקשת חתימה מקושרת
+  וודאו שהפקד מציג אותה.
+
 ## Prerequisites | דרישות מקדימות
 
 Before deploying or running the solution, make sure the following are in place.
