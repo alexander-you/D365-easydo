@@ -13,6 +13,7 @@ Each version folder contains both artifacts, produced by
 
 | Version | Date | Highlights |
 | --- | --- | --- |
+| [2.0.0.1](2.0.0.1/) | 2026-08-10 | **Release repair** — packages the Template Gallery PCF and removes an EN-only Tenant Contract relationship from EasyDo |
 | [2.0.0.0](2.0.0.0/) | 2026-08-01 | **Major** — multi-document **envelopes** (2 new tables, 7 connector ops, Envelope Composition PCF), recipient **authentication** (PIN/OTP), **Template Gallery** PCF, on-demand **status check** flow, envelope real-time signing, copy-link governance, read-only forms |
 | [1.3.0.0](1.3.0.0/) | 2026-07-30 | Document validity / expiry — per-template settings, send-time compute, per-send override, and daily auto-cancel of overdue requests |
 | [1.2.0.0](1.2.0.0/) | 2026-07-30 | Multi-page read-back — signed values written back from **all** PDF pages, not just page 0 |

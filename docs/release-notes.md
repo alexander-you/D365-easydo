@@ -4,6 +4,19 @@
 
 All notable changes to this project are documented here.
 
+## [2.0.0.1] — release-boundary repair (2026-08-10)
+
+### Fixed | תוקן
+
+- **Managed-package dependencies.** The Template Gallery PCF is now explicitly included in
+  `alex_d365_easydo`, rather than remaining only in the development environment's Active
+  solution. The EN-only Tenant Contract (`alex_tenant_contract`) relationship and its
+  Documents subgrid were removed from EasyDo, so the package no longer depends on that
+  environment-specific table.
+
+> **תוקן:** פקד גלריית התבניות נכלל במפורש ב־EasyDo. הקשר המקומי לטבלת חוזי הדיירים
+> וה־subgrid שלו הוסרו מ־EasyDo, ולכן החבילה אינה תלויה עוד בהתאמה הייחודית לסביבת EN.
+
 ## [2.0.0.0] — envelopes (multi-document packages), recipient authentication (PIN/OTP), template gallery & on-demand status (2026-08-01)
 
 > **Major release.** This version turns the solution from single-document signing into a
