@@ -4,6 +4,34 @@
 
 All notable changes to this project are documented here.
 
+## [2.0.0.2] — signature-lookup provisioning fix on managed installs (2026-08-10)
+
+### Fixed | תוקן
+
+- **"שגיאת קשר" when enabling a table on a managed (customer) install.** The
+  `alex_EnsureSignatureLookup` Custom API (which provisions the native lookup from
+  `alex_signaturerequest` to a business table so the source record shows a subgrid of its
+  signature requests) used to always try to create an unmanaged *runtime* solution under
+  the `alex` publisher. On a managed install that publisher is **read-only**, so
+  `Create(solution)` threw; because a plug-in cannot catch an `OrganizationService`
+  failure and continue (`0x8009000c` — *"ISV code reduced the open transaction count"*),
+  the whole transaction — including the lookup that had just been created — was rolled
+  back. The result: the relationship was reported created but did not exist, and the admin
+  center showed a generic **"שגיאת קשר"**.
+- The plugin now checks the publisher's `isreadonly` flag **before** attempting any
+  solution create. When the publisher is writable (dev) it behaves as before; when it is
+  read-only (managed install) it **leaves the relationship in the Default solution** —
+  which is fully functional org-wide, so the native subgrid works — and returns
+  successfully with an informational warning instead of failing. The mandatory `alex_`
+  lookup is always provisioned.
+
+> **תוקן:** בהתקנה מנוהלת (לקוח) פעולת ה‑`alex_EnsureSignatureLookup` ניסתה תמיד ליצור
+> Solution לא‑מנוהל תחת מפרסם ה‑`alex`, שהוא לקריאה בלבד בהתקנה מנוהלת — מה שגרם לכשל
+> ולגלגול לאחור של כל הטרנזקציה (כולל ה‑lookup שנוצר), והצגת **"שגיאת קשר"**. כעת ה‑plugin
+> בודק את הדגל `isreadonly` של המפרסם לפני כל ניסיון יצירה: אם המפרסם לקריאה בלבד הוא
+> משאיר את הקשר ב‑Default solution (פעיל לכל דבר, ה‑subgrid עובד) ומחזיר הצלחה עם אזהרה
+> במקום להיכשל. ה‑lookup החובה של `alex_` תמיד נוצר.
+
 ## [2.0.0.1] — release-boundary repair (2026-08-10)
 
 ### Fixed | תוקן

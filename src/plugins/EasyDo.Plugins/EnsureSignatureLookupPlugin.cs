@@ -176,6 +176,14 @@ namespace EasyDo.Plugins
 
         // Resolves an UNMANAGED solution the new relationship can be added to.
         // Returns null to mean "leave the component in the Default solution".
+        //
+        // CRITICAL: a plug-in must never make an OrganizationService call that is
+        // expected to fail. A caught OrganizationService fault still aborts the whole
+        // platform transaction ("ISV code reduced the open transaction count"), which
+        // would roll back the lookup we just created. So we only attempt to create the
+        // runtime solution when we KNOW its publisher is writable; on a managed customer
+        // install the base publisher is read-only, and we fall back to the Default
+        // solution WITHOUT a doomed call.
         private static string ResolveTargetSolution(IOrganizationService svc, ITracingService trace, out string warning)
         {
             warning = null;
@@ -193,33 +201,47 @@ namespace EasyDo.Plugins
                 return RuntimeSolution;
             }
 
-            // Try to create the dedicated unmanaged runtime solution, reusing the base publisher.
-            if (primary != null && primary.PublisherId != Guid.Empty)
+            // We would like a dedicated unmanaged runtime solution, but creating one is
+            // only possible when the base publisher is writable. On a managed customer
+            // install the publisher is read-only and the create would throw - poisoning
+            // the transaction and losing the lookup. Check FIRST, and only create when
+            // we know it will succeed.
+            if (primary != null && primary.PublisherId != Guid.Empty && IsPublisherWritable(svc, trace, primary.PublisherId))
             {
-                try
-                {
-                    var sol = new Entity("solution");
-                    sol["uniquename"] = RuntimeSolution;
-                    sol["friendlyname"] = RuntimeSolutionFriendly;
-                    sol["version"] = "1.0.0.0";
-                    sol["publisherid"] = new EntityReference("publisher", primary.PublisherId);
-                    svc.Create(sol);
-                    trace.Trace("EnsureSignatureLookup: created unmanaged runtime solution '{0}'.", RuntimeSolution);
-                    warning = "Base solution '" + PrimarySolution + "' is managed. A new unmanaged solution '" +
-                              RuntimeSolution + "' was created automatically to hold signature-request relationships " +
-                              "made on this environment. New relationships will be added there from now on - include it in your ALM.";
-                    return RuntimeSolution;
-                }
-                catch (Exception ex)
-                {
-                    trace.Trace("EnsureSignatureLookup: could not create runtime solution: {0}", ex.Message);
-                }
+                var sol = new Entity("solution");
+                sol["uniquename"] = RuntimeSolution;
+                sol["friendlyname"] = RuntimeSolutionFriendly;
+                sol["version"] = "1.0.0.0";
+                sol["publisherid"] = new EntityReference("publisher", primary.PublisherId);
+                svc.Create(sol);
+                trace.Trace("EnsureSignatureLookup: created unmanaged runtime solution '{0}'.", RuntimeSolution);
+                warning = "Base solution '" + PrimarySolution + "' is managed. A new unmanaged solution '" +
+                          RuntimeSolution + "' was created automatically to hold signature-request relationships " +
+                          "made on this environment. New relationships will be added there from now on - include it in your ALM.";
+                return RuntimeSolution;
             }
 
-            // Last resort: leave the component in the Default solution (functional, not packaged).
-            warning = "Base solution '" + PrimarySolution + "' is managed and a dedicated unmanaged solution could not " +
-                      "be created. The relationship was left in the Default solution (functional but not tracked in a packaged solution).";
+            // Publisher is read-only (managed install) or unavailable: leave the
+            // relationship in the Default solution. It still exists org-wide, so the
+            // native subgrid on the source record works; it is simply not packaged in a
+            // named unmanaged solution (these per-table relationships are environment-
+            // specific and are stripped from the managed export anyway - see script 62).
+            trace.Trace("EnsureSignatureLookup: base publisher not writable; leaving relationship in the Default solution.");
+            warning = "The base publisher is read-only (managed install), so the relationship was left in the " +
+                      "Default solution. It is fully functional; it is simply not packaged in a named solution.";
             return null;
+        }
+
+        // Returns true when the publisher can receive new solutions/components. A
+        // read-only publisher (e.g. one that arrived via a managed solution import)
+        // cannot, and creating a solution under it would throw and abort the whole
+        // plug-in transaction - so this MUST be checked BEFORE attempting the create.
+        private static bool IsPublisherWritable(IOrganizationService svc, ITracingService trace, Guid publisherId)
+        {
+            var publisher = svc.Retrieve("publisher", publisherId, new ColumnSet("isreadonly"));
+            var readOnly = publisher.GetAttributeValue<bool>("isreadonly");
+            trace.Trace("EnsureSignatureLookup: publisher {0} isreadonly={1}.", publisherId, readOnly);
+            return !readOnly;
         }
 
         private static SolutionInfo RetrieveSolution(IOrganizationService svc, string uniqueName)
@@ -250,39 +272,33 @@ namespace EasyDo.Plugins
 
         private static bool AttributeExists(IOrganizationService svc, ITracingService trace, string logical)
         {
-            try
+            var response = (RetrieveEntityResponse)svc.Execute(new RetrieveEntityRequest
             {
-                svc.Execute(new RetrieveAttributeRequest
+                LogicalName = RequestEntity,
+                EntityFilters = EntityFilters.Attributes,
+                RetrieveAsIfPublished = true
+            });
+
+            foreach (var attribute in response.EntityMetadata.Attributes)
+            {
+                if (string.Equals(attribute.LogicalName, logical, StringComparison.OrdinalIgnoreCase))
                 {
-                    EntityLogicalName = RequestEntity,
-                    LogicalName = logical,
-                    RetrieveAsIfPublished = true
-                });
-                return true;
+                    return true;
+                }
             }
-            catch
-            {
-                return false;
-            }
+
+            return false;
         }
 
         private static EntityMetadata RetrieveEntityMeta(IOrganizationService svc, ITracingService trace, string logical)
         {
-            try
+            var resp = (RetrieveEntityResponse)svc.Execute(new RetrieveEntityRequest
             {
-                var resp = (RetrieveEntityResponse)svc.Execute(new RetrieveEntityRequest
-                {
-                    LogicalName = logical,
-                    EntityFilters = EntityFilters.Entity,
-                    RetrieveAsIfPublished = true
-                });
-                return resp.EntityMetadata;
-            }
-            catch (Exception ex)
-            {
-                trace.Trace("EnsureSignatureLookup: entity metadata for {0} failed: {1}", logical, ex.Message);
-                return null;
-            }
+                LogicalName = logical,
+                EntityFilters = EntityFilters.Entity,
+                RetrieveAsIfPublished = true
+            });
+            return resp.EntityMetadata;
         }
 
         // contact -> Contact, alex_foo -> AlexFoo (mirrors ConvertTo-Pascal in script 22).
