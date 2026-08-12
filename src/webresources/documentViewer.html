@@ -326,13 +326,24 @@
     // and copy actions). Option values from the alex_copylinkmode choice.
     var COPY_ALLOW = 626250001, COPY_BLOCK = 626250002;
     var globalAllowCopy = true;
+    // Per-channel governance for "send a signed copy to the customer" (independent
+    // of how the signing link was delivered). Email defaults on, SMS/WA off.
+    var copyChannelAllow = { email: true, sms: false, whatsapp: false };
     function loadCopyPolicy() {
-      return apiGet("alex_easydosettings?$select=alex_allowcopylink&$top=1")
+      return apiGet("alex_easydosettings?$select=alex_allowcopylink,alex_allowcopyemail,alex_allowcopysms,alex_allowcopywhatsapp&$top=1")
         .then(function (d) {
           var e = d && d.value && d.value[0];
           globalAllowCopy = e ? (e.alex_allowcopylink !== false) : true;
+          copyChannelAllow = {
+            email: e ? (e.alex_allowcopyemail !== false) : true,
+            sms: e ? (e.alex_allowcopysms === true) : false,
+            whatsapp: e ? (e.alex_allowcopywhatsapp === true) : false
+          };
         })
-        .catch(function () { globalAllowCopy = true; });
+        .catch(function () {
+          globalAllowCopy = true;
+          copyChannelAllow = { email: true, sms: false, whatsapp: false };
+        });
     }
     // Whether the signing link is shown for a given template's copy-link mode.
     // Allow -> shown; Block -> hidden; Inherit/unset -> follow the global default.
@@ -462,7 +473,7 @@
       var select = "alex_name,alex_status,alex_senton,alex_completedon,alex_laststatuscheckon,alex_signednoteid,alex_primaryrecordid,alex_declinereason";
       select += ",alex_ismultidocument,alex_externalenvelopeid,alex_envelopefillurl,alex_signinglink";
       select += ",_alex_templateid_value,_alex_relatedcontactid_value";
-      return apiGet("alex_signaturerequests(" + requestId + ")?$select=" + select + "&$expand=alex_TemplateId($select=alex_name,alex_copylinkmode),alex_RelatedContactId($select=fullname,emailaddress1,mobilephone)");
+      return apiGet("alex_signaturerequests(" + requestId + ")?$select=" + select + "&$expand=alex_TemplateId($select=alex_name,alex_copylinkmode),alex_RelatedContactId($select=fullname,emailaddress1,mobilephone,telephone1)");
     }
 
     function loadItems() {
@@ -742,15 +753,7 @@
 
       // Send copy section (only if signed)
       if (isSigned) {
-        html += '<div class="v-copy-section">';
-        html += '<div class="v-copy-title">' + (lang === "he" ? "שליחת עותק ללקוח" : "Send copy to customer") + '</div>';
-        html += '<div class="v-copy-desc">' + (lang === "he" ? "שלח עותק של המסמך החתום ללקוח בערוץ הרצוי" : "Send a copy of the signed document to the customer") + '</div>';
-        html += '<div class="v-copy-btns">';
-        html += '<button class="btn-copy sms" id="btnSms">' + SVG_SMS + '<span>SMS</span></button>';
-        html += '<button class="btn-copy email" id="btnEmail">' + SVG_EMAIL + '<span>Email</span></button>';
-        html += '<button class="btn-copy whatsapp" id="btnWhatsapp">' + SVG_WHATSAPP + '<span>WhatsApp</span></button>';
-        html += '</div>';
-        html += '</div>';
+        html += sendCopySectionHtml();
       }
 
       v.innerHTML = html;
@@ -780,6 +783,30 @@
           window.open(url, "_blank");
         });
       }
+    }
+
+    // Build the "send copy to customer" section: one button per channel that is
+    // allowed in settings AND has a usable recipient address/phone. Empty => the
+    // whole section is omitted.
+    function sendCopySectionHtml() {
+      var c = (requestData && requestData.alex_RelatedContactId) || {};
+      var hasEmail = !!c.emailaddress1;
+      var hasPhone = !!(c.mobilephone || c.telephone1);
+      var avail = {
+        email: copyChannelAllow.email && hasEmail,
+        sms: copyChannelAllow.sms && hasPhone,
+        whatsapp: copyChannelAllow.whatsapp && hasPhone
+      };
+      if (!avail.email && !avail.sms && !avail.whatsapp) return "";
+      var h = '<div class="v-copy-section">';
+      h += '<div class="v-copy-title">' + (lang === "he" ? "שליחת עותק ללקוח" : "Send copy to customer") + '</div>';
+      h += '<div class="v-copy-desc">' + (lang === "he" ? "שלח עותק של המסמך החתום ללקוח בערוץ הרצוי" : "Send a copy of the signed document to the customer") + '</div>';
+      h += '<div class="v-copy-btns">';
+      if (avail.sms) h += '<button class="btn-copy sms" id="btnSms">' + SVG_SMS + '<span>SMS</span></button>';
+      if (avail.email) h += '<button class="btn-copy email" id="btnEmail">' + SVG_EMAIL + '<span>Email</span></button>';
+      if (avail.whatsapp) h += '<button class="btn-copy whatsapp" id="btnWhatsapp">' + SVG_WHATSAPP + '<span>WhatsApp</span></button>';
+      h += '</div></div>';
+      return h;
     }
 
     function wireEvents() {

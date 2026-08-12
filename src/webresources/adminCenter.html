@@ -843,6 +843,32 @@
           </div>
           <button class="switch" id="swAllowCopyLink" role="switch" aria-label="הצגת קישור חתימה"></button>
         </div>
+        <!-- Send-copy channels (governance). Which channels may deliver the signed COPY to the customer, independent of how the signing link was sent. -->
+        <div class="gs-group" id="copyChannelGroup">
+          <div class="gs-group-title">שליחת עותק חתום ללקוח — ערוצים מותרים</div>
+          <div class="pane-hint" style="margin:2px 0 6px;">אילו ערוצים מוצעים למשתמש לשליחת עותק של המסמך החתום ללקוח, במסך המסמכים. עצמאי מערוץ השליחה של קישור החתימה. כפתור ערוץ מוצג רק אם הוא מותר כאן וגם קיים לנמען יעד מתאים (דוא״ל לערוץ דוא״ל, טלפון ל-SMS/וואטסאפ).</div>
+          <div class="gs-row" id="rowCopyEmail">
+            <div class="gs-main">
+              <div class="gs-name">דוא״ל</div>
+              <div class="gs-desc">שליחת עותק של המסמך החתום לכתובת הדוא״ל של הלקוח.</div>
+            </div>
+            <button class="switch" id="swAllowCopyEmail" role="switch" aria-label="אפשר עותק בדוא״ל"></button>
+          </div>
+          <div class="gs-row" id="rowCopySms">
+            <div class="gs-main">
+              <div class="gs-name">SMS</div>
+              <div class="gs-desc">שליחת עותק של המסמך החתום בהודעת SMS למספר הטלפון של הלקוח.</div>
+            </div>
+            <button class="switch" id="swAllowCopySms" role="switch" aria-label="אפשר עותק ב-SMS"></button>
+          </div>
+          <div class="gs-row" id="rowCopyWhatsApp">
+            <div class="gs-main">
+              <div class="gs-name">WhatsApp</div>
+              <div class="gs-desc">שליחת עותק של המסמך החתום בהודעת WhatsApp למספר הטלפון של הלקוח.</div>
+            </div>
+            <button class="switch" id="swAllowCopyWhatsApp" role="switch" aria-label="אפשר עותק בוואטסאפ"></button>
+          </div>
+        </div>
         <!-- Real-time mode (optional). When on, the agent can send a document live and wait for the signed result in a floating modal. -->
         <div class="gs-master">
           <div class="gs-main">
@@ -1508,6 +1534,7 @@
         return {
           id: null, primaryChannel: "email", multiChannel: false, allowPreview: false, realtimeEnabled: false,
           allowCopyLink: true,
+          allowCopy: { email: true, sms: false, whatsapp: false },
           ccEnabled: false, ccAgentReview: false, ccRealtime: false, ccDefaultCase: false, ccMessageTemplate: "",
           allow: { email: false, sms: false, whatsapp: false },
           method: { email: null, sms: null, whatsapp: null },
@@ -1529,6 +1556,7 @@
         var q = "?$select=alex_easydosettingsid,alex_easydochannel,alex_multichannelenabled,alex_allowpreview,alex_realtimeenabled," +
           "alex_contactcenterenabled,alex_ccagentreview,alex_ccrealtimeresults,alex_ccdefaultcase,alex_ccmessagetemplate," +
           "alex_allowemail,alex_allowsms,alex_allowwhatsapp,alex_allowcopylink," +
+          "alex_allowcopyemail,alex_allowcopysms,alex_allowcopywhatsapp," +
           "alex_emailmethod,alex_emailjourneyname,_alex_emailflowid_value," +
           "alex_smsmethod,alex_smsjourneyname,_alex_smsflowid_value," +
           "alex_whatsappmethod,alex_whatsappjourneyname,_alex_whatsappflowid_value&$top=1";
@@ -1545,6 +1573,11 @@
               multiChannel: e.alex_multichannelenabled === true,
               allowPreview: e.alex_allowpreview === true,
               allowCopyLink: e.alex_allowcopylink !== false,
+              allowCopy: {
+                email: e.alex_allowcopyemail !== false,
+                sms: e.alex_allowcopysms === true,
+                whatsapp: e.alex_allowcopywhatsapp === true
+              },
               realtimeEnabled: e.alex_realtimeenabled === true,
               ccEnabled: e.alex_contactcenterenabled === true,
               ccAgentReview: e.alex_ccagentreview === true,
@@ -1605,6 +1638,9 @@
           alex_multichannelenabled: s.multiChannel,
           alex_allowpreview: s.allowPreview === true,
           alex_allowcopylink: s.allowCopyLink !== false,
+          alex_allowcopyemail: s.allowCopy ? s.allowCopy.email !== false : true,
+          alex_allowcopysms: s.allowCopy ? s.allowCopy.sms === true : false,
+          alex_allowcopywhatsapp: s.allowCopy ? s.allowCopy.whatsapp === true : false,
           alex_realtimeenabled: s.realtimeEnabled === true,
           alex_contactcenterenabled: s.ccEnabled === true,
           alex_ccagentreview: s.ccAgentReview === true,
@@ -1683,6 +1719,16 @@
       function toggleAllowCopyLink() {
         var s = currentSettings();
         s.allowCopyLink = !(s.allowCopyLink !== false);
+        state.settings = s;
+        saveSettings();
+      }
+
+      // Per-channel governance for the "send a signed copy to the customer"
+      // buttons on the document viewer. Independent of the send channels.
+      function toggleAllowCopy(ch) {
+        var s = currentSettings();
+        if (!s.allowCopy) s.allowCopy = { email: true, sms: false, whatsapp: false };
+        s.allowCopy[ch] = !s.allowCopy[ch];
         state.settings = s;
         saveSettings();
       }
@@ -1823,6 +1869,10 @@
         renderPrimary();
         setSwitch("swAllowPreview", s.allowPreview, false);
         setSwitch("swAllowCopyLink", s.allowCopyLink !== false, false);
+        var ac = s.allowCopy || { email: true, sms: false, whatsapp: false };
+        setSwitch("swAllowCopyEmail", ac.email !== false, false);
+        setSwitch("swAllowCopySms", ac.sms === true, false);
+        setSwitch("swAllowCopyWhatsApp", ac.whatsapp === true, false);
         setSwitch("swRealtime", s.realtimeEnabled, false);
         setSwitch("swMultiChannel", s.multiChannel, false);
         // Additional channels are disabled until the master toggle is on.
@@ -2851,6 +2901,9 @@
       });
       $("swAllowPreview").addEventListener("click", toggleAllowPreview);
       $("swAllowCopyLink").addEventListener("click", toggleAllowCopyLink);
+      $("swAllowCopyEmail").addEventListener("click", function () { toggleAllowCopy("email"); });
+      $("swAllowCopySms").addEventListener("click", function () { toggleAllowCopy("sms"); });
+      $("swAllowCopyWhatsApp").addEventListener("click", function () { toggleAllowCopy("whatsapp"); });
       $("swRealtime").addEventListener("click", toggleRealtime);
       $("swMultiChannel").addEventListener("click", toggleMultiChannel);
       $("swEmail").addEventListener("click", function () { toggleChannel("email"); });

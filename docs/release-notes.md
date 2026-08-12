@@ -4,6 +4,33 @@
 
 All notable changes to this project are documented here.
 
+## [2.0.0.6] — per-channel governance for "send a signed copy to the customer" (2026-08-12)
+
+### Added | נוסף
+
+- **Configuration-level control of the copy channels.** The document viewer's *"Send
+  copy to customer"* buttons (Email / SMS / WhatsApp) previously appeared
+  unconditionally on every signed document. They are now governed independently of the
+  send channel by three new global settings —
+  `alex_easydosettings.alex_AllowCopyEmail` (default **Yes**),
+  `alex_AllowCopySms` and `alex_AllowCopyWhatsApp` (default **No**) — managed from the
+  Admin Center under **Send settings → "שליחת עותק חתום ללקוח — ערוצים מותרים"**. A copy
+  channel's button is shown only when it is **allowed** there **and** the recipient has a
+  usable target (an email for the Email channel; a mobile/business phone for SMS /
+  WhatsApp). When no channel qualifies, the whole *"Send copy"* section is hidden.
+- Sending the signed copy is deliberately decoupled from how the signing link was
+  delivered (`alex_easydochannel`) — a customer may sign via a WhatsApp link yet require
+  the formal copy by email.
+
+> **נוסף:** ניהול ברמת קונפיגורציה של ערוצי *"שליחת עותק חתום ללקוח"* (דוא״ל / SMS /
+> WhatsApp) במסך המסמכים. עד כה הכפתורים הופיעו תמיד בכל מסמך חתום; כעת הם נשלטים בנפרד
+> מערוץ השליחה דרך שלוש הגדרות גלובליות חדשות — `alex_AllowCopyEmail` (ברירת מחדל **כן**),
+> `alex_AllowCopySms` ו-`alex_AllowCopyWhatsApp` (ברירת מחדל **לא**) — הנשלטות ב-Admin
+> Center תחת **הגדרות שליחה**. כפתור ערוץ מוצג רק אם הוא **מותר** וגם קיים לנמען יעד מתאים
+> (דוא״ל לערוץ דוא״ל, טלפון נייד/עסקי ל-SMS/וואטסאפ). כשאף ערוץ אינו כשיר — מקטע שליחת
+> העותק כולו מוסתר. שליחת העותק מנותקת במכוון מאופן מסירת קישור החתימה
+> (`alex_easydochannel`).
+
 ## [2.0.0.5] — anchor from the dedicated "signature source" lookup (2026-08-12)
 
 ### Fixed | תוקן
