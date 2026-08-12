@@ -4,6 +4,40 @@
 
 All notable changes to this project are documented here.
 
+## [2.0.0.5] — anchor from the dedicated "signature source" lookup (2026-08-12)
+
+### Fixed | תוקן
+
+- **Prefilled fields stayed blank when a request was created outside the send wizard.**
+  Prefill and write-back both resolve every mapped value from the request's anchor
+  (`alex_primaryrecordid`). `PopulateAnchorPlugin` derived that anchor only from the
+  generic launch context the wizard records (`alex_relatedtablename` /
+  `alex_relatedrecordid`, or the related contact). An integration or Power Automate flow
+  that creates the request directly — populating only the dedicated native lookup
+  `alex_related<primarytable>id` (the *"… (signature source)"* column) and leaving the
+  generic context empty — produced a null anchor, so every field mapped directly off the
+  primary table was skipped and rendered blank on the signed document.
+- The plugin now adds a third, fully generic fallback: when no anchor can be derived from
+  the launch context, it reads the dedicated per-table lookup back off the request and
+  uses it as the anchor. The lookup name is always **computed** from the template's
+  primary table (`alex_related` + table + `id`) — the exact convention
+  `EnsureSignatureLookup` creates and `SetDedicatedLookup` writes — so it works for **any**
+  supported table with no hard-coding. The change is additive: an explicit anchor and the
+  wizard/contact paths are untouched, so manual sends are unaffected. Both prefill and
+  write-back benefit, since they share the same anchor.
+
+> **תוקן:** שדות שממופים לתבנית נשארו ריקים כשבקשת החתימה נוצרה מחוץ לאשף השליחה (למשל
+> ע"י אינטגרציה או Power Automate) שמילאה רק את ה‑lookup הייעודי `alex_related<טבלה>id`
+> (עמודת *"signature source"*) והשאירה את שדות ההקשר הגנריים ריקים. במצב כזה העוגן
+> (`alex_primaryrecordid`) יצא ריק, וכל שדה שממופה ישירות מהטבלה הראשית דולג ונשאר ריק
+> במסמך החתום. כעת `PopulateAnchorPlugin` כולל נפילת‑חזרה שלישית וגנרית לחלוטין: כשאי אפשר
+> לגזור עוגן מההקשר, הוא קורא בחזרה את ה‑lookup הייעודי ומשתמש בו כעוגן. שם ה‑lookup
+> **מחושב** תמיד משם הטבלה הראשית של התבנית (`alex_related` + טבלה + `id`) — אותה קונבנציה
+> ש‑`EnsureSignatureLookup` יוצר ו‑`SetDedicatedLookup` כותב — כך שזה עובד עבור **כל**
+> טבלה נתמכת ללא קידוד קשיח. השינוי מצטבר בלבד: עוגן מפורש ומסלולי האשף/איש‑הקשר לא
+> משתנים, ולכן שליחה ידנית אינה מושפעת. גם המילוי מראש וגם הכתיבה‑בחזרה נהנים מהתיקון כי
+> שניהם משתמשים באותו עוגן.
+
 ## [2.0.0.2] — signature-lookup provisioning fix on managed installs (2026-08-10)
 
 ### Fixed | תוקן

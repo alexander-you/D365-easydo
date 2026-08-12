@@ -16,6 +16,16 @@
   table (otherwise it leaves it empty so nothing is resolved against the wrong
   table).
 
+  The anchor is derived, in priority order:
+     1. generic launch context (alex_relatedtablename/-recordid) matches primary;
+     2. primary table is contact -> the related contact;
+     3. the dedicated native "signature source" lookup (alex_related<table>id).
+  Branch 3 makes the plug-in work for integrations that create the request
+  directly (bypassing the wizard) and only populate the native lookup - the read
+  side of the very convention EnsureSignatureLookup creates and SetDedicatedLookup
+  writes. The lookup name is always computed from the primary table, never
+  hard-coded, so it works for any supported table.
+
   Runs pre-operation so the value is set in-pipeline with no extra Update call.
   An explicit anchor already present on the row is always respected.
 */
@@ -118,6 +128,22 @@ namespace EasyDo.Plugins
                 anchor = relatedContact.Id.ToString();
             }
 
+            // 3. The request was created by an external integration that only set the
+            //    dedicated "signature source" lookup (alex_related<table>id) and left the
+            //    generic launch context empty. Read that lookup back and use it as the
+            //    anchor - it is already the source, so we don't re-write it below.
+            var anchorFromDedicatedLookup = false;
+            if (anchor == null)
+            {
+                var source = ReadDedicatedLookup(svc, trace, target, isUpdate, primaryTable);
+                if (source != null &&
+                    string.Equals(source.LogicalName, primaryTable, StringComparison.OrdinalIgnoreCase))
+                {
+                    anchor = source.Id.ToString();
+                    anchorFromDedicatedLookup = true;
+                }
+            }
+
             if (anchor == null)
             {
                 trace.Trace("PopulateAnchor: launch context (table={0}) does not match primary table {1}; anchor left empty.",
@@ -131,9 +157,38 @@ namespace EasyDo.Plugins
             // Also populate the dedicated, native lookup (e.g. alex_relatedentitlementid)
             // so the primary record shows a real subgrid of its signature requests.
             // The contact case is already handled by alex_relatedcontactid; for every
-            // other primary table a per-table lookup is provisioned by script 22.
-            if (Guid.TryParse(anchor, out var anchorId))
+            // other primary table a per-table lookup is provisioned by script 22. When
+            // the anchor itself came from that lookup, it is already set - don't rewrite.
+            if (!anchorFromDedicatedLookup && Guid.TryParse(anchor, out var anchorId))
                 SetDedicatedLookup(svc, trace, target, primaryTable, anchorId);
+        }
+
+        // Reads the dedicated per-table "signature source" lookup back off the request,
+        // using the same name convention as SetDedicatedLookup / EnsureSignatureLookup.
+        // On Update the Target carries only changed columns and the column name is only
+        // known after the template loads, so the stored row is read for that one column.
+        private static EntityReference ReadDedicatedLookup(
+            IOrganizationService svc, ITracingService trace, Entity target,
+            bool isUpdate, string primaryTable)
+        {
+            var column = "alex_related" + primaryTable.Replace("_", string.Empty).ToLowerInvariant() + "id";
+
+            var onTarget = target.GetAttributeValue<EntityReference>(column);
+            if (onTarget != null) return onTarget;
+
+            if (isUpdate && target.Id != Guid.Empty && RequestLookupExists(svc, trace, column))
+            {
+                try
+                {
+                    var row = svc.Retrieve("alex_signaturerequest", target.Id, new ColumnSet(column));
+                    return row.GetAttributeValue<EntityReference>(column);
+                }
+                catch (Exception ex)
+                {
+                    trace.Trace("PopulateAnchor: could not read dedicated lookup {0}: {1}", column, ex.Message);
+                }
+            }
+            return null;
         }
 
         // Convention (mirrors 22-create-related-record-lookups.ps1):

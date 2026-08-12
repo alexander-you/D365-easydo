@@ -13,6 +13,9 @@ Each version folder contains both artifacts, produced by
 
 | Version | Date | Highlights |
 | --- | --- | --- |
+| [2.0.0.5](2.0.0.5/) | 2026-08-12 | **Fix** — prefill/write-back anchor now falls back to the dedicated per-table "signature source" lookup, so requests created outside the send wizard (integrations/flows) prefill correctly; fully generic, no per-table hard-coding |
+| [2.0.0.4](2.0.0.4/) | 2026-08-11 | **Fix** — `concurrency=1` on all three scheduled flows (auto-sync, read-results, expire-overdue) to stop runaway concurrent runs; manual Sync Templates label fix. Supersedes 2.0.0.3 |
+| [2.0.0.3](2.0.0.3/) | 2026-08-11 | Superseded by 2.0.0.4 (trigger-concurrency deploy landed incomplete) |
 | [2.0.0.2](2.0.0.2/) | 2026-08-10 | **Fix** — signature-lookup provisioning no longer fails ("שגיאת קשר") on managed installs; falls back to the Default solution when the publisher is read-only |
 | [2.0.0.1](2.0.0.1/) | 2026-08-10 | **Release repair** — packages the Template Gallery PCF and removes an EN-only Tenant Contract relationship from EasyDo |
 | [2.0.0.0](2.0.0.0/) | 2026-08-01 | **Major** — multi-document **envelopes** (2 new tables, 7 connector ops, Envelope Composition PCF), recipient **authentication** (PIN/OTP), **Template Gallery** PCF, on-demand **status check** flow, envelope real-time signing, copy-link governance, read-only forms |
