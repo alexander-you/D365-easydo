@@ -40,6 +40,11 @@
             "interval": 5,
             "frequency": "Minute"
           },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "runs": 1
+            }
+          },
           "metadata": {
             "operationMetadataId": "b7c0d1e2-0001-4a10-9c01-000000000001"
           },
