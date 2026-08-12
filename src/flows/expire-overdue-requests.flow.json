@@ -43,6 +43,11 @@
           "recurrence": {
             "interval": 1,
             "frequency": "Day"
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "runs": 1
+            }
           }
         }
       },

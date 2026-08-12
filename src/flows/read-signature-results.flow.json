@@ -42,6 +42,11 @@
           "recurrence": {
             "interval": 5,
             "frequency": "Minute"
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "runs": 1
+            }
           }
         }
       },
