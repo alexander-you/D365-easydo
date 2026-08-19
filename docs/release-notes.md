@@ -4,7 +4,7 @@
 
 All notable changes to this project are documented here.
 
-## [2.0.0.8] — cancel the easydo form when a request is cancelled in Dataverse (2026-08-19)
+## [2.0.0.9] — cancel the easydo form when a request is cancelled in Dataverse (2026-08-19)
 
 ### Added | נוסף
 
@@ -28,8 +28,8 @@ All notable changes to this project are documented here.
 > וסובלנית לטופס שכבר בוטל (אידמפוטנטית). קודם לכן ביטול בצד Dataverse השאיר את הטופס
 > ב-easydo פתוח. ל-API של easydo אין שדה סיבת-ביטול חופשי, ולכן דבר אינו נשלח אליו בביטול.
 
-> _2.0.0.7 was an internal export and was not published; 2.0.0.8 supersedes it._
-> _(2.0.0.7 היה ייצוא פנימי שלא פורסם; 2.0.0.8 מחליף אותו.)_
+> _2.0.0.7 and 2.0.0.8 were internal/unpublished exports; 2.0.0.9 supersedes them._
+> _(2.0.0.7 ו-2.0.0.8 היו ייצואים פנימיים/לא-מפורסמים; 2.0.0.9 מחליף אותם.)_
 
 ## [2.0.0.6] — per-channel governance for "send a signed copy to the customer" (2026-08-12)
 
