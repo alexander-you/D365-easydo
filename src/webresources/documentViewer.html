@@ -330,7 +330,7 @@
     // of how the signing link was delivered). Email defaults on, SMS/WA off.
     var copyChannelAllow = { email: true, sms: false, whatsapp: false };
     function loadCopyPolicy() {
-      return apiGet("alex_easydosettings?$select=alex_allowcopylink,alex_allowcopyemail,alex_allowcopysms,alex_allowcopywhatsapp&$top=1")
+      return apiGet("alex_easydosettingses?$select=alex_allowcopylink,alex_allowcopyemail,alex_allowcopysms,alex_allowcopywhatsapp&$top=1")
         .then(function (d) {
           var e = d && d.value && d.value[0];
           globalAllowCopy = e ? (e.alex_allowcopylink !== false) : true;
