@@ -13,6 +13,7 @@ Each version folder contains both artifacts, produced by
 
 | Version | Date | Highlights |
 | --- | --- | --- |
+| [2.0.0.8](2.0.0.8/) | 2026-08-19 | **Feature** — cancelling a signature request in Dataverse (`alex_status` = Cancelled) now calls easydo `CancelForm` via a new flow, closing the form so the recipient can no longer sign; stamps `alex_cancelledon`, no status write-back (no re-trigger), idempotent for already-cancelled forms. Supersedes the unpublished 2.0.0.7 |
 | [2.0.0.6](2.0.0.6/) | 2026-08-12 | **Feature** — per-channel governance for "send a signed copy to the customer" (Email/SMS/WhatsApp) via new global settings, managed from the Admin Center; buttons shown only when allowed and the recipient has a usable target |
 | [2.0.0.5](2.0.0.5/) | 2026-08-12 | **Fix** — prefill/write-back anchor now falls back to the dedicated per-table "signature source" lookup, so requests created outside the send wizard (integrations/flows) prefill correctly; fully generic, no per-table hard-coding |
 | [2.0.0.4](2.0.0.4/) | 2026-08-11 | **Fix** — `concurrency=1` on all three scheduled flows (auto-sync, read-results, expire-overdue) to stop runaway concurrent runs; manual Sync Templates label fix. Supersedes 2.0.0.3 |

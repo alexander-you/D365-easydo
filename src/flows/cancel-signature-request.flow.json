@@ -1,0 +1,170 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_alex-5feasydo-5f5849d39a0feaf28d": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "alex_easydo"
+        },
+        "api": {
+          "name": "shared_alex-5feasydo-5f5849d39a0feaf28d",
+          "logicalName": "alex_5Feasydo"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "alex_dataverse_easydo"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_a_request_is_cancelled": {
+          "metadata": {
+            "operationMetadataId": "d7c0e1f2-0001-4a10-9c01-000000000201"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "SubscribeWebhookTrigger",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "subscriptionRequest/message": 4,
+              "subscriptionRequest/entityname": "alex_signaturerequest",
+              "subscriptionRequest/scope": 4,
+              "subscriptionRequest/filteringattributes": "alex_status",
+              "subscriptionRequest/filterexpression": "alex_status eq 626210009"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "runs": 1
+            }
+          }
+        }
+      },
+      "actions": {
+        "Get_the_request": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "d7c0e1f2-0002-4a10-9c01-000000000202"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "GetItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+            },
+            "parameters": {
+              "entityName": "alex_signaturerequests",
+              "recordId": "@triggerOutputs()?['body/alex_signaturerequestid']",
+              "$select": "alex_signaturerequestid,alex_externalformid,alex_cancelledon,alex_name"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Only_if_an_easydo_form_exists": {
+          "runAfter": {
+            "Get_the_request": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "d7c0e1f2-0003-4a10-9c01-000000000203"
+          },
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "not": {
+                  "equals": [
+                    "@coalesce(body('Get_the_request')?['alex_externalformid'], '')",
+                    ""
+                  ]
+                }
+              }
+            ]
+          },
+          "actions": {
+            "Try_to_cancel_the_form": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "d7c0e1f2-0004-4a10-9c01-000000000204"
+              },
+              "type": "Scope",
+              "actions": {
+                "Cancel_the_easydo_form": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "d7c0e1f2-0005-4a10-9c01-000000000205"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_alex-5feasydo-5f5849d39a0feaf28d",
+                      "operationId": "CancelForm",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f5849d39a0feaf28d"
+                    },
+                    "parameters": {
+                      "formId": "@body('Get_the_request')?['alex_externalformid']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              }
+            },
+            "Stamp_the_cancellation_time": {
+              "runAfter": {
+                "Try_to_cancel_the_form": [
+                  "Succeeded",
+                  "Failed"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "d7c0e1f2-0006-4a10-9c01-000000000206"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "UpdateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "entityName": "alex_signaturerequests",
+                  "recordId": "@triggerOutputs()?['body/alex_signaturerequestid']",
+                  "item/alex_cancelledon": "@if(empty(coalesce(body('Get_the_request')?['alex_cancelledon'], '')), utcNow(), body('Get_the_request')?['alex_cancelledon'])"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "else": {
+            "actions": {}
+          }
+        }
+      }
+    }
+  },
+  "schemaVersion": "1.0.0.0"
+}

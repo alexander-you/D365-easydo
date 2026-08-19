@@ -4,6 +4,33 @@
 
 All notable changes to this project are documented here.
 
+## [2.0.0.8] — cancel the easydo form when a request is cancelled in Dataverse (2026-08-19)
+
+### Added | נוסף
+
+- **Cancellation now syncs back to easydo.** When a signature request is set to
+  **Cancelled** (`alex_status = 626210009`) in Dataverse, a new cloud flow — *"Cancel
+  Signature Request on easydo"* — automatically calls the connector `CancelForm`
+  (`PUT /entity/me/forms/{formId}/cancel`) so the corresponding easydo form is closed
+  and the recipient can no longer sign. The flow reads the request, cancels the form
+  only when an `alex_externalformid` exists, and stamps `alex_cancelledon` (without
+  overwriting an existing value). It never writes `alex_status`, so there is no
+  re-trigger loop, and it tolerates already-cancelled forms (idempotent). Previously a
+  Dataverse-side cancellation left the easydo form open.
+- The easydo API has no free-text cancellation reason, so nothing is pushed to easydo
+  on cancel; the recipient's `decline_reason` remains an inbound-only value.
+
+> **נוסף:** ביטול בקשה ב-Dataverse (קביעת `alex_status` ל"מבוטל", `626210009`) מסנכרן
+> כעת חזרה ל-easydo. זרימת ענן חדשה — *"Cancel Signature Request on easydo"* — קוראת
+> אוטומטית ל-`CancelForm` (`PUT /entity/me/forms/{formId}/cancel`) כך שהטופס ב-easydo
+> נסגר והנמען אינו יכול עוד לחתום. הזרימה מבטלת רק כשקיים `alex_externalformid`, מחתימה
+> `alex_cancelledon` (בלי לדרוס ערך קיים), אינה כותבת `alex_status` (אין לולאת טריגר),
+> וסובלנית לטופס שכבר בוטל (אידמפוטנטית). קודם לכן ביטול בצד Dataverse השאיר את הטופס
+> ב-easydo פתוח. ל-API של easydo אין שדה סיבת-ביטול חופשי, ולכן דבר אינו נשלח אליו בביטול.
+
+> _2.0.0.7 was an internal export and was not published; 2.0.0.8 supersedes it._
+> _(2.0.0.7 היה ייצוא פנימי שלא פורסם; 2.0.0.8 מחליף אותו.)_
+
 ## [2.0.0.6] — per-channel governance for "send a signed copy to the customer" (2026-08-12)
 
 ### Added | נוסף
