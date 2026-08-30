@@ -46,6 +46,8 @@ namespace EasyDo.Plugins
         private const int StatusReadyToSend = 626210001;
         private const int LanguageHebrew = 626210000;
         private const int LanguageEnglish = 626210001;
+        private const int LanguageRussian = 626210002;
+        private const int LanguageArabic = 626210003;
         private const int DirectionPrefill = 626210000;
 
         // alex_envelopeitemstatus global choice: a bundle document not yet sent.
@@ -223,6 +225,8 @@ namespace EasyDo.Plugins
                     if (!string.IsNullOrWhiteSpace(r.Phone)) rec["alex_phone"] = r.Phone;
                     if (r.Sequence > 0) rec["alex_signingorder"] = r.Sequence;
                     if (!string.IsNullOrEmpty(r.RoleName)) rec["alex_externalrecipientname"] = r.RoleName;
+                    var langOpt = LanguageOpt(p.SigningLanguage);
+                    if (langOpt.HasValue) rec["alex_preferredlanguage"] = new OptionSetValue(langOpt.Value);
                     rec["alex_signaturerequestid"] = requestRef;
                     try { svc.Create(rec); }
                     catch (Exception ex) { trace.Trace("WizardIntake: recipient '{0}' create failed: {1}", r.Email ?? r.Phone, ex.Message); }
@@ -322,6 +326,7 @@ namespace EasyDo.Plugins
             {
                 TemplateExternalId = Text(payloadNode, "templateExternalId"),
                 Language = Text(payloadNode, "language"),
+                SigningLanguage = Text(payloadNode, "signingLanguage"),
                 PrimaryChannel = Text(payloadNode, "primaryChannel"),
                 LaunchEntityName = Text(payloadNode, "launchEntityName"),
                 LaunchRecordId = Text(payloadNode, "launchRecordId"),
@@ -428,6 +433,21 @@ namespace EasyDo.Plugins
             return ChannelEmailOpt;
         }
 
+        // Map a signing-language code (he/en/ru/ar) to the alex_language global choice
+        // value. Returns null for an unknown/empty code so the caller can skip it.
+        private static int? LanguageOpt(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code)) return null;
+            switch (code.Trim().ToLowerInvariant())
+            {
+                case "he": return LanguageHebrew;
+                case "en": return LanguageEnglish;
+                case "ru": return LanguageRussian;
+                case "ar": return LanguageArabic;
+                default: return null;
+            }
+        }
+
         // True when a JsonReaderWriterFactory node represents a JSON null (type="null").
         private static bool IsJsonNull(XmlNode node)
         {
@@ -479,6 +499,7 @@ namespace EasyDo.Plugins
             public bool IsDraft;
             public bool IsRealtime;
             public string Language;
+            public string SigningLanguage;
             public string PrimaryChannel;
             public string LaunchEntityName;
             public string LaunchRecordId;

@@ -79,8 +79,10 @@ New-DVGlobalChoice -Name "alex_language" `
     -DescEn "The language used for the signature request and recipient communication." `
     -DescHe "השפה המשמשת לבקשת החתימה ולתקשורת עם הנמען." `
     -Options @(
-        @{ En="Hebrew";  He="עברית";   DescEn="Hebrew language and right-to-left presentation."; DescHe="שפה עברית ותצוגה מימין לשמאל." }
-        @{ En="English"; He="אנגלית";  DescEn="English language and left-to-right presentation."; DescHe="שפה אנגלית ותצוגה משמאל לימין." }
+        @{ Value=626210000; En="Hebrew";  He="עברית";   DescEn="Hebrew language and right-to-left presentation."; DescHe="שפה עברית ותצוגה מימין לשמאל." }
+        @{ Value=626210001; En="English"; He="אנגלית";  DescEn="English language and left-to-right presentation."; DescHe="שפה אנגלית ותצוגה משמאל לימין." }
+        @{ Value=626210002; En="Russian"; He="רוסית";   DescEn="Russian language for recipient communication and the signing interface."; DescHe="שפה רוסית לתקשורת עם הנמען ולממשק החתימה." }
+        @{ Value=626210003; En="Arabic";  He="ערבית";   DescEn="Arabic language and right-to-left presentation for the signing interface."; DescHe="שפה ערבית ותצוגה מימין לשמאל לממשק החתימה." }
     )
 
 # 7) Integration log direction

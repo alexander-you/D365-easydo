@@ -404,6 +404,23 @@
                         "type": "boolean",
                         "x-ms-summary": "חותם | Signer",
                         "description": "True for the main signer. Only one recipient may be true. | True עבור החותם הראשי. רק נמען אחד יכול להיות true."
+                      },
+                      "language": {
+                        "type": "string",
+                        "x-ms-summary": "שפת חתימה | Signing language",
+                        "description": "The language of the signing interface shown to this recipient. | שפת ממשק החתימה המוצג לנמען זה.",
+                        "enum": [
+                          "he",
+                          "en",
+                          "ru",
+                          "ar"
+                        ],
+                        "x-ms-enum-display-name": [
+                          "עברית | Hebrew",
+                          "אנגלית | English",
+                          "רוסית | Russian",
+                          "ערבית | Arabic"
+                        ]
                       }
                     }
                   }
@@ -926,6 +943,23 @@
                         "type": "boolean",
                         "x-ms-summary": "חותם | Signer",
                         "description": "True for the main signer. Only one recipient may be true. | True עבור החותם הראשי. רק נמען אחד יכול להיות true."
+                      },
+                      "language": {
+                        "type": "string",
+                        "x-ms-summary": "שפת חתימה | Signing language",
+                        "description": "The language of the signing interface shown to this recipient. | שפת ממשק החתימה המוצג לנמען זה.",
+                        "enum": [
+                          "he",
+                          "en",
+                          "ru",
+                          "ar"
+                        ],
+                        "x-ms-enum-display-name": [
+                          "עברית | Hebrew",
+                          "אנגלית | English",
+                          "רוסית | Russian",
+                          "ערבית | Arabic"
+                        ]
                       }
                     }
                   }
@@ -1563,6 +1597,23 @@
                       "type": "string",
                       "x-ms-summary": "טלפון | Phone",
                       "description": "Recipient phone (optional, for SMS notification). | טלפון הנמען (אופציונלי, להתראת SMS)."
+                    },
+                    "language": {
+                      "type": "string",
+                      "x-ms-summary": "שפת חתימה | Signing language",
+                      "description": "The language of the signing interface shown to the main recipient. | שפת ממשק החתימה המוצג לנמען הראשי.",
+                      "enum": [
+                        "he",
+                        "en",
+                        "ru",
+                        "ar"
+                      ],
+                      "x-ms-enum-display-name": [
+                        "עברית | Hebrew",
+                        "אנגלית | English",
+                        "רוסית | Russian",
+                        "ערבית | Arabic"
+                      ]
                     }
                   },
                   "required": [
@@ -1608,6 +1659,23 @@
                               "type": "string",
                               "x-ms-summary": "טלפון | Phone",
                               "description": "The signer phone for this role (optional). | טלפון החותם עבור תפקיד זה (אופציונלי)."
+                            },
+                            "language": {
+                              "type": "string",
+                              "x-ms-summary": "שפת חתימה | Signing language",
+                              "description": "The language of the signing interface shown to this role's signer. | שפת ממשק החתימה המוצג לחותם של תפקיד זה.",
+                              "enum": [
+                                "he",
+                                "en",
+                                "ru",
+                                "ar"
+                              ],
+                              "x-ms-enum-display-name": [
+                                "עברית | Hebrew",
+                                "אנגלית | English",
+                                "רוסית | Russian",
+                                "ערבית | Arabic"
+                              ]
                             }
                           },
                           "required": [

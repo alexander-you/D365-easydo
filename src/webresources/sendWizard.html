@@ -238,6 +238,8 @@
                     channelPrimary: "ערוץ easydo ראשי",
                     channelsHint: "easydo שולחת את ההתראה בערוץ הראשי. ערוצים נוספים מפיצים את קישור החתימה דרך שירות הלקוח לפי הגדרת ההפצה של הארגון.",
                     validityLabel: "תוקף המסמך (ימים)", validityHint: "מספר הימים שהמסמך יישאר בתוקף מרגע השליחה. לאחר מכן הוא ייסגר אוטומטית.", validityDays: "ימים",
+                    signingLangLabel: "שפת החתימה", signingLangHint: "השפה שבה יוצג ממשק החתימה לנמען.",
+                    langHe: "עברית", langEn: "אנגלית", langRu: "רוסית", langAr: "ערבית", reviewSigningLang: "שפת החתימה",
                     declVia: "מופץ דרך", declCij: "מסעות לקוח (CIJ)", declFlow: "זרימת Power Automate",
                     declVerify: "ודאו שערוץ ההפצה פעיל לפני השליחה.",
                     envelopeBadge: "מעטפה", roleRecipient: "נמען ראשי", roleSigner: "חותם",
@@ -299,6 +301,8 @@
                     channelPrimary: "Primary easydo channel",
                     channelsHint: "easydo notifies on the primary channel. Additional channels distribute the signing link through your organization's configured method.",
                     validityLabel: "Document validity (days)", validityHint: "How many days the document stays valid from the moment it is sent. After that it is closed automatically.", validityDays: "days",
+                    signingLangLabel: "Signing language", signingLangHint: "The language the signing interface is shown in to the recipient.",
+                    langHe: "Hebrew", langEn: "English", langRu: "Russian", langAr: "Arabic", reviewSigningLang: "Signing language",
                     declVia: "Distributed via", declCij: "Customer Insights - Journeys (CIJ)", declFlow: "Power Automate flow",
                     declVerify: "Make sure the distribution channel is active before sending.",
                     envelopeBadge: "Envelope", roleRecipient: "Primary recipient", roleSigner: "Signer",
@@ -418,6 +422,7 @@
                 this.recipients = [];
                 this.isDraft = false;
                 this.isRealtime = false;
+                this.signingLanguage = "";
                 this.previewState = null; // null | "building" | "ready" | "error"
                 this.previewRequestId = null;
                 this.previewUrl = null;
@@ -1468,6 +1473,7 @@
                     wrap.appendChild(el("div", { "class": "edo-wz-field" }, [chLabel, chList,
                         el("div", { text: t.ccBackupHint, style: "margin:8px 2px 0; font-size:12px; line-height:1.5; color: var(--edo-sub);" })
                     ]));
+                    this.appendLanguageField(wrap, t);
                     return wrap;
                 }
 
@@ -1493,6 +1499,7 @@
                 }
                 var field = el("div", { "class": "edo-wz-field" }, [chLabel, chList]);
                 wrap.appendChild(field);
+                this.appendLanguageField(wrap, t);
 
                 // Per-send document validity (days): shown only when the template has
                 // expiry AND permits changing it at send time.
@@ -1540,6 +1547,26 @@
                 return wrap;
             };
 
+            Wizard.prototype.appendLanguageField = function (wrap, t) {
+                var self = this;
+                var langs = ["he", "en", "ru", "ar"];
+                var current = this.signingLanguage;
+                if (langs.indexOf(current) < 0) { current = (langs.indexOf(this.lang) >= 0 ? this.lang : "he"); }
+                this.signingLanguage = current;
+                var labels = { he: t.langHe, en: t.langEn, ru: t.langRu, ar: t.langAr };
+                var label = el("div", { "class": "edo-wz-field-label", text: t.signingLangLabel });
+                var sel = el("select", { "class": "edo-wz-input" });
+                langs.forEach(function (code) {
+                    var opt = el("option", { value: code, text: labels[code] });
+                    if (code === current) { opt.selected = true; }
+                    sel.appendChild(opt);
+                });
+                sel.onchange = function () { self.signingLanguage = sel.value; };
+                wrap.appendChild(el("div", { "class": "edo-wz-field" }, [label, sel,
+                    el("div", { text: t.signingLangHint, style: "margin:8px 2px 0; font-size:12px; line-height:1.5; color: var(--edo-sub);" })
+                ]));
+            };
+
             Wizard.prototype.stepReview = function (t) {
                 var self = this;
                 var wrap = el("div", { "class": "edo-wz-step" }, [this.heading(t.reviewHeading, t.reviewHint)]);
@@ -1584,6 +1611,10 @@
                     }
                 }
                 addRow(t.reviewChannels, picked.join(", "));
+                // Signing-interface language applied to all recipients.
+                var sLang = this.signingLanguage || this.lang;
+                var sLangLabels = { he: t.langHe, en: t.langEn, ru: t.langRu, ar: t.langAr };
+                addRow(t.reviewSigningLang, sLangLabels[sLang] || sLang);
                 // Document validity (only when the template has expiry and the sender
                 // may change it at send time).
                 if (tpl && tpl.hasExpiry && tpl.allowExpiryOverride && this.expiryDays) {
@@ -1789,6 +1820,7 @@
                     isDraft: this.isDraft,
                     isRealtime: (!this.isDraft && this.isRealtime),
                     language: this.lang,
+                    signingLanguage: this.signingLanguage || this.lang,
                     expiryDays: expiryDays,
                     recipients: recipients,
                     fieldValues: fieldValues,

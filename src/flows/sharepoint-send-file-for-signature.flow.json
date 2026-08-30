@@ -64,6 +64,13 @@
                     "description": "Display name of the signer | שם החותם",
                     "x-ms-content-hint": "TEXT",
                     "x-ms-dynamically-added": true
+                  },
+                  "RecipientLanguage": {
+                    "title": "Signing language (he/en/ru/ar)",
+                    "type": "string",
+                    "description": "Optional signing-interface language: he, en, ru or ar. Defaults to Hebrew. | שפת ממשק החתימה (אופציונלי): he, en, ru או ar. ברירת מחדל עברית.",
+                    "x-ms-content-hint": "TEXT",
+                    "x-ms-dynamically-added": true
                   }
                 },
                 "required": [
@@ -184,7 +191,8 @@
               "name": "@triggerBody()?['RecipientName']",
               "sequence": 1,
               "recipient": true,
-              "notify_platform": "any"
+              "notify_platform": "any",
+              "language": "@if(contains(createArray('he', 'en', 'ru', 'ar'), toLower(coalesce(triggerBody()?['RecipientLanguage'], 'he'))), toLower(coalesce(triggerBody()?['RecipientLanguage'], 'he')), 'he')"
             }
           ]
         },

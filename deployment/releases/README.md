@@ -13,6 +13,7 @@ Each version folder contains both artifacts, produced by
 
 | Version | Date | Highlights |
 | --- | --- | --- |
+| [2.0.0.10](2.0.0.10/) | 2026-08-30 | **Feature** — per-recipient signing-interface language. `alex_language` extended to 4 options (Hebrew/English/**Russian**/**Arabic**); send wizard *Signing language* selector, written to each recipient (`alex_preferredlanguage`) and passed to easydo per assignee by the Send flow; connector declares the `language` enum on every assignee/recipient; SharePoint flow accepts optional `RecipientLanguage` |
 | [2.0.0.9](2.0.0.9/) | 2026-08-19 | **Feature** — cancelling a signature request in Dataverse (`alex_status` = Cancelled) now calls easydo `CancelForm` via a new flow, closing the form so the recipient can no longer sign; stamps `alex_cancelledon`, no status write-back (no re-trigger), idempotent for already-cancelled forms. Supersedes the unpublished 2.0.0.7/2.0.0.8 |
 | [2.0.0.6](2.0.0.6/) | 2026-08-12 | **Feature** — per-channel governance for "send a signed copy to the customer" (Email/SMS/WhatsApp) via new global settings, managed from the Admin Center; buttons shown only when allowed and the recipient has a usable target |
 | [2.0.0.5](2.0.0.5/) | 2026-08-12 | **Fix** — prefill/write-back anchor now falls back to the dedicated per-table "signature source" lookup, so requests created outside the send wizard (integrations/flows) prefill correctly; fully generic, no per-table hard-coding |

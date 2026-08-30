@@ -4,6 +4,35 @@
 
 All notable changes to this project are documented here.
 
+## [2.0.0.10] — recipient signing-interface language (Hebrew / English / Russian / Arabic) (2026-08-30)
+
+### Added | נוסף
+
+- **Per-recipient signing language.** easydo now accepts a `language` value per
+  assignee that controls the language of the **signing interface** shown to the
+  recipient. The solution surfaces this end to end: the `alex_language` global choice
+  was extended from 2 to 4 options — Hebrew (`626210000`), English (`626210001`),
+  **Russian** (`626210002`) and **Arabic** (`626210003`) — and the recipient's
+  `alex_preferredlanguage` picklist uses it. The **send wizard** gained a *Signing
+  language* selector on the Settings step (shown for both standard and Contact Center
+  sends, and echoed on the Review step); the choice is written to every recipient by the
+  `WizardIntakePlugin` and passed to the connector by the **Send Signature Request**
+  flow (with a per-request and Hebrew fallback). The **custom connector** now declares
+  the `language` enum (`he`/`en`/`ru`/`ar`) on every assignee/recipient schema, and the
+  SharePoint "send file for signature" flow accepts an optional `RecipientLanguage`
+  input. Previously the signing interface always defaulted to Hebrew.
+
+> **נוסף:** שפת ממשק החתימה לפי נמען. easydo מקבלת כעת ערך `language` לכל חותם הקובע את
+> שפת **ממשק החתימה** המוצג לנמען. הפתרון תומך בכך מקצה לקצה: רשימת הבחירה הגלובלית
+> `alex_language` הורחבה מ‑2 ל‑4 ערכים — עברית (`626210000`), אנגלית (`626210001`),
+> **רוסית** (`626210002`) ו**ערבית** (`626210003`) — ועמודת `alex_preferredlanguage`
+> של הנמען משתמשת בה. ל**אשף השליחה** נוסף בורר *שפת החתימה* בשלב ההגדרות (מוצג גם
+> בשליחה רגילה וגם ב‑Contact Center, ומוצג שוב בשלב הסקירה); הבחירה נכתבת לכל נמען על ידי
+> ה‑`WizardIntakePlugin` ומועברת למחבר על ידי זרימת **Send Signature Request** (עם נפילה
+> חזרה לרמת הבקשה ולעברית). ה**מחבר המותאם** מצהיר כעת על ה‑enum ‏`language`
+> (`he`/`en`/`ru`/`ar`) בכל סכמת חותם/נמען, וזרימת SharePoint לשליחת קובץ לחתימה מקבלת
+> קלט אופציונלי `RecipientLanguage`. קודם לכן ממשק החתימה היה תמיד בעברית כברירת מחדל.
+
 ## [2.0.0.9] — cancel the easydo form when a request is cancelled in Dataverse (2026-08-19)
 
 ### Added | נוסף

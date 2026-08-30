@@ -226,7 +226,7 @@
                     },
                     "parameters": {
                       "entityName": "alex_signaturerecipients",
-                      "$select": "alex_name,alex_email,alex_phone,alex_signingorder,alex_externalprofileid,alex_recipienttype",
+                      "$select": "alex_name,alex_email,alex_phone,alex_signingorder,alex_externalprofileid,alex_recipienttype,alex_preferredlanguage",
                       "$filter": "@concat('_alex_signaturerequestid_value eq ', triggerOutputs()?['body/alex_signaturerequestid'])",
                       "$orderby": "alex_signingorder asc"
                     },
@@ -245,7 +245,7 @@
                   "type": "Select",
                   "inputs": {
                     "from": "@outputs('List_the_recipients')?['body/value']",
-                    "select": "@if(equals(item()?['alex_signingorder'], 1), addProperty(addProperty(addProperty(addProperty(addProperty(addProperty(json('{}'), 'email', item()?['alex_email']), 'phone', item()?['alex_phone']), 'name', item()?['alex_name']), 'sequence', item()?['alex_signingorder']), 'notify_platform', if(not(equals(coalesce(triggerOutputs()?['body/alex_ccconversationid'], ''), '')), null, if(equals(triggerOutputs()?['body/alex_easydochannel'], 626210001), 'sms', if(equals(triggerOutputs()?['body/alex_easydochannel'], 626210002), 'whatsapp', 'email')))), 'recipient', true), addProperty(addProperty(addProperty(addProperty(addProperty(json('{}'), 'email', item()?['alex_email']), 'phone', item()?['alex_phone']), 'name', item()?['alex_name']), 'sequence', item()?['alex_signingorder']), 'notify_platform', if(not(equals(coalesce(triggerOutputs()?['body/alex_ccconversationid'], ''), '')), null, if(equals(triggerOutputs()?['body/alex_easydochannel'], 626210001), 'sms', if(equals(triggerOutputs()?['body/alex_easydochannel'], 626210002), 'whatsapp', 'email')))))"
+                    "select": "@if(equals(item()?['alex_signingorder'], 1), addProperty(addProperty(addProperty(addProperty(addProperty(addProperty(addProperty(json('{}'), 'email', item()?['alex_email']), 'phone', item()?['alex_phone']), 'name', item()?['alex_name']), 'sequence', item()?['alex_signingorder']), 'notify_platform', if(not(equals(coalesce(triggerOutputs()?['body/alex_ccconversationid'], ''), '')), null, if(equals(triggerOutputs()?['body/alex_easydochannel'], 626210001), 'sms', if(equals(triggerOutputs()?['body/alex_easydochannel'], 626210002), 'whatsapp', 'email')))), 'recipient', true), 'language', if(equals(coalesce(item()?['alex_preferredlanguage'], triggerOutputs()?['body/alex_language'], 626210000), 626210001), 'en', if(equals(coalesce(item()?['alex_preferredlanguage'], triggerOutputs()?['body/alex_language'], 626210000), 626210002), 'ru', if(equals(coalesce(item()?['alex_preferredlanguage'], triggerOutputs()?['body/alex_language'], 626210000), 626210003), 'ar', 'he')))), addProperty(addProperty(addProperty(addProperty(addProperty(addProperty(json('{}'), 'email', item()?['alex_email']), 'phone', item()?['alex_phone']), 'name', item()?['alex_name']), 'sequence', item()?['alex_signingorder']), 'notify_platform', if(not(equals(coalesce(triggerOutputs()?['body/alex_ccconversationid'], ''), '')), null, if(equals(triggerOutputs()?['body/alex_easydochannel'], 626210001), 'sms', if(equals(triggerOutputs()?['body/alex_easydochannel'], 626210002), 'whatsapp', 'email')))), 'language', if(equals(coalesce(item()?['alex_preferredlanguage'], triggerOutputs()?['body/alex_language'], 626210000), 626210001), 'en', if(equals(coalesce(item()?['alex_preferredlanguage'], triggerOutputs()?['body/alex_language'], 626210000), 626210002), 'ru', if(equals(coalesce(item()?['alex_preferredlanguage'], triggerOutputs()?['body/alex_language'], 626210000), 626210003), 'ar', 'he')))))"
                   }
                 },
                 "Check_if_this_is_a_draft_preview": {
@@ -368,7 +368,8 @@
                           "name": "@item()?['alex_name']",
                           "sequence": "@item()?['alex_signingorder']",
                           "recipient": "@equals(item()?['alex_signingorder'], 1)",
-                          "notify_platform": "any"
+                          "notify_platform": "any",
+                          "language": "@if(equals(coalesce(item()?['alex_preferredlanguage'], triggerOutputs()?['body/alex_language'], 626210000), 626210001), 'en', if(equals(coalesce(item()?['alex_preferredlanguage'], triggerOutputs()?['body/alex_language'], 626210000), 626210002), 'ru', if(equals(coalesce(item()?['alex_preferredlanguage'], triggerOutputs()?['body/alex_language'], 626210000), 626210003), 'ar', 'he')))"
                         }
                       }
                     },
@@ -617,7 +618,8 @@
                                     "role_id": "@item()?['alex_signingorder']",
                                     "name": "@item()?['alex_name']",
                                     "email": "@item()?['alex_email']",
-                                    "phone": "@item()?['alex_phone']"
+                                    "phone": "@item()?['alex_phone']",
+                                    "language": "@if(equals(coalesce(item()?['alex_preferredlanguage'], triggerOutputs()?['body/alex_language'], 626210000), 626210001), 'en', if(equals(coalesce(item()?['alex_preferredlanguage'], triggerOutputs()?['body/alex_language'], 626210000), 626210002), 'ru', if(equals(coalesce(item()?['alex_preferredlanguage'], triggerOutputs()?['body/alex_language'], 626210000), 626210003), 'ar', 'he')))"
                                   }
                                 }
                               },
