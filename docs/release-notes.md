@@ -4,6 +4,42 @@
 
 All notable changes to this project are documented here.
 
+## [2.0.0.11] — manual signature-request cancellation with reason (2026-08-31)
+
+### Added | נוסף
+
+- **Cancel a signature request by hand, from the document pane.** Open a **sent,
+  not-yet-signed** single document in the *eayDo Documents* pane and a red **"ביטול
+  בקשת החתימה"** (Cancel signature request) button now appears. Clicking it opens a
+  confirmation dialog with a **multi-line reason** text area; on confirm the request's
+  `alex_status` is set to **Cancelled** (`626210009`) and the reason is stored in the
+  new `alex_cancelreason` memo column. Setting the status to Cancelled triggers the
+  existing *"Cancel Signature Request on easydo"* flow (2.0.0.9), so the easydo form is
+  closed and the recipient can no longer sign. The button is shown only for cancellable
+  statuses and only for single documents (envelopes are excluded, since they close via
+  a different id).
+- **Optional "require cancel reason" governance.** A new global toggle **"חייב סיבת
+  ביטול"** in the Admin Center → Send settings drawer (backed by
+  `alex_requirecancelreason` on `alex_easydosettings`) makes the reason mandatory: when
+  on, the cancel dialog refuses to submit an empty reason.
+- The cancel reason is **Dataverse-only** (audit); easydo has no free-text cancel-reason
+  field, so nothing extra is pushed to easydo. `alex_cancelreason` was also added to the
+  signature-request form's *Tracking* section as a text area.
+
+> **נוסף:** ביטול ידני של בקשת חתימה, ישירות מחלונית המסמך. פתיחת מסמך יחיד **שנשלח ולא
+> נחתם** בחלונית *eayDo Documents* מציגה כעת כפתור אדום **"ביטול בקשת החתימה"**. לחיצה
+> פותחת חלון אישור עם תיבת טקסט **רב-שורתית לסיבת הביטול**; באישור, `alex_status` של
+> הבקשה נקבע ל**מבוטל** (`626210009`) והסיבה נשמרת בעמודת ה-memo החדשה
+> `alex_cancelreason`. קביעת הסטטוס ל"מבוטל" מפעילה את הזרימה הקיימת *"Cancel Signature
+> Request on easydo"* (2.0.0.9), כך שהטופס ב-easydo נסגר והנמען אינו יכול עוד לחתום.
+> הכפתור מוצג רק לסטטוסים הניתנים לביטול ורק למסמכים יחידים (מעטפות אינן נכללות, כי הן
+> נסגרות דרך מזהה אחר).
+> **ממשל אופציונלי:** מתג גלובלי חדש **"חייב סיבת ביטול"** במרכז הניהול ← מגירת הגדרות
+> השליחה (מבוסס על `alex_requirecancelreason` ב-`alex_easydosettings`) הופך את הסיבה
+> לחובה. הסיבה נשמרת **ב-Dataverse בלבד** (תיעוד); ל-easydo אין שדה סיבת-ביטול חופשי,
+> ולכן דבר נוסף אינו נשלח אליו. `alex_cancelreason` נוסף גם לקטע *מעקב* בטופס הבקשה
+> כתיבת טקסט.
+
 ## [2.0.0.10] — recipient signing-interface language (Hebrew / English / Russian / Arabic) (2026-08-30)
 
 ### Added | נוסף

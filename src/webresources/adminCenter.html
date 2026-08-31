@@ -843,6 +843,14 @@
           </div>
           <button class="switch" id="swAllowCopyLink" role="switch" aria-label="הצגת קישור חתימה"></button>
         </div>
+        <!-- Require a reason when cancelling a signature request (global policy). -->
+        <div class="gs-master">
+          <div class="gs-main">
+            <div class="gs-name">חיוב סיבת ביטול</div>
+            <div class="gs-desc">כאשר מופעל, בעת ביטול בקשת חתימה מחלונית המסמכים המשתמש חייב להקליד סיבה לפני שהביטול יבוצע. הסיבה נשמרת על הבקשה למעקב (אינה נשלחת ל-easydo).</div>
+          </div>
+          <button class="switch" id="swRequireCancelReason" role="switch" aria-label="חיוב סיבת ביטול"></button>
+        </div>
         <!-- Send-copy channels (governance). Which channels may deliver the signed COPY to the customer, independent of how the signing link was sent. -->
         <div class="gs-group" id="copyChannelGroup">
           <div class="gs-group-title">שליחת עותק חתום ללקוח — ערוצים מותרים</div>
@@ -1534,6 +1542,7 @@
         return {
           id: null, primaryChannel: "email", multiChannel: false, allowPreview: false, realtimeEnabled: false,
           allowCopyLink: true,
+          requireCancelReason: false,
           allowCopy: { email: true, sms: false, whatsapp: false },
           ccEnabled: false, ccAgentReview: false, ccRealtime: false, ccDefaultCase: false, ccMessageTemplate: "",
           allow: { email: false, sms: false, whatsapp: false },
@@ -1555,7 +1564,7 @@
       function loadSettings() {
         var q = "?$select=alex_easydosettingsid,alex_easydochannel,alex_multichannelenabled,alex_allowpreview,alex_realtimeenabled," +
           "alex_contactcenterenabled,alex_ccagentreview,alex_ccrealtimeresults,alex_ccdefaultcase,alex_ccmessagetemplate," +
-          "alex_allowemail,alex_allowsms,alex_allowwhatsapp,alex_allowcopylink," +
+          "alex_allowemail,alex_allowsms,alex_allowwhatsapp,alex_allowcopylink,alex_requirecancelreason," +
           "alex_allowcopyemail,alex_allowcopysms,alex_allowcopywhatsapp," +
           "alex_emailmethod,alex_emailjourneyname,_alex_emailflowid_value," +
           "alex_smsmethod,alex_smsjourneyname,_alex_smsflowid_value," +
@@ -1573,6 +1582,7 @@
               multiChannel: e.alex_multichannelenabled === true,
               allowPreview: e.alex_allowpreview === true,
               allowCopyLink: e.alex_allowcopylink !== false,
+              requireCancelReason: e.alex_requirecancelreason === true,
               allowCopy: {
                 email: e.alex_allowcopyemail !== false,
                 sms: e.alex_allowcopysms === true,
@@ -1638,6 +1648,7 @@
           alex_multichannelenabled: s.multiChannel,
           alex_allowpreview: s.allowPreview === true,
           alex_allowcopylink: s.allowCopyLink !== false,
+          alex_requirecancelreason: s.requireCancelReason === true,
           alex_allowcopyemail: s.allowCopy ? s.allowCopy.email !== false : true,
           alex_allowcopysms: s.allowCopy ? s.allowCopy.sms === true : false,
           alex_allowcopywhatsapp: s.allowCopy ? s.allowCopy.whatsapp === true : false,
@@ -1719,6 +1730,15 @@
       function toggleAllowCopyLink() {
         var s = currentSettings();
         s.allowCopyLink = !(s.allowCopyLink !== false);
+        state.settings = s;
+        saveSettings();
+      }
+
+      // Global policy: require a free-text reason before a signature request may
+      // be cancelled from the document viewer.
+      function toggleRequireCancelReason() {
+        var s = currentSettings();
+        s.requireCancelReason = !(s.requireCancelReason === true);
         state.settings = s;
         saveSettings();
       }
@@ -1869,6 +1889,7 @@
         renderPrimary();
         setSwitch("swAllowPreview", s.allowPreview, false);
         setSwitch("swAllowCopyLink", s.allowCopyLink !== false, false);
+        setSwitch("swRequireCancelReason", s.requireCancelReason === true, false);
         var ac = s.allowCopy || { email: true, sms: false, whatsapp: false };
         setSwitch("swAllowCopyEmail", ac.email !== false, false);
         setSwitch("swAllowCopySms", ac.sms === true, false);
@@ -2901,6 +2922,7 @@
       });
       $("swAllowPreview").addEventListener("click", toggleAllowPreview);
       $("swAllowCopyLink").addEventListener("click", toggleAllowCopyLink);
+      $("swRequireCancelReason").addEventListener("click", toggleRequireCancelReason);
       $("swAllowCopyEmail").addEventListener("click", function () { toggleAllowCopy("email"); });
       $("swAllowCopySms").addEventListener("click", function () { toggleAllowCopy("sms"); });
       $("swAllowCopyWhatsApp").addEventListener("click", function () { toggleAllowCopy("whatsapp"); });

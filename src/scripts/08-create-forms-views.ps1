@@ -165,7 +165,7 @@ $t = 'alex_signaturerequest'
 Write-Output "== $t =="
 New-MainForm -Table $t -Meta $m[$t] -NameEn "Information" -NameHe "מידע" -DescEn "Main form for a signature request." -DescHe "טופס ראשי לבקשת חתימה." -Sections @(
     @{ En="Request Details"; He="פרטי בקשה"; Fields=@('alex_name','alex_status','alex_templateid','alex_relatedcontactid','alex_language','alex_isdraft') }
-    @{ En="Tracking"; He="מעקב"; Fields=@('alex_senton','alex_completedon','alex_cancelledon','alex_ispreviewgenerated','alex_signinglink') }
+    @{ En="Tracking"; He="מעקב"; Fields=@('alex_senton','alex_completedon','alex_cancelledon','alex_cancelreason','alex_ispreviewgenerated','alex_signinglink') }
     @{ En="Support & Diagnostics"; He="תמיכה ואבחון"; Fields=@('alex_externalformid','alex_externaldocumentid','alex_laststatuscheckon','alex_retrycount','alex_errorcode','alex_errormessage') }
 )
 New-PublicView -Table $t -Meta $m[$t] -NameEn "Active Signature Requests" -DescEn "Signature requests that are in progress." -Columns @('alex_name','alex_status','alex_relatedcontactid','alex_senton','alex_language') -IsDefault $true
