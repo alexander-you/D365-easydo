@@ -6,8 +6,17 @@ signed results back into the originating record — powered by the
 [easydo](https://easydoc.stoplight.io/docs/easydoc) signing service and Microsoft
 Power Platform.
 
-> Status: **v2.0.0.0** — multi-document envelopes, recipient authentication (PIN/OTP),
-> template gallery & on-demand status. See [docs/release-notes.md](docs/release-notes.md).
+> ## ⬇️ Download / הורדה
+>
+> **[→ Latest release & all versions on GitHub Releases](https://github.com/alexander-you/D365-easydo/releases/latest)**
+> — grab the ready-to-import **managed** zip (test/production) or **unmanaged** zip (dev)
+> from the release assets. No build required.
+>
+> Latest: **v2.0.0.11** — manual signature-request cancellation with reason.
+> Full history: [docs/release-notes.md](docs/release-notes.md) ·
+> version table: [deployment/releases/README.md](deployment/releases/README.md).
+>
+> חבילות מוכנות לייבוא (Managed / Unmanaged) זמינות בעמוד ה‑Releases בקישור למעלה.
 
 > הפרויקט מאפשר למשתמש עסקי לשלוח מסמך לחתימה דיגיטלית ישירות מתוך רשומת
 > Dynamics 365, לאכלס מראש שדות במסמך באמצעות נתוני הרשומה, לעקוב אחר הסטטוס
