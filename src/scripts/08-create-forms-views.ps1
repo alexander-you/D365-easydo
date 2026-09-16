@@ -110,6 +110,15 @@ function New-MainForm {
     $existing = Invoke-DV GET "systemforms?`$select=formid,name&`$filter=objecttypecode eq '$Table' and type eq 2" -Silent
     if ($existing.value -and $existing.value.Count -gt 0) {
         $fid = $existing.value[0].formid
+        # Guard: never clobber a form that already hosts a PCF / custom control.
+        # New-FormXml only emits plain field cells, so overwriting would strip PCF tabs
+        # (e.g. the template form's field-mapping + envelope tabs, added later by maker
+        # work + 50-place-envelope-pcf-and-tabs.ps1). Skip so re-runs stay idempotent.
+        $curXml = (Invoke-DV GET "systemforms($fid)?`$select=formxml" -Silent).formxml
+        if ($curXml -match 'customControl') {
+            Write-Output "  ! skipped main form (already hosts a PCF/custom control): $Table / $NameEn"
+            return
+        }
         Invoke-DV PATCH "systemforms($fid)" -Body @{ name = $NameEn; description = $DescEn; formxml = $xml } -ExtraHeaders $SolHeader | Out-Null
         Write-Output "  ~ updated main form: $Table / $NameEn"
         return
