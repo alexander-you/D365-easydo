@@ -79,8 +79,9 @@ account, API access, trial & contact),
 [docs/data-model.md](docs/data-model.md) (tables, ERD, data flow),
 [docs/custom-connector.md](docs/custom-connector.md) (easydo connector actions),
 [docs/technical-architecture.md](docs/technical-architecture.md) (components and
-flow) and [docs/business-user-guide.md](docs/business-user-guide.md) (a plain-language
-guide to every connector action).
+flow), [docs/troubleshooting.md](docs/troubleshooting.md) (symptoms, diagnostics and
+controlled recovery steps) and [docs/business-user-guide.md](docs/business-user-guide.md)
+(a plain-language guide to every connector action).
 
 ## Solution
 
