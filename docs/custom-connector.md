@@ -39,14 +39,37 @@ header. When creating a **Connection**, the only thing the user provides is the
 
 | Field | Value to enter |
 | --- | --- |
-| easydo token | `Bearer <your easydo API token>` |
+| easydo token | `<your easydo API token>` — token only, without the `Bearer ` prefix |
 
 - The token is generated in the **easydo portal** (Company settings → API).
+- The connector policy adds the `Authorization: Bearer ` prefix to every request.
 - It is stored inside the Power Platform **Connection** (secure), not in flows,
   not in the connector definition, and not in source control.
 - One Connection can be shared by all flows in the solution. For Test/Prod it is
   recommended that a **service principal / application user** owns the Connection.
 - Rotating the token = update the Connection only; no flow changes needed.
+
+### Troubleshooting `302` redirects to `/login`
+
+If an action returns HTTP `302` with `Location: https://api.easydo.co.il/login`,
+the easydo API did not authenticate the request. Use this sequence before escalating:
+
+1. Generate or copy the token from **Company settings → API**, and enter the token
+  alone in the Connection. Do not add `Bearer`, quotes, or leading/trailing spaces.
+2. Test the same token directly against `GET https://api.easydo.co.il/api/entity/me`
+  with `Authorization: Bearer <token>`. A `200` response proves that the token and
+  easydo API access are valid.
+3. If the direct call succeeds but the connector still returns `302`, verify that
+  the deployed connector contains the `setheader` policy from
+  `apiProperties.json`. The policy must set `Authorization` to
+  `Bearer @connectionParameters('api_key')` in the Request section.
+4. After fixing or redeploying the connector policy, create a new Connection and
+  rebind its Connection Reference. Do not rely on an existing connection because
+  Power Platform can retain old connector metadata and cached responses.
+
+Deploy connector updates with `pac connector update` using both
+`apiDefinition.swagger.json` and `apiProperties.json`. Updating only the OpenAPI
+definition does not deploy the header policy.
 
 ## Definition files (in source control)
 

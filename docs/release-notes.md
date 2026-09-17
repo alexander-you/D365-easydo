@@ -4,6 +4,57 @@
 
 All notable changes to this project are documented here.
 
+## [2.0.0.12] — Read Signature Results reliability & retry-cap (2026-09-17)
+
+### Fixed | תוקן
+
+- **Signed PDFs are now captured for approval-only documents.** The signed-PDF
+  download and the `completedon` stamp were previously gated on the easydo `has_data`
+  flag, so a document that was **signed/approved without form-field data** never had its
+  PDF attached to the Timeline. The download now runs whenever the form reports
+  **signed** — the same condition already used to mark the request *Completed*.
+- **Crash-safe read-back.** The read-back field filter no longer throws
+  `InvalidTemplate` when a field's `export` mapping is a boolean/mask instead of an
+  object; a single such field used to abort the entire read-back for that request.
+- **No duplicate read-back on retry.** An idempotency guard counts the existing
+  read-back values before writing, so a re-polled request never creates duplicate
+  `alex_signaturefieldvalue` rows.
+- **`completedon` now means "fully done, PDF included" (envelopes).** The envelope
+  path was reordered to **attach the signed PDF before** stamping `completedon` /
+  marking *Completed*, so an envelope whose PDF failed to download is no longer treated
+  as finished.
+- **Retry-cap surfaces stuck requests instead of retrying forever.** A signed request
+  whose PDF cannot be retrieved (dead easydo form or a persistent download failure) is
+  now flipped to **Failed** (`626210008`) after **48 polling attempts (~4 h)**, with
+  `alex_errorcode` = `PDF_NOT_RETRIEVED` / `ENVELOPE_PDF_NOT_RETRIEVED` and a bilingual
+  `alex_errormessage`. It then appears in the *Requests Needing Attention* view for
+  manual retrieval; the signature itself remains valid.
+- All of the above apply to **both** single-document and envelope requests. This is a
+  **flow-only** change to *Read Signature Results* — no connector, plugin, or PCF change.
+
+> **תוקן — אמינות "קריאת תוצאות החתימה":**
+> - **PDF חתום נלכד כעת גם למסמכי אישור-בלבד.** הורדת ה-PDF החתום וחותמת `completedon`
+>   היו מותנות קודם בדגל `has_data` של easydo, כך שמסמך ש**נחתם/אושר ללא נתוני שדות**
+>   לא קיבל את ה-PDF שלו ב-Timeline. ההורדה מתבצעת כעת בכל פעם שהטופס מדווח **חתום** —
+>   אותו תנאי שכבר משמש לסימון הבקשה כ*הושלמה*.
+> - **קריאה-חזרה עמידה לקריסה.** מסנן שדות הקריאה-חזרה אינו זורק יותר `InvalidTemplate`
+>   כאשר מיפוי ה-`export` של שדה הוא בוליאני/מסכה במקום אובייקט; שדה אחד כזה נהג לבטל
+>   את כל הקריאה-חזרה של אותה בקשה.
+> - **אין קריאה-חזרה כפולה בניסיון חוזר.** שומר-אידמפוטנטיות סופר את ערכי הקריאה-חזרה
+>   הקיימים לפני כתיבה, כך שבקשה שנסרקת מחדש אינה יוצרת שורות `alex_signaturefieldvalue`
+>   כפולות.
+> - **`completedon` פירושו כעת "הושלם לגמרי, כולל PDF" (מעטפות).** מסלול המעטפה סודר
+>   מחדש כך ש**ה-PDF החתום מצורף לפני** חותמת `completedon` / סימון *הושלמה*, כך שמעטפה
+>   שה-PDF שלה נכשל בהורדה אינה נחשבת עוד כגמורה.
+> - **מכסת ניסיונות חוזרים חושפת בקשות תקועות במקום לנסות לנצח.** בקשה חתומה שה-PDF שלה
+>   אינו ניתן לאחזור (טופס easydo מת או כשל הורדה מתמשך) מתהפכת כעת ל**נכשל**
+>   (`626210008`) לאחר **48 ניסיונות סקירה (~4 שעות)**, עם `alex_errorcode` =
+>   `PDF_NOT_RETRIEVED` / `ENVELOPE_PDF_NOT_RETRIEVED` והודעת `alex_errormessage`
+>   דו-לשונית. היא מופיעה אז בתצוגת *בקשות הדורשות טיפול* לאחזור ידני; החתימה עצמה
+>   נותרת תקפה.
+> - כל האמור לעיל חל על **שני** סוגי הבקשות — מסמך יחיד ומעטפה. זהו שינוי **ברמת הזרימה
+>   בלבד** ל"קריאת תוצאות החתימה" — ללא שינוי במחבר, בתוסף או ב-PCF.
+
 ## [2.0.0.11] — manual signature-request cancellation with reason (2026-08-31)
 
 ### Added | נוסף

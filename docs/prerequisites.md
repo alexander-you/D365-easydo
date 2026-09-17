@@ -22,7 +22,7 @@ flowchart TD
 
     D --> H["5. Import the Solution<br/>ייבוא ה‑Solution<br/>(Managed / Unmanaged)"]
     G --> H
-    H --> I["6. Create easydo Connection<br/>חיבור easydo<br/>(paste Bearer token)"]
+    H --> I["6. Create easydo Connection<br/>חיבור easydo<br/>(paste token only)"]
     I --> J["7. Set base‑URL env var<br/>הגדרת כתובת ה‑API<br/>+ turn on flows"]
     J --> K["Ready to send ✅<br/>מוכן לשליחה"]
 
@@ -68,6 +68,12 @@ Platform **Connection** (never into code or source control).
 
 החיבור מזדהה באמצעות **טוקן Bearer** שמופק בתוך פורטל easydo: **הגדרות חברה → API**.
 אותו טוקן מודבק בהמשך ל‑**Connection** ב‑Power Platform (לעולם לא בקוד או ב‑Git).
+
+Paste only the token value into the Connection field, without the `Bearer ` prefix;
+the custom connector adds that prefix automatically.
+
+בשדה החיבור יש להדביק את ערך הטוקן בלבד, ללא התחילית `Bearer `; הקונקטור המותאם
+מוסיף את התחילית אוטומטית.
 
 > The token is a **secret**. Rotate it if it was ever shared, and store it only in the
 > secure Connection. See [security-model.md](security-model.md).

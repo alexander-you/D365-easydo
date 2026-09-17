@@ -69,3 +69,11 @@ mockup/
 # Local test/demo documents (binary, not source)
 demodoc.doc
 *.demo.doc
+
+# ==========================================================================
+# Local diagnostic / scratch scripts (not part of the shipped solution)
+# ==========================================================================
+src/scripts/_diag-*.ps1
+src/scripts/_test-retrycap-*
+src/scripts/_form-template-*.xml
+src/scripts/restore-templateform.ps1
