@@ -28,9 +28,16 @@ All notable changes to this project are documented here.
   now flipped to **Failed** (`626210008`) after **48 polling attempts (~4 h)**, with
   `alex_errorcode` = `PDF_NOT_RETRIEVED` / `ENVELOPE_PDF_NOT_RETRIEVED` and a bilingual
   `alex_errormessage`. It then appears in the *Requests Needing Attention* view for
-  manual retrieval; the signature itself remains valid.
-- All of the above apply to **both** single-document and envelope requests. This is a
-  **flow-only** change to *Read Signature Results* — no connector, plugin, or PCF change.
+  manual retrieval; the signature itself remains valid. (The on-demand *Check Signature
+  Status* flow has no such cap — it is user-triggered, not a background poller.)
+- **On-demand *Check Signature Status* now follows the same readiness rules.** The manual
+  status-check flow shared the same defects (PDF gated on `has_data`, crash-prone
+  read-back filter, `completedon` stamped before the PDF, no idempotency guard). It now
+  mirrors *Read Signature Results* exactly for both single-document and envelope
+  requests, so a manual re-check and the scheduled poller produce identical results.
+- All of the above apply to **both** single-document and envelope requests, across
+  **both** the scheduled *Read Signature Results* and the on-demand *Check Signature
+  Status* flows. This is a **flow-only** change — no connector, plugin, or PCF change.
 
 > **תוקן — אמינות "קריאת תוצאות החתימה":**
 > - **PDF חתום נלכד כעת גם למסמכי אישור-בלבד.** הורדת ה-PDF החתום וחותמת `completedon`
@@ -51,9 +58,16 @@ All notable changes to this project are documented here.
 >   (`626210008`) לאחר **48 ניסיונות סקירה (~4 שעות)**, עם `alex_errorcode` =
 >   `PDF_NOT_RETRIEVED` / `ENVELOPE_PDF_NOT_RETRIEVED` והודעת `alex_errormessage`
 >   דו-לשונית. היא מופיעה אז בתצוגת *בקשות הדורשות טיפול* לאחזור ידני; החתימה עצמה
->   נותרת תקפה.
-> - כל האמור לעיל חל על **שני** סוגי הבקשות — מסמך יחיד ומעטפה. זהו שינוי **ברמת הזרימה
->   בלבד** ל"קריאת תוצאות החתימה" — ללא שינוי במחבר, בתוסף או ב-PCF.
+>   נותרת תקפה. (לזרימת *בדיקת סטטוס החתימה* לפי דרישה אין מכסה כזו — היא מופעלת
+>   על-ידי המשתמש ולא רצה ברקע.)
+> - **"בדיקת סטטוס החתימה" לפי דרישה עוקבת כעת אחר אותם כללי מוכנות.** לזרימת בדיקת
+>   הסטטוס הידנית היו אותם פגמים (PDF מותנה ב-`has_data`, מסנן קריאה-חזרה שנוטה
+>   לקרוס, `completedon` שנחתם לפני ה-PDF, ללא שומר-אידמפוטנטיות). היא משקפת כעת את
+>   "קריאת תוצאות החתימה" במדויק עבור מסמך יחיד ומעטפה כאחד, כך שבדיקה ידנית חוזרת
+>   והסקירה המתוזמנת מפיקות תוצאות זהות.
+> - כל האמור לעיל חל על **שני** סוגי הבקשות — מסמך יחיד ומעטפה, ועל **שתי** הזרימות —
+>   "קריאת תוצאות החתימה" המתוזמנת ו"בדיקת סטטוס החתימה" לפי דרישה. זהו שינוי **ברמת
+>   הזרימה בלבד** — ללא שינוי במחבר, בתוסף או ב-PCF.
 
 ## [2.0.0.11] — manual signature-request cancellation with reason (2026-08-31)
 
