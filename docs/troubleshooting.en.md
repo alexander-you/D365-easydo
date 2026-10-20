@@ -133,3 +133,31 @@ Apply the same principle to the envelope path. Before retrying readback, account
 for values created by a partial earlier execution so duplicate rows are not created.
 
 > This is a proposed fix. It has not yet been implemented in the repository flow.
+
+## Real-time request reverts to "Sent" after cancellation, or an empty request appears after deletion
+
+### Symptom
+
+- During a real-time (Contact Center) session, a request that was cancelled, expired
+  or declined switches back to **Sent** within a few seconds.
+- After a request is deleted while its real-time session is open, a new
+  `alex_signaturerequest` row with the same id and almost no data appears.
+
+### Cause
+
+Before release 2.0.0.13, the `Real-Time Session Poll` loop wrote `alex_status` every
+5 seconds without reading the current value, falling back to Sent (`626210002`).
+The Dataverse *Update a row* action is an upsert, so writes against a deleted id
+(live status, *Mark Completed*, closing the session) recreated an empty row.
+
+### Resolution
+
+Import release 2.0.0.13 or deploy the flow with
+[`_deploy-realtime-poll.ps1`](../src/scripts/_deploy-realtime-poll.ps1). The flow now
+re-reads the request on every iteration and writes only while it still exists, is
+open (Sent / Delivered / Viewed / In Progress), still references the same easydo
+form/envelope, and the session is active.
+
+Clean up existing damage manually: restore the correct status (for example Cancelled,
+`626210009`) on affected requests, and delete the empty rows. Empty rows have no
+`alex_name` / `alex_externalformid` and their `createdon` matches the deletion time.

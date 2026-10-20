@@ -4,6 +4,44 @@
 
 All notable changes to this project are documented here.
 
+## [2.0.0.13] — Real-Time Session Poll respects Dataverse state (2026-10-20)
+
+### Fixed | תוקן
+
+- **No more "Sent" overwriting cancellations.** Every 5 s the *Real-Time Session Poll*
+  loop wrote `alex_status` without reading it, falling back to **Sent** (`626210002`).
+  A request cancelled, expired or declined during a live session was silently flipped
+  back to Sent, and *Viewed* could be downgraded. Each iteration now re-reads the
+  request from Dataverse first and only writes while it is still **open** (Sent /
+  Delivered / Viewed / In Progress), still bound to the same easydo form/envelope and
+  the session is still active. When nothing new happened, the **current Dataverse
+  status is kept**, and Viewed is never downgraded.
+- **No empty rows when a request is deleted mid-session.** Dataverse *Update a row* is an
+  upsert, so the live-status write, *Mark Completed* and *Close session* recreated an
+  empty `alex_signaturerequest` with the deleted id. The status read uses
+  *List rows* (an empty result instead of a 404), and every write — live status,
+  per-envelope-item status, Completed, and closing the session — is now gated on the
+  row still existing.
+- **The loop stops** as soon as the request is cancelled / deleted / expired / re-sent
+  or the agent closes the session, instead of polling for the full 10 minutes.
+- **A stale run cannot close a new session.** After *Reject → Resend* the old run no
+  longer clears `alex_realtimesessionactive` on the re-sent request (the form /
+  envelope id must still match the run's trigger).
+- Applies to both single-document and envelope sessions. Flow-only change
+  (`realtime-session-poll.flow.json`); deploy with
+  [`_deploy-realtime-poll.ps1`](../src/scripts/_deploy-realtime-poll.ps1).
+
+> **תוקן — Real-Time Session Poll מכבד את המצב ב-Dataverse:**
+> - **"נשלח" לא דורס יותר ביטולים.** הלולאה כתבה את `alex_status` כל 5 שניות בלי לקרוא
+>   אותו, עם ברירת מחדל **נשלח**. בקשה שבוטלה / פגה / נדחתה במהלך סשן חזרה ל"נשלח".
+>   כעת כל איטרציה קוראת קודם את הבקשה מ-Dataverse וכותבת רק כשהיא עדיין **פתוחה**,
+>   שייכת לאותו טופס/מעטפה והסשן פעיל; אחרת הסטטוס הנוכחי נשמר, ו"נצפה" לא יורד ל"נשלח".
+> - **אין שורות ריקות כשבקשה נמחקת.** *Update a row* הוא upsert, ולכן עדכון הסטטוס,
+>   סימון *הושלם* וסגירת הסשן יצרו רשומה ריקה עם המזהה שנמחק. כעת הקריאה נעשית עם
+>   *List rows* וכל כתיבה מותנית בקיום הרשומה.
+> - **הלולאה נעצרת** מיד עם ביטול / מחיקה / פקיעה / שליחה מחדש / סגירת הסשן ע"י הנציג.
+> - **ריצה ישנה לא סוגרת סשן חדש** לאחר *דחייה ← שליחה מחדש*.
+
 ## [2.0.0.12] — Read Signature Results reliability & retry-cap (2026-09-17)
 
 ### Fixed | תוקן
