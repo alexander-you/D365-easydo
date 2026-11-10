@@ -161,3 +161,33 @@ form/envelope, and the session is active.
 Clean up existing damage manually: restore the correct status (for example Cancelled,
 `626210009`) on affected requests, and delete the empty rows. Empty rows have no
 `alex_name` / `alex_externalformid` and their `createdon` matches the deletion time.
+
+## Status check or results flow fails with "property '' cannot be selected"
+
+### Symptom
+
+- A `Check Signature Status` or `Read Signature Results` run is marked **Failed** with
+  `The template language expression ... cannot be evaluated because property '' cannot be selected`.
+- The request itself is **Completed**; only the run fails.
+- In `Real-Time Session Poll` the equivalent error is
+  `Property selection is not supported on values of type 'Boolean'`.
+
+### Cause
+
+A template field has an `export` mapping without a usable `header` (the key is
+missing, `null`, empty or whitespace), or the `export` is a boolean/mask instead of an
+object. Before release 2.0.0.14 the read-back looked up the value by that header and
+failed. In a failed run the signed-PDF step was skipped; the next scheduled poll
+normally attaches it.
+
+### Resolution
+
+Import release 2.0.0.14, or deploy with
+[`_deploy-readback-flows.ps1`](../src/scripts/_deploy-readback-flows.ps1) and
+[`_deploy-realtime-poll.ps1`](../src/scripts/_deploy-realtime-poll.ps1). Fields without
+a header are now skipped; they carry no value in easydo, so nothing is lost.
+
+For requests that failed before the upgrade, confirm `alex_signednoteid` is populated
+(the signed PDF is in the Timeline). If it is empty, run **Check status** again.
+If the Dynamics side needs that field's value, define an export header for the field
+in the easydo template.

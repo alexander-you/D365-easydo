@@ -225,9 +225,24 @@
                             "where": "@and(not(equals(item()?['type'], 'input-signature')), startsWith(string(coalesce(item()?['export'], '')), '{'))"
                           }
                         },
-                        "Write_each_read_back_value": {
+                        "Keep_only_fields_with_a_header": {
                           "runAfter": {
                             "Keep_only_value_fields": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "c3a0d1e2-0008-4a10-9c01-0000000000e1"
+                          },
+                          "type": "Query",
+                          "inputs": {
+                            "from": "@body('Keep_only_value_fields')",
+                            "where": "@not(equals(trim(string(coalesce(item()?['export']?['header'], ''))), ''))"
+                          }
+                        },
+                        "Write_each_read_back_value": {
+                          "runAfter": {
+                            "Keep_only_fields_with_a_header": [
                               "Succeeded"
                             ]
                           },
@@ -235,7 +250,7 @@
                             "operationMetadataId": "c3a0d1e2-0009-4a10-9c01-000000000009"
                           },
                           "type": "Foreach",
-                          "foreach": "@body('Keep_only_value_fields')",
+                          "foreach": "@body('Keep_only_fields_with_a_header')",
                           "runtimeConfiguration": {
                             "concurrency": {
                               "repetitions": 1
@@ -842,9 +857,24 @@
                                     "where": "@and(not(equals(item()?['type'], 'input-signature')), startsWith(string(coalesce(item()?['export'], '')), '{'))"
                                   }
                                 },
-                                "Write_each_member_value": {
+                                "Keep_only_member_fields_with_a_header": {
                                   "runAfter": {
                                     "Keep_only_member_value_fields": [
+                                      "Succeeded"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "c3a0d1e2-0f03-4a10-9c01-000000000fe1"
+                                  },
+                                  "type": "Query",
+                                  "inputs": {
+                                    "from": "@body('Keep_only_member_value_fields')",
+                                    "where": "@not(equals(trim(string(coalesce(item()?['export']?['header'], ''))), ''))"
+                                  }
+                                },
+                                "Write_each_member_value": {
+                                  "runAfter": {
+                                    "Keep_only_member_fields_with_a_header": [
                                       "Succeeded"
                                     ]
                                   },
@@ -852,7 +882,7 @@
                                     "operationMetadataId": "c3a0d1e2-0f04-4a10-9c01-000000000f04"
                                   },
                                   "type": "Foreach",
-                                  "foreach": "@body('Keep_only_member_value_fields')",
+                                  "foreach": "@body('Keep_only_member_fields_with_a_header')",
                                   "runtimeConfiguration": {
                                     "concurrency": {
                                       "repetitions": 1

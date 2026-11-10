@@ -158,3 +158,31 @@ and alex_realtimesessionactive ne true
 ניקוי נזק קיים נעשה ידנית: יש להחזיר את הסטטוס הנכון (למשל בוטל, `626210009`) בבקשות
 שנפגעו ולמחוק את השורות הריקות. לשורות ריקות אין `alex_name` / `alex_externalformid`,
 וזמן ה-`createdon` שלהן תואם את זמן המחיקה.
+
+## בדיקת סטטוס או קריאת תוצאות נכשלת עם "property '' cannot be selected"
+
+### תסמין
+
+- ריצה של `Check Signature Status` או `Read Signature Results` מסומנת **נכשלה** עם
+  `The template language expression ... cannot be evaluated because property '' cannot be selected`.
+- הבקשה עצמה בסטטוס **הושלם**; רק הריצה נכשלת.
+- ב-`Real-Time Session Poll` השגיאה המקבילה היא
+  `Property selection is not supported on values of type 'Boolean'`.
+
+### סיבה
+
+לשדה בתבנית יש מיפוי `export` ללא `header` שמיש (המפתח חסר, `null`, ריק או רווחים),
+או שה-`export` הוא בוליאני/מסכה ולא אובייקט. לפני גרסה 2.0.0.14 קריאת הערכים חזרה
+חיפשה את הערך לפי ה-header הזה ונכשלה. בריצה שנכשלה דולג שלב צירוף ה-PDF החתום;
+הריצה המתוזמנת הבאה מצרפת אותו בדרך כלל.
+
+### פתרון
+
+יש לייבא את גרסה 2.0.0.14 או לפרוס באמצעות
+[`_deploy-readback-flows.ps1`](../src/scripts/_deploy-readback-flows.ps1) ו-
+[`_deploy-realtime-poll.ps1`](../src/scripts/_deploy-realtime-poll.ps1). שדות ללא header
+מדולגים כעת; אין להם ערך ב-easydo, ולכן לא הולך לאיבוד מידע.
+
+בבקשות שנכשלו לפני השדרוג יש לוודא ש-`alex_signednoteid` מלא (ה-PDF החתום נמצא
+ב-Timeline). אם הוא ריק, יש להריץ שוב **בדיקת סטטוס**. אם נדרש ב-Dynamics הערך של
+השדה הזה, יש להגדיר לו export header בתבנית ב-easydo.

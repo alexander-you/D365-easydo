@@ -4,6 +4,43 @@
 
 All notable changes to this project are documented here.
 
+## [2.0.0.14] — Read-back skips fields without an export header (2026-11-10)
+
+### Fixed | תוקן
+
+- **Read-back no longer fails on a field without an export header.** When a template
+  field's `export` mapping has no usable `header` (missing key, `null`, empty or
+  whitespace), the read-back looked the value up with an empty property name and the
+  run failed with `property '' cannot be selected`. The signature itself completed,
+  but the run was marked *Failed* and the signed-PDF step for that run was skipped
+  (the next scheduled poll attached it). A second filter step now drops such fields
+  before any value lookup. A field without a header has no value in easydo's `data`,
+  so nothing is lost. Applies to **Read Signature Results** and **Check Signature
+  Status**, single-document and envelope paths.
+- **Real-Time Session Poll no longer crashes on a non-object `export`.** Its read-back
+  filter read `export.header` directly, so a field whose `export` is a boolean/mask
+  failed the whole page (`Property selection is not supported on values of type
+  'Boolean'`), including Completed and the signed PDF for the live session. It now
+  uses the same two-step filter as the other flows (object `export` first, then a
+  non-empty header).
+- Verified against the Power Automate engine with a field matrix (empty / whitespace /
+  `null` / missing header, boolean and string `export`, signature field, multi-page):
+  the previous filters reproduced both errors; the new filters write only the
+  fields that have a header.
+- Flow-only change. Deploy with
+  [`_deploy-readback-flows.ps1`](../src/scripts/_deploy-readback-flows.ps1) and
+  [`_deploy-realtime-poll.ps1`](../src/scripts/_deploy-realtime-poll.ps1), or import
+  the 2.0.0.14 solution (upgrade over 2.0.0.13).
+
+> **תוקן — קריאת ערכים חזרה מדלגת על שדות ללא export header:**
+> - שדה בתבנית שאין לו `header` שמיש ב-`export` (חסר, `null`, ריק או רווחים) גרם לכשל
+>   `property '' cannot be selected`. החתימה הושלמה, אבל הריצה סומנה כנכשלת ושלב צירוף
+>   ה-PDF דולג באותה ריצה. כעת שלב סינון נוסף מסיר שדות כאלה לפני שליפת הערך. לשדה
+>   ללא header אין ממילא ערך ב-`data`, כך שלא הולך לאיבוד מידע. התיקון חל על
+>   *Read Signature Results* ועל *Check Signature Status*, במסמך בודד ובמעטפה.
+> - **Real-Time Session Poll:** שדה שה-`export` שלו בוליאני הפיל את כל קריאת הערכים
+>   של העמוד, כולל סימון *הושלם* וה-PDF בסשן. כעת הוא משתמש באותו סינון דו-שלבי.
+
 ## [2.0.0.13] — Real-Time Session Poll respects Dataverse state (2026-10-20)
 
 ### Fixed | תוקן
