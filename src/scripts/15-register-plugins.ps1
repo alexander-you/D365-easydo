@@ -256,15 +256,15 @@ Set-WizardStep -Stage 40 -NameSuffix "PostOperation"
 
 # ---- 7. Custom API: alex_AttachSignedPdf --------------------------------
 # Creates the signed-PDF note on the request's PRIMARY business record (contact /
-# entitlement / ...), called by the read-back flow instead of attaching to the
-# signature request itself.
+# entitlement / ...); falls back to the signature request itself when no primary
+# record can be resolved (AttachedToRequest = true).
 $attachTypeId = Set-PluginType -TypeName "EasyDo.Plugins.AttachSignedPdfPlugin" -Friendly "EasyDo Attach Signed PDF"
 $attachApiName = "alex_AttachSignedPdf"
 $attachApiBody = @{
     uniquename       = $attachApiName
     name             = "AttachSignedPdf"
     displayname      = "Attach Signed PDF"
-    description      = "Attaches the signed PDF as a note on the signature request's primary business record."
+    description      = "Attaches the signed PDF as a note on the signature request's primary business record (or on the request itself when none can be resolved)."
     bindingtype      = 0       # Global
     isfunction       = $false
     isprivate        = $false
@@ -309,6 +309,7 @@ Set-AttachReqParam -UniqueName "SignatureRequestId" -Name "SignatureRequestId" -
 Set-AttachReqParam -UniqueName "FileName"           -Name "FileName"           -Type 10 -Optional $true
 Set-AttachReqParam -UniqueName "FileContent"        -Name "FileContent"        -Type 10 -Optional $false
 Set-AttachRespProp -UniqueName "AnnotationId"       -Name "AnnotationId"        -Type 10
+Set-AttachRespProp -UniqueName "AttachedToRequest"  -Name "AttachedToRequest"   -Type 0
 
 # ---- 8. Custom API: alex_EnsureSignatureLookup --------------------------
 # Provisions the dedicated native lookup (alex_Related<table>Id) from the

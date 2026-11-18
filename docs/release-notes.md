@@ -4,6 +4,67 @@
 
 All notable changes to this project are documented here.
 
+## [2.0.0.15] — Read Signature Results: no lost PDFs, bounded runs (2026-11-18)
+
+### Fixed | תוקן
+
+- **Signed PDF is no longer lost when no primary business record exists.** The
+  `alex_AttachSignedPdf` plug-in silently skipped (returned success without creating a
+  note) when it could not resolve the request's primary record (`alex_primaryrecordid`
+  empty, or the template has no primary table). `alex_signednoteid` stayed empty, so the
+  request was marked *Completed* but stayed in the *Read Signature Results* list forever:
+  every 5 minutes the flow downloaded the PDF again, rewrote `alex_completedon`, and the
+  list kept growing. The plug-in now attaches the note to the **signature request
+  itself**, fills `alex_signednoteid` and returns the new output `AttachedToRequest`;
+  the flows then set `alex_errorcode` = `NO_PRIMARY_RECORD` (warning, status stays
+  *Completed*). Requests already stuck this way are repaired automatically on the first
+  run after the upgrade.
+- **`alex_completedon` is preserved.** *Mark Completed* keeps an existing completion
+  date instead of overwriting it on every run.
+- **No more multi-hour hangs from retries.** The flows used the platform default retry
+  policy (up to 12 retries, exponential, up to ~1 hour apart). A transient easydo error
+  could keep a run *Running* for hours with no visible activity, and with *one run at a
+  time* every following run queued behind it. All easydo calls and the plug-in call now
+  use a bounded policy (2 retries, 15 s apart); the next scheduled run retries anyway.
+  Applies to *Read Signature Results*, *Check Signature Status* and *Real-Time Session
+  Poll*.
+- **Bounded batch per run with fair rotation.** *Read Signature Results* processes at most
+  **`alex_ReadResultsBatchSize`** requests per run (new environment variable, default
+  **25**), oldest status check first (`alex_laststatuscheckon asc`). Remaining requests
+  are picked up by the next runs, so none is skipped. A failed easydo read now also
+  stamps `alex_laststatuscheckon`, so a permanently broken request cannot block the
+  front of the queue. This keeps each run well inside the 5-minute window and bounds the
+  daily Power Platform action count (every action, including skipped ones, counts).
+- **The envelope path runs even if the single-document loop fails.**
+- Verified on DEV: plug-in with and without a primary record; a *Completed* request
+  without a note and without a primary record left the list with the PDF on the request,
+  `NO_PRIMARY_RECORD` and the original `completedon`; batch 3 processed exactly the 3
+  oldest, the next run the following 3; default 25 processed the full queue; a broken
+  form was stamped and rotated; real-time session regression.
+
+### Upgrade notes
+- Import 2.0.0.15 over 2.0.0.14 (plug-in assembly, Custom API output, environment
+  variable and flows are all in the solution). Developer deploy:
+  `15-register-plugins.ps1`, `66-add-readresults-batch-envvar.ps1`,
+  `_deploy-readback-flows.ps1`, `_deploy-realtime-poll.ps1`.
+- With *N* open requests each request is checked every ⌈N/batch⌉ × 5 minutes
+  (35 → 10 min, 100 → 20 min). *Check status* still updates a request immediately.
+  Raise the batch only if runs stay well under 5 minutes.
+
+> **תוקן — Read Signature Results: אין יותר PDF שהולך לאיבוד, וריצות מוגבלות בזמן:**
+> - **PDF חתום לא הולך לאיבוד כשאין רשומה עסקית.** הפלאגין דילג בשקט כשלא מצא רשומה
+>   ראשית, `alex_signednoteid` נשאר ריק, והבקשה נשארה ברשימה לתמיד, עם הורדת PDF מחדש
+>   כל 5 דקות. כעת ה-PDF מצורף לבקשת החתימה עצמה, השדה מתמלא ו-`alex_errorcode` =
+>   `NO_PRIMARY_RECORD`. בקשות שכבר תקועות מתוקנות אוטומטית בריצה הראשונה אחרי השדרוג.
+> - **`alex_completedon` נשמר** ולא נדרס בכל ריצה.
+> - **אין יותר תקיעה של שעות בגלל ניסיונות חוזרים.** ברירת המחדל של הפלטפורמה היא עד 12
+>   ניסיונות עם המתנה של עד שעה. כעת כל קריאה ל-easydo ולפלאגין מוגבלת ל-2 ניסיונות
+>   חוזרים במרווח 15 שניות.
+> - **מגבלה לכל ריצה עם סבב הוגן.** עד `alex_ReadResultsBatchSize` בקשות בכל ריצה
+>   (ברירת מחדל 25), קודם אלה שנבדקו לפני הכי הרבה זמן. השאר מטופלות בריצות הבאות.
+>   קריאה שנכשלה מעדכנת גם היא את מועד הבדיקה, כדי שבקשה תקולה לא תחסום את התור.
+> - **מסלול המעטפות רץ** גם אם לולאת המסמכים הבודדים נכשלה.
+
 ## [2.0.0.14] — Read-back skips fields without an export header (2026-11-10)
 
 ### Fixed | תוקן

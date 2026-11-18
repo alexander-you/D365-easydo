@@ -5,20 +5,25 @@
   plus the signed PDF (base64) the read-back flow downloaded from easydo, it
   creates a single annotation (note with attachment) on the request's PRIMARY
   business record - the contact / entitlement / etc. the document was sent for -
-  so the signed copy lands on that record's Timeline. Nothing is attached to the
-  signature request itself.
+  so the signed copy lands on that record's Timeline. Only when no primary record
+  can be resolved is the note attached to the signature request itself.
 
   Input parameters:
     SignatureRequestId (String) - the request GUID
     FileName           (String) - attachment file name (e.g. "Form-signed.pdf")
     FileContent        (String) - base64-encoded PDF bytes
   Output:
-    AnnotationId       (String) - id of the created note (empty when skipped)
+    AnnotationId       (String)  - id of the created note (empty when skipped)
+    AttachedToRequest  (Boolean) - true when no primary record could be resolved
+                                   and the note was attached to the signature
+                                   request itself instead
 
   The primary record is resolved exactly like the prefill / write-back plug-ins:
   alex_primaryrecordid + the template's alex_primarytable, with a contact
-  fallback. When no primary record can be resolved nothing is created (the flow
-  has already marked the request Completed regardless).
+  fallback. When no primary record can be resolved, the note is attached to the
+  signature request itself so the signed copy is never lost and
+  alex_signednoteid is always populated (otherwise the read-back flow would keep
+  re-processing the request forever).
 */
 using System;
 using Microsoft.Xrm.Sdk;
@@ -38,6 +43,7 @@ namespace EasyDo.Plugins
             var svc = local.PluginUserService;
 
             ctx.OutputParameters["AnnotationId"] = string.Empty;
+            ctx.OutputParameters["AttachedToRequest"] = false;
 
             var requestIdRaw = ctx.InputParameters.Contains("SignatureRequestId")
                 ? ctx.InputParameters["SignatureRequestId"] as string : null;
@@ -82,10 +88,12 @@ namespace EasyDo.Plugins
                 && string.Equals(primaryTable, "contact", StringComparison.OrdinalIgnoreCase))
                 primary = relatedContact;
 
+            var attachedToRequest = false;
             if (primary == null)
             {
-                trace.Trace("AttachSignedPdf: could not resolve a primary record (table={0}); skipping.", primaryTable);
-                return;
+                trace.Trace("AttachSignedPdf: could not resolve a primary record (table={0}); attaching to the signature request.", primaryTable);
+                primary = new EntityReference("alex_signaturerequest", requestId);
+                attachedToRequest = true;
             }
 
             var requestName = request.GetAttributeValue<string>("alex_name");
@@ -106,6 +114,7 @@ namespace EasyDo.Plugins
             {
                 var id = svc.Create(note);
                 ctx.OutputParameters["AnnotationId"] = id.ToString();
+                ctx.OutputParameters["AttachedToRequest"] = attachedToRequest;
                 trace.Trace("AttachSignedPdf: created note {0} on {1}:{2}.", id, primary.LogicalName, primary.Id);
 
                 // Write the note ID back to the signature request for easy retrieval

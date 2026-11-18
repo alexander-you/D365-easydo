@@ -64,7 +64,9 @@ before attaching the PDF.
 ### What does alex_signednoteid mean?
 
 After downloading the PDF from easydo, `alex_AttachSignedPdf` creates a note with
-the file on the primary business record's Timeline. Only after the note is created
+the file on the primary business record's Timeline. From 2.0.0.15, when no primary
+business record can be resolved, the note is created on the signature request itself
+and `alex_errorcode` is set to `NO_PRIMARY_RECORD`. Only after the note is created
 successfully is its identifier stored in `alex_signednoteid` on the signature request.
 
 - Populated: the request references the Timeline note created for the signed PDF.
@@ -191,3 +193,42 @@ For requests that failed before the upgrade, confirm `alex_signednoteid` is popu
 (the signed PDF is in the Timeline). If it is empty, run **Check status** again.
 If the Dynamics side needs that field's value, define an export header for the field
 in the easydo template.
+
+## Read Signature Results run stays "Running" for hours / Completed requests stay in the list
+
+### Symptoms
+
+- A `Read Signature Results` run stays **Running** for hours with no action visibly
+  running; the following 5-minute runs queue behind it (the flow runs one at a time) and
+  signatures stop updating in the CRM until the run is cancelled.
+- Requests already in **Completed** keep appearing in every run: the PDF is downloaded
+  again and `alex_completedon` is rewritten each time, so every run gets longer.
+
+### Causes
+
+1. **No primary business record.** Before 2.0.0.15, `alex_AttachSignedPdf` skipped
+   silently when `alex_primaryrecordid` was empty or the template had no primary table.
+   No note was created, `alex_signednoteid` stayed empty, so the request never left the
+   list (the list filter is `alex_signednoteid eq null`).
+2. **Default retry policy.** Without an explicit policy, Power Automate retries a failed
+   connector call up to 12 times with exponentially growing intervals (up to ~1 hour).
+   A transient easydo error can hold a run for hours.
+3. **Action throttling.** Every action counts toward the owner's daily Power Platform
+   request limit, *including skipped actions*. Each request costs about 15 actions per
+   run. With many open requests every 5 minutes, a flow owned by a Premium / Dynamics 365
+   user (40,000 per 24 hours) can exceed the limit; actions are then delayed.
+
+### Resolution
+
+- Import release 2.0.0.15. The PDF of a request without a primary record is attached to
+  the signature request itself, `alex_errorcode` = `NO_PRIMARY_RECORD`, and the request
+  leaves the list. Stuck requests repair themselves on the first run.
+- Calls are retried at most twice (15 s apart); the next run retries anyway.
+- `alex_ReadResultsBatchSize` (default 25) limits the requests per run; the rest rotate
+  into the next runs, oldest check first. Lower it if runs approach 5 minutes; raise it
+  only if runs stay well below.
+- Check the flow owner's license and whether the flow shows a throttling banner. For
+  high volumes consider a Process license for the flow (250,000 per 24 hours).
+- Fix the source data: requests with `NO_PRIMARY_RECORD` need `alex_primaryrecordid`,
+  or their template needs a primary table.
+- If a run is stuck before the upgrade, cancel it manually; the next run continues.

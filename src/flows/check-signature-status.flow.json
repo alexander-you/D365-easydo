@@ -75,7 +75,7 @@
             },
             "parameters": {
               "entityName": "alex_signaturerequests",
-              "$select": "alex_signaturerequestid,alex_externalformid,alex_name,alex_status",
+              "$select": "alex_signaturerequestid,alex_externalformid,alex_name,alex_status,alex_completedon",
               "$filter": "@concat('(alex_status eq 626210002 or alex_status eq 626210003 or alex_status eq 626210004 or alex_status eq 626210005 or alex_status eq 626210006) and alex_signednoteid eq null and alex_externalformid ne null and alex_signaturerequestid eq ', triggerOutputs()?['body/alex_signaturerequestid'])"
             },
             "authentication": "@parameters('$authentication')"
@@ -114,6 +114,11 @@
                     },
                     "parameters": {
                       "formId": "@items('Process_each_open_request')?['alex_externalformid']"
+                    },
+                    "retryPolicy": {
+                      "type": "fixed",
+                      "count": 2,
+                      "interval": "PT15S"
                     },
                     "authentication": "@parameters('$authentication')"
                   }
@@ -343,6 +348,11 @@
                         "parameters": {
                           "formId": "@items('Process_each_open_request')?['alex_externalformid']"
                         },
+                        "retryPolicy": {
+                          "type": "fixed",
+                          "count": 2,
+                          "interval": "PT15S"
+                        },
                         "authentication": "@parameters('$authentication')"
                       }
                     },
@@ -368,6 +378,11 @@
                           "item/FileName": "@concat(items('Process_each_open_request')?['alex_name'], '-signed.pdf')",
                           "item/FileContent": "@base64(body('Download_the_signed_PDF'))"
                         },
+                        "retryPolicy": {
+                          "type": "fixed",
+                          "count": 2,
+                          "interval": "PT15S"
+                        },
                         "authentication": "@parameters('$authentication')"
                       }
                     },
@@ -391,9 +406,52 @@
                           "entityName": "alex_signaturerequests",
                           "recordId": "@items('Process_each_open_request')?['alex_signaturerequestid']",
                           "item/alex_status": 626210006,
-                          "item/alex_completedon": "@utcNow()"
+                          "item/alex_completedon": "@coalesce(items('Process_each_open_request')?['alex_completedon'], utcNow())"
                         },
                         "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Flag_when_attached_to_the_request": {
+                      "runAfter": {
+                        "Mark_request_as_Completed": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "c3a0d1e2-0015-4a10-9c01-000000000c10"
+                      },
+                      "type": "If",
+                      "expression": {
+                        "equals": [
+                          "@coalesce(body('Attach_the_signed_PDF_to_the_Timeline')?['AttachedToRequest'], false)",
+                          true
+                        ]
+                      },
+                      "actions": {
+                        "Flag_no_primary_record": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "c3a0d1e2-0015-4a10-9c01-000000000c11"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_commondataserviceforapps",
+                              "operationId": "UpdateRecord",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                            },
+                            "parameters": {
+                              "entityName": "alex_signaturerequests",
+                              "recordId": "@items('Process_each_open_request')?['alex_signaturerequestid']",
+                              "item/alex_errorcode": "NO_PRIMARY_RECORD",
+                              "item/alex_errormessage": "המסמך החתום צורף לבקשת החתימה עצמה, כי לא נמצאה רשומה עסקית (alex_primaryrecordid / טבלה ראשית בתבנית). | The signed PDF was attached to the signature request itself because no primary business record could be resolved."
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {}
                       }
                     }
                   },
@@ -423,7 +481,7 @@
             },
             "parameters": {
               "entityName": "alex_signaturerequests",
-              "$select": "alex_signaturerequestid,alex_externalenvelopeid,alex_name,alex_status",
+              "$select": "alex_signaturerequestid,alex_externalenvelopeid,alex_name,alex_status,alex_completedon",
               "$filter": "@concat('(alex_status eq 626210002 or alex_status eq 626210003 or alex_status eq 626210004 or alex_status eq 626210005 or alex_status eq 626210006) and alex_signednoteid eq null and alex_externalenvelopeid ne null and alex_signaturerequestid eq ', triggerOutputs()?['body/alex_signaturerequestid'])"
             },
             "authentication": "@parameters('$authentication')"
@@ -462,6 +520,11 @@
                     },
                     "parameters": {
                       "envelopeId": "@items('Process_each_open_envelope')?['alex_externalenvelopeid']"
+                    },
+                    "retryPolicy": {
+                      "type": "fixed",
+                      "count": 2,
+                      "interval": "PT15S"
                     },
                     "authentication": "@parameters('$authentication')"
                   }
@@ -727,6 +790,11 @@
                             "parameters": {
                               "formId": "@string(items('Read_back_each_form')?['id'])"
                             },
+                            "retryPolicy": {
+                              "type": "fixed",
+                              "count": 2,
+                              "interval": "PT15S"
+                            },
                             "authentication": "@parameters('$authentication')"
                           }
                         },
@@ -870,9 +938,52 @@
                           "entityName": "alex_signaturerequests",
                           "recordId": "@items('Process_each_open_envelope')?['alex_signaturerequestid']",
                           "item/alex_status": 626210006,
-                          "item/alex_completedon": "@utcNow()"
+                          "item/alex_completedon": "@coalesce(items('Process_each_open_envelope')?['alex_completedon'], utcNow())"
                         },
                         "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Flag_when_envelope_attached_to_the_request": {
+                      "runAfter": {
+                        "Mark_envelope_request_as_Completed": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "c3a0d1e2-0015-4a10-9c01-000000000c30"
+                      },
+                      "type": "If",
+                      "expression": {
+                        "equals": [
+                          "@coalesce(body('Attach_the_envelope_PDF_to_the_Timeline')?['AttachedToRequest'], false)",
+                          true
+                        ]
+                      },
+                      "actions": {
+                        "Flag_envelope_no_primary_record": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "c3a0d1e2-0015-4a10-9c01-000000000c31"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_commondataserviceforapps",
+                              "operationId": "UpdateRecord",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                            },
+                            "parameters": {
+                              "entityName": "alex_signaturerequests",
+                              "recordId": "@items('Process_each_open_envelope')?['alex_signaturerequestid']",
+                              "item/alex_errorcode": "NO_PRIMARY_RECORD",
+                              "item/alex_errormessage": "המסמך החתום צורף לבקשת החתימה עצמה, כי לא נמצאה רשומה עסקית (alex_primaryrecordid / טבלה ראשית בתבנית). | The signed PDF was attached to the signature request itself because no primary business record could be resolved."
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {}
                       }
                     },
                     "Download_the_envelope_PDF": {
@@ -893,6 +1004,11 @@
                         },
                         "parameters": {
                           "envelopeId": "@items('Process_each_open_envelope')?['alex_externalenvelopeid']"
+                        },
+                        "retryPolicy": {
+                          "type": "fixed",
+                          "count": 2,
+                          "interval": "PT15S"
                         },
                         "authentication": "@parameters('$authentication')"
                       }
@@ -918,6 +1034,11 @@
                           "item/SignatureRequestId": "@items('Process_each_open_envelope')?['alex_signaturerequestid']",
                           "item/FileName": "@concat(items('Process_each_open_envelope')?['alex_name'], '-envelope-signed.pdf')",
                           "item/FileContent": "@base64(body('Download_the_envelope_PDF'))"
+                        },
+                        "retryPolicy": {
+                          "type": "fixed",
+                          "count": 2,
+                          "interval": "PT15S"
                         },
                         "authentication": "@parameters('$authentication')"
                       }

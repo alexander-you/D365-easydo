@@ -137,6 +137,11 @@
                     "parameters": {
                       "formId": "@triggerOutputs()?['body/alex_externalformid']"
                     },
+                    "retryPolicy": {
+                      "type": "fixed",
+                      "count": 2,
+                      "interval": "PT15S"
+                    },
                     "authentication": "@parameters('$authentication')"
                   }
                 },
@@ -391,6 +396,11 @@
                         "parameters": {
                           "formId": "@triggerOutputs()?['body/alex_externalformid']"
                         },
+                        "retryPolicy": {
+                          "type": "fixed",
+                          "count": 2,
+                          "interval": "PT15S"
+                        },
                         "authentication": "@parameters('$authentication')"
                       }
                     },
@@ -416,7 +426,55 @@
                           "item/FileName": "@concat(triggerOutputs()?['body/alex_name'], '-signed.pdf')",
                           "item/FileContent": "@base64(body('Download_the_signed_PDF'))"
                         },
+                        "retryPolicy": {
+                          "type": "fixed",
+                          "count": 2,
+                          "interval": "PT15S"
+                        },
                         "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Flag_when_attached_to_the_request": {
+                      "runAfter": {
+                        "Attach_the_signed_PDF_to_the_business_record": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "d4b1e2f3-0018-4a10-9c01-000000000018"
+                      },
+                      "type": "If",
+                      "expression": {
+                        "equals": [
+                          "@coalesce(body('Attach_the_signed_PDF_to_the_business_record')?['AttachedToRequest'], false)",
+                          true
+                        ]
+                      },
+                      "actions": {
+                        "Flag_no_primary_record": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "d4b1e2f3-0019-4a10-9c01-000000000019"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_commondataserviceforapps",
+                              "operationId": "UpdateRecord",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                            },
+                            "parameters": {
+                              "entityName": "alex_signaturerequests",
+                              "recordId": "@triggerOutputs()?['body/alex_signaturerequestid']",
+                              "item/alex_errorcode": "NO_PRIMARY_RECORD",
+                              "item/alex_errormessage": "המסמך החתום צורף לבקשת החתימה עצמה, כי לא נמצאה רשומה עסקית (alex_primaryrecordid / טבלה ראשית בתבנית). | The signed PDF was attached to the signature request itself because no primary business record could be resolved."
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {}
                       }
                     },
                     "Attach_a_copy_for_the_agent_modal": {
@@ -592,6 +650,11 @@
                   "inputs": {
                     "host": { "connectionName": "shared_alex-5feasydo-5f5849d39a0feaf28d", "operationId": "GetEnvelope", "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f5849d39a0feaf28d" },
                     "parameters": { "envelopeId": "@triggerOutputs()?['body/alex_externalenvelopeid']" },
+                    "retryPolicy": {
+                      "type": "fixed",
+                      "count": 2,
+                      "interval": "PT15S"
+                    },
                     "authentication": "@parameters('$authentication')"
                   }
                 },
@@ -708,6 +771,11 @@
                       "inputs": {
                         "host": { "connectionName": "shared_alex-5feasydo-5f5849d39a0feaf28d", "operationId": "GetFormStatus", "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f5849d39a0feaf28d" },
                         "parameters": { "formId": "@string(items('Read_back_each_envelope_form')?['id'])" },
+                        "retryPolicy": {
+                          "type": "fixed",
+                          "count": 2,
+                          "interval": "PT15S"
+                        },
                         "authentication": "@parameters('$authentication')"
                       }
                     },
@@ -824,6 +892,11 @@
                       "inputs": {
                         "host": { "connectionName": "shared_alex-5feasydo-5f5849d39a0feaf28d", "operationId": "DownloadEnvelope", "apiId": "/providers/Microsoft.PowerApps/apis/shared_alex-5feasydo-5f5849d39a0feaf28d" },
                         "parameters": { "envelopeId": "@triggerOutputs()?['body/alex_externalenvelopeid']" },
+                        "retryPolicy": {
+                          "type": "fixed",
+                          "count": 2,
+                          "interval": "PT15S"
+                        },
                         "authentication": "@parameters('$authentication')"
                       }
                     },
@@ -839,7 +912,55 @@
                           "item/FileName": "@concat(triggerOutputs()?['body/alex_name'], '-envelope-signed.pdf')",
                           "item/FileContent": "@base64(body('Download_the_envelope_package'))"
                         },
+                        "retryPolicy": {
+                          "type": "fixed",
+                          "count": 2,
+                          "interval": "PT15S"
+                        },
                         "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Flag_when_envelope_attached_to_the_request": {
+                      "runAfter": {
+                        "Attach_the_envelope_package_to_the_record": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "e50b2c00-0022-4a10-9c01-000000000022"
+                      },
+                      "type": "If",
+                      "expression": {
+                        "equals": [
+                          "@coalesce(body('Attach_the_envelope_package_to_the_record')?['AttachedToRequest'], false)",
+                          true
+                        ]
+                      },
+                      "actions": {
+                        "Flag_envelope_no_primary_record": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "e50b2c00-0023-4a10-9c01-000000000023"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_commondataserviceforapps",
+                              "operationId": "UpdateRecord",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                            },
+                            "parameters": {
+                              "entityName": "alex_signaturerequests",
+                              "recordId": "@triggerOutputs()?['body/alex_signaturerequestid']",
+                              "item/alex_errorcode": "NO_PRIMARY_RECORD",
+                              "item/alex_errormessage": "המסמך החתום צורף לבקשת החתימה עצמה, כי לא נמצאה רשומה עסקית (alex_primaryrecordid / טבלה ראשית בתבנית). | The signed PDF was attached to the signature request itself because no primary business record could be resolved."
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {}
                       }
                     },
                     "Attach_an_envelope_copy_for_the_agent": {
